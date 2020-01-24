@@ -572,26 +572,22 @@ void FmArcSegmentMaster::setDefaultOrientation(FmTriad* follower)
     // No arcs found, all segments are straight lines.
     // Find first line not parallel to the first one.
 
-    FaVec3 line;
-    FaVec3 tan1 = arcs.front().P[2] - arcs.front().P[0];
+    FaVec3 tan1 = arcs.front().getSecant();
     if (arcs.size() > 1)
     {
       iarc = arcs.begin();
       for (++iarc; iarc != arcs.end(); ++iarc)
-      {
-        line = iarc->P[2] - iarc->P[0];
-        if (!tan1.isParallell(line))
+        if (!tan1.isParallell(iarc->getSecant()))
         {
-          positiveNormal = tan1 ^ line;
+          positiveNormal = tan1 ^ iarc->getSecant();
           break;
         }
-      }
     }
 
     if (iarc == arcs.end())
     {
       // All lines are parallel
-      line = followerPos - this->getFirstTriad()->getLocalTranslation();
+      FaVec3 line = followerPos - this->getFirstTriad()->getLocalTranslation();
       if (!line.isParallell(tan1))
         positiveNormal = tan1 ^ line;
       else if (!tan1.isParallell(FaVec3(0.0,0.0,1.0)))
