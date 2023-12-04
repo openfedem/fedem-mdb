@@ -1,0 +1,35 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* cylJoint_xpm[] = {
+"16 16 10 1",
+". c None",
+"a c #000000",
+"g c #6c91b5",
+"f c #99ccff",
+"h c #c80000",
+"b c #cccc00",
+"# c #ff0000",
+"c c #ffd987",
+"d c #ffff00",
+"e c #ffff99",
+"..#.abcda..#....",
+".##.abcda..##...",
+"##############..",
+".##.abeda..##...",
+"..#.abeda..#....",
+"....abeda...#...",
+"....abeda..###..",
+"....abeda..#.#..",
+"...abbbbba.#.#..",
+"aaaadddddaaaa##a",
+"fffaeeeeeaffff#f",
+"gggaeeeeeagggg#g",
+"aaaadddddaaaah#a",
+"...abbbbba.h.h..",
+"....aaaaa..hhh..",
+"...........hhhh."};

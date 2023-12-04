@@ -1,0 +1,29 @@
+triads_from_fe_parts:
+  fix_bottom@front:                [Front bottom bearing housing to ground,  p1, node,  441]
+  fix_top@front:                   [Front top bearing housing to ground,     p1, node,  211]
+  right_housing@front:             [Front right bearing housing,             p1, node,   38]
+  left_housing@front:              [Front left bearing housing,              p1, node,   58]
+  top_cylinder_attachment@front:   [Front top cylinder attachment point,     p1, node,   18]
+  right_cylinder_attachment@front: [Front right cylinder attachment point,   p1, node,  222]
+  left_cylinder_attachment@front:  [Front left cylinder attachment point,    p1, node,  235]
+
+  rear_right_housing@boom:         [Boom right rear bearing housing,         p2, node, 1038]
+  rear_left_housing@boom:          [Boom left rear bearing housing,          p2, node,  178]
+  front_right_housing@boom:        [Boom right front bearing housing,        p2, node,  715]
+  front_left_housing@boom:         [Boom left front bearing housing,         p2, node,    5]
+  right_bellcrank_housing@boom:    [Boom right bearing housing to BellCrank, p2, node,  545]
+  left_bellcrank_housing@boom:     [Boom left bearing housing to BellCrank,  p2, node,  424]
+  right_cylinder_attachment@boom:  [Boom right cylinder attachment point,    p2, node,  829]
+  left_cylinder_attachment@boom:   [Boom left cylinder attachment point,     p2, node,  119]
+
+  right_housing@bucket:            [Bucket right housing,                    p3, node,  509]
+  mid_housing@bucket:              [Bucket midt housing,                     p3, node,  451]
+  left_housing@bucket:             [Bucket left housing,                     p3, node,  284]
+
+  top_housing@bellcrank:           [BellCrank top housing,                   p4, node,  420]
+  bottom_housing@bellcrank:        [BellCrank bottom housing,                p4, node,   14]
+  right_housing@bellcrank:         [BellCrank right housing,                 p4, node,  276]
+  left_housing@bellcrank:          [BellCrank left housing,                  p4, node,  244]
+
+  rear_houding@bucketlink:         [BucketLink rear housing,                 p5, node,  575]
+  front_housing@bucketlink:        [BucketLink front housing,                p5, node,  174]

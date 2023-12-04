@@ -1,0 +1,6 @@
+fe_parts:
+  p1: [Front.flm]
+  p2: [Boom.flm]
+  p3: [Bucket.flm]
+  p4: [BellCrank.flm]
+  p5: [BucketLink.flm]

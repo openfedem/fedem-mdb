@@ -1,0 +1,33 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* makeRelativeSensor_xpm[] = {
+/* width height num_colors chars_per_pixel */
+"    16    16        4            1",
+/* colors */
+". c     blue",
+"# c #00ff00",
+"a c none",
+"b c #ffffff",
+/* pixels */
+"aaa.............",
+"aaa.bbbbbbbbbbb.",
+"aaa.bbbbbbbbbbb.",
+"aaa.bb.bb.bb.bb.",
+"aaa.bbb.b.b.bbb.",
+"aaa.bbbb...bbbb.",
+"aaa.bb.......bb.",
+"aaa.bbbbbbbbbbb.",
+"aaa.bbbbbbbbbbb.",
+"aaa.............",
+"aaaaaaaa..aaaaaa",
+"....aaa..aaa....",
+".##..........##.",
+".##.aaaaaaaa.##.",
+"....aaaaaaaa....",
+"aaaaaaaaaaaaaaaa"
+};

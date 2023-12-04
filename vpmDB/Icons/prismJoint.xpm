@@ -1,0 +1,33 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* prismJoint_xpm[] = {
+"16 16 8 1",
+". c None",
+"a c #000000",
+"f c #99ccff",
+"e c #c4deff",
+"b c #cccc00",
+"# c #ff0000",
+"d c #ffff00",
+"c c #ffff99",
+"...#.abcda.#....",
+"..##.abcda.##...",
+".#############..",
+"..##.abcda.##...",
+"...#.abcda.#....",
+".....abcda......",
+"...aaaaaaaaa....",
+"...addddddda....",
+"aaaadaadaadaaaaa",
+"eeeacccccccaeeee",
+"fffacccccccaffff",
+"aaaadaadaadaaaaa",
+"...abbbbbbba....",
+"...aaaaaaaaa....",
+"................",
+"................"};

@@ -1,0 +1,33 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* ballJoint_xpm[] = {
+"16 16 8 1",
+". c None",
+"# c #000000",
+"b c #6c91b5",
+"a c #99ccff",
+"d c #c4deff",
+"f c #cccc00",
+"e c #ffff00",
+"c c #ffff99",
+"................",
+".........##.....",
+"........##aa....",
+"......###aab##..",
+"...###bbb#b##...",
+"..#c#baddb###...",
+".#c#bbaaaab#c#..",
+".#c##bbbbb##c#..",
+".#ecc######ce#..",
+".#feccccccccf#..",
+"..#feeeeeeef#...",
+"..##fffffff##...",
+"....##f#f##.....",
+".....#fee#......",
+".....#fee#......",
+".....#fee#......"};

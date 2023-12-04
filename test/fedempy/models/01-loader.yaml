@@ -1,0 +1,11 @@
+# 01-loader.yaml
+#
+# No-code version of the Loader model
+# where the model is split into several files.
+#
+# Developed by Knut Morten Okstad
+#
+relative_path: 01-loader-YAML/
+target_file: 01-loader-YAML.fmm
+file_exists: OVERWRITE!
+include: [ parts.yaml, triads.yaml, joints.yaml, cylinders.yaml ]

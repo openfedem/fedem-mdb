@@ -1,0 +1,29 @@
+include: fe_parts.yaml
+
+edit_fe_parts:
+  p1: &link_property
+    alpha2: 0.00286
+    component_modes: 0
+    consistent_mass: True
+  p2:
+    <<: *link_property
+    Tx:  0.01080263
+    Tz: -0.77487206
+  p3:
+    <<: *link_property
+    Tx:   -0.64636636
+    Tz:   -2.0328088
+    Ry:  -30
+    Rz: -180
+  p4:
+    <<: *link_property
+    Tx: -3.2499752
+    Ty: -2.8376081
+    Tz:  0.04694241
+    Ry: 21.814096
+  p5:
+    <<: *link_property
+    Tx: -2.041544
+    Ty: -0.92750001
+    Tz:  0.12191465
+    Ry: -4.9156169

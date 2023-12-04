@@ -1,0 +1,36 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* material_xpm[] = {
+"16 16 11 1",
+" 	c None",
+".	c #005FA2",
+"+	c #000000",
+"@	c #4BB5FF",
+"#	c #7BC9FF",
+"$	c #63BFFF",
+"%	c #CDEAFF",
+"&	c #A7DBFF",
+"*	c #0F9CFF",
+"=	c #FFFFFF",
+"-	c #0076C8",
+"                ",
+"                ",
+"     ...++      ",
+"   ..@#$#@++    ",
+"  .##%&#$#@*+   ",
+"  .#%=%&#@@@+   ",
+" .@%==%&$#@**+  ",
+" .#%%%%$#@@*-+  ",
+" +$#&&$#@@@*-+  ",
+" +#$#$#@#@**++  ",
+"  +#@#@@@**-+   ",
+"  +@#@@@**-++   ",
+"   ++*---+++    ",
+"     +++++      ",
+"                ",
+"                "};

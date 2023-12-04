@@ -1,0 +1,32 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* sticker_xpm[] = {
+/* width height num_colors chars_per_pixel */
+"    16    16        3            1",
+/* colors */
+". c #000000",
+"# c brown  ",
+"a c none",
+/* pixels */
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaa..aaaaaaa",
+"aaaaaa.##.aaaaaa",
+"aaaaaa.##.aaaaaa",
+"aaaaaa....aaaaaa",
+"aaaaa..aa..aaaaa",
+"aaaa..aaaa..aaaa",
+"aaa..aaaaaa..aaa",
+"aa..aaaaaaaa..aa",
+"a..aaaaaaaaaa..a",
+"a..............a",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa"
+};

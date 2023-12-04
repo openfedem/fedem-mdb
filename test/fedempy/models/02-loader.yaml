@@ -1,0 +1,102 @@
+# 02-loader.yaml
+#
+# No-code version of the Loader model
+# where the triad specifications are embedded in the script.
+#
+# No BASE_ID identification
+#
+# Developed by Oeystein Stranden
+#
+relative_path: 02-loader-YAML/
+target_file: 02-loader-YAML.fmm
+file_exists: OVERWRITE!
+
+fe_parts:
+  p1: [Front.flm]
+  p2: [Boom.flm]
+  p3: [Bucket.flm]
+  p4: [BellCrank.flm]
+  p5: [BucketLink.flm]
+
+triads_from_fe_parts:
+  fix_bottom@front:                [Front bottom bearing housing to ground,  p1, node,  441]
+  fix_top@front:                   [Front top bearing housing to ground,     p1, node,  211]
+  right_housing@front:             [Front right bearing housing,             p1, node,   38]
+  left_housing@front:              [Front left bearing housing,              p1, node,   58]
+  top_cylinder_attachment@front:   [Front top cylinder attachment point,     p1, node,   18]
+  right_cylinder_attachment@front: [Front right cylinder attachment point,   p1, node,  222]
+  left_cylinder_attachment@front:  [Front left cylinder attachment point,    p1, node,  235]
+
+  rear_right_housing@boom:         [Boom right rear bearing housing,         p2, node, 1038]
+  rear_left_housing@boom:          [Boom left rear bearing housing,          p2, node,  178]
+  front_right_housing@boom:        [Boom right front bearing housing,        p2, node,  715]
+  front_left_housing@boom:         [Boom left front bearing housing,         p2, node,    5]
+  right_bellcrank_housing@boom:    [Boom right bearing housing to BellCrank, p2, node,  545]
+  left_bellcrank_housing@boom:     [Boom left bearing housing to BellCrank,  p2, node,  424]
+  right_cylinder_attachment@boom:  [Boom right cylinder attachment point,    p2, node,  829]
+  left_cylinder_attachment@boom:   [Boom left cylinder attachment point,     p2, node,  119]
+
+  right_housing@bucket:            [Bucket right housing,                    p3, node,  509]
+  mid_housing@bucket:              [Bucket midt housing,                     p3, node,  451]
+  left_housing@bucket:             [Bucket left housing,                     p3, node,  284]
+
+  top_housing@bellcrank:           [BellCrank top housing,                   p4, node,  420]
+  bottom_housing@bellcrank:        [BellCrank bottom housing,                p4, node,   14]
+  right_housing@bellcrank:         [BellCrank right housing,                 p4, node,  276]
+  left_housing@bellcrank:          [BellCrank left housing,                  p4, node,  244]
+
+  rear_houding@bucketlink:         [BucketLink rear housing,                 p5, node,  575]
+  front_housing@bucketlink:        [BucketLink front housing,                p5, node,  174]
+
+edit_fe_parts:
+  p1: &link_property
+    alpha2: 0.00286
+    component_modes: 0
+    consistent_mass: True
+  p2:
+    <<: *link_property
+    Tx:  0.01080263
+    Tz: -0.77487206
+  p3:
+    <<: *link_property
+    Tx:   -0.64636636
+    Tz:   -2.0328088
+    Ry:  -30
+    Rz: -180
+  p4:
+    <<: *link_property
+    Tx: -3.2499752
+    Ty: -2.8376081
+    Tz:  0.04694241
+    Ry: 21.814096
+  p5:
+    <<: *link_property
+    Tx: -2.041544
+    Ty: -0.92750001
+    Tz:  0.12191465
+    Ry: -4.9156169
+
+joints:
+  j01: [Front bottom to ground,  BALL_JOINT, fix_bottom@front]
+  j02: [Front top to ground,     BALL_JOINT, fix_top@front]
+
+  j03: [Front to boom right,     BALL_JOINT, right_housing@front,      rear_right_housing@boom]
+  j04: [Front to boom left,      BALL_JOINT, left_housing@front,       rear_left_housing@boom]
+
+  j05: [Front to bucket right,   BALL_JOINT, front_right_housing@boom, right_housing@bucket]
+  j06: [Front to bucket left,    BALL_JOINT, front_left_housing@boom,  left_housing@bucket, {"spring": {"Rx": 1000.0, "Ry": 200.0, "Rz": 30.0}}]
+
+  j07: [Bucketlink to bellcrank, BALL_JOINT, rear_houding@bucketlink,  bottom_housing@bellcrank]
+  j08: [Bucketlink to bucket,    BALL_JOINT, front_housing@bucketlink, mid_housing@bucket]
+
+  j09: [Boom to bellcrank right, BALL_JOINT, right_bellcrank_housing@boom, right_housing@bellcrank]
+  j10: [Boom to bellcrank left,  BALL_JOINT, left_bellcrank_housing@boom,  left_housing@bellcrank]
+
+edit_joints:
+  j06: {"damper": {"Rx": 12.3}}
+  j07: {"spring": {"Rx": 123.456}}
+
+spring_dampers:
+  Top cylinder:   [Top cylinder,   top_cylinder_attachment@front,   top_housing@bellcrank,          1.0e+5]
+  Right cylinder: [Right cylinder, right_cylinder_attachment@front, right_cylinder_attachment@boom, 1.0e+6]
+  Left cylinder:  [Left cylinder,  left_cylinder_attachment@front,  left_cylinder_attachment@boom,  1.0e+6]

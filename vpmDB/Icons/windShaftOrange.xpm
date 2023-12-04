@@ -1,0 +1,34 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* windShaftOrange_xpm[] = {
+"16 16 9 1",
+" 	c None",
+".	c #A26300",
+"+	c #000000",
+"@	c #FFDDA7",
+"#	c #FFB94B",
+"$	c #FFFFFF",
+"%	c #FFECCD",
+"&	c #FFCC7B",
+"*	c #C87A00",
+"                ",
+"                ",
+"                ",
+"  .+++++++++++  ",
+" .@.##########+ ",
+".@$$.@@@@@@@@@@+",
+".%$%.%%%%%%%%%%+",
+".$$%.$$$$$$$$$$+",
+".$%@.@@@@@@@@@@+",
+"+%@@+&&&&&&&&&&+",
+"+@@@+##########+",
+" +@+**********+ ",
+"  ++++++++++++  ",
+"                ",
+"                ",
+"                "};

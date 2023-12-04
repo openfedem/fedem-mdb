@@ -1,0 +1,12 @@
+triads:
+  top_cylinder_attachment@front:   { name: Top cylinder attachment point,   pos: [-0.8, 0.0, 1.4] }
+  right_cylinder_attachment@front: { name: Right cylinder attachment point, pos: [-0.8, 0.5, 0.7] }
+  left_cylinder_attachment@front:  { name: Left cylinder attachment point,  pos: [-0.8,-0.5, 0.7] }
+  top_housing@bellcrank:           [ Top housing,   [ 0.1,  0.0, 1,4] ]
+  right_cylinder_attachment@boom:  [ Right housing, [-1.9,  0.5, 1.2] ]
+  left_cylinder_attachment@boom:   [ Left housing,  [-1.9, -0.5, 1.2] ]
+
+spring_dampers:
+  Top cylinder:   [Top cylinder,   top_cylinder_attachment@front,   top_housing@bellcrank,          1.0e+5]
+  Right cylinder: [Right cylinder, right_cylinder_attachment@front, right_cylinder_attachment@boom, 1.0e+6]
+  Left cylinder:  [Left cylinder,  left_cylinder_attachment@front,  left_cylinder_attachment@boom,  1.0e+6]

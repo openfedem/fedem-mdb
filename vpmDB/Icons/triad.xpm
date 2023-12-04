@@ -1,0 +1,30 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* triad_xpm[] = {
+"16 16 4 1",
+". c #000000",
+"# c #008000",
+"a c #00ff00",
+"b c none",
+"bbbbbbb##bbbbbbb",
+"bbbbbbb##bbbbbbb",
+"bbbbbb####bbbbbb",
+"bbbbbb####bbbbbb",
+"bbbbb#b##b#bbbbb",
+"bbbbbbb##bbbbbbb",
+"bbbbbbb..bbbbbbb",
+"bbbbbb.aa.bbbbbb",
+"bbbbb.aaaa.bbbbb",
+"bbbbb#.aa.#bbbbb",
+"bbbb##b..b##bbbb",
+"b#b##bbbbbb##b#b",
+"b###bbbbbbbb###b",
+"b##b#bbbbbb#b##b",
+"####bbbbbbbb####",
+"##bbbbbbbbbbbb##"
+};

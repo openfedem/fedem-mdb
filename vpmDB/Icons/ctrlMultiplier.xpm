@@ -1,0 +1,33 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* ctrlMultiplier_xpm[] = {
+/* width height num_colors chars_per_pixel */
+"    16    16        4            1",
+/* colors */
+". c #000000",
+"# c #808080",
+"a c none",
+"b c #ffffff",
+/* pixels */
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa",
+"....aaa...aaaaaa",
+"aaaa.a.bbb.aaaaa",
+"aaaaa.bb#bb.aaaa",
+"aaaa.bb#.#bb.aaa",
+"aaaa.b#...#b....",
+"aaaa.bb#.#bb.aaa",
+"aaaaa.bb#bb.aaaa",
+"aaaa.a.bbb.aaaaa",
+"....aaa...aaaaaa",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa",
+"aaaaaaaaaaaaaaaa"
+};

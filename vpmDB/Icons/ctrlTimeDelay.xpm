@@ -1,0 +1,33 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* ctrlTimeDelay_xpm[] = {
+/* width height num_colors chars_per_pixel */
+"    16    16        4            1",
+/* colors */
+". c #000000",
+"# c #ff0000",
+"a c #0000ff",
+"b c #ffffff",
+/* pixels */
+"................",
+".bbbbbbbbbbb#bb.",
+".bbbbbbbbbbb##b.",
+".b..bbaabb#####.",
+"..bb.abbabbb##b.",
+".bbba.bbbabb#bb.",
+".bbba.bbbabbbbb.",
+".bbba.bbbabbbbb.",
+".bbbbb.bbba.bbb.",
+".bbbbb.bbba.bbb.",
+".bbbbb.bbba.bbb.",
+".bbbbbb.bb.abba.",
+".bbbbbbb..bbaab.",
+".bbbbbbbbbbbbbb.",
+".bbbbbbbbbbbbbb.",
+"................"
+};

@@ -1,0 +1,32 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* ctrlDeadZone_xpm[] = {
+/* width height num_colors chars_per_pixel */
+"    16    16        3            1",
+/* colors */
+". c #000000",
+"# c #0000ff",
+"a c #ffffff",
+/* pixels */
+"................",
+".aaaaaaaaaaaaaa.",
+".aaaaaa.aaaaaaa.",
+".aaaaaa.aaaaaaa.",
+".aaaaaa.aaaaa#a.",
+".aaaaaa.aaaa#aa.",
+".aaaaaa.aaa#aaa.",
+".aaaaaaaaa#aaaa.",
+".a..a#####a...a.",
+".aaa#aaaaaaaaaa.",
+".aa#aaa.aaaaaaa.",
+".a#aaaa.aaaaaaa.",
+".aaaaaa.aaaaaaa.",
+".aaaaaa.aaaaaaa.",
+".aaaaaaaaaaaaaa.",
+"................"
+};

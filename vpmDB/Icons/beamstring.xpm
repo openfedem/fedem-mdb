@@ -1,0 +1,32 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* beamstring_xpm[] = {
+"16 15 8 1",
+" 	c None",
+".	c #000000",
+"+	c #4BB5FF",
+"@	c #A7DBFF",
+"#	c #CDEAFF",
+"$	c #7BC9FF",
+"%	c #0076C8",
+"&	c #FFFFFF",
+"    ........    ",
+"    .+@#$+%.    ",
+"    .+@#$+%.    ",
+"    .+@#$+%.    ",
+"    .+@#$+%.    ",
+"   .+@#&@$+%.   ",
+"   .+@#&@$+%.   ",
+"   .+@#&@$+%.   ",
+"   .+@#&@$+%.   ",
+"   .+@#&@$+%.   ",
+"    .+@#$+%.    ",
+"    .+@#$+%.    ",
+"    .+@#$+%.    ",
+"    .+@#$+%.    ",
+"    ........    "};

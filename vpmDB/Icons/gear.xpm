@@ -1,0 +1,32 @@
+/* SPDX-FileCopyrightText: 2023 SAP SE
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * This file is part of FEDEM - https://openfedem.org
+ */
+/* XPM */
+const char* gear_xpm[] = {
+"16 16 7 1",
+"# c None",
+"a c #000000",
+"e c #99ccff",
+"d c #c4deff",
+"c c #cccc00",
+". c #ff0000",
+"b c #ffff00",
+"....###aaa######",
+"##..#aabbbaa####",
+"#.#.#abcccba####",
+"..#.abccbccba###",
+"..##abcbabcba###",
+"..##abccbccba###",
+"#..##abcccba####",
+"##..#aabbbaa####",
+"######aaaa######",
+"#####addda##....",
+"####adeeeda#..##",
+"####adeaeda#.#.#",
+"####adeeeda#.#..",
+"#####addda####..",
+"######aaa####..#",
+"############..##"};

@@ -1,0 +1,19 @@
+joints:
+  j01: [Front bottom to ground,  BALL_JOINT, fix_bottom@front]
+  j02: [Front top to ground,     BALL_JOINT, fix_top@front]
+
+  j03: [Front to boom right,     BALL_JOINT, right_housing@front,      rear_right_housing@boom]
+  j04: [Front to boom left,      BALL_JOINT, left_housing@front,       rear_left_housing@boom]
+
+  j05: [Front to bucket right,   BALL_JOINT, front_right_housing@boom, right_housing@bucket]
+  j06: [Front to bucket left,    BALL_JOINT, front_left_housing@boom,  left_housing@bucket, {"spring": {"Rx": 1000.0, "Ry": 200.0, "Rz": 30.0}}]
+
+  j07: [Bucketlink to bellcrank, BALL_JOINT, rear_houding@bucketlink,  bottom_housing@bellcrank]
+  j08: [Bucketlink to bucket,    BALL_JOINT, front_housing@bucketlink, mid_housing@bucket]
+
+  j09: [Boom to bellcrank right, BALL_JOINT, right_bellcrank_housing@boom, right_housing@bellcrank]
+  j10: [Boom to bellcrank left,  BALL_JOINT, left_bellcrank_housing@boom,  left_housing@bellcrank]
+
+edit_joints:
+  j06: {"damper": {"Rx": 12.3}}
+  j07: {"spring": {"Rx": 123.456}}

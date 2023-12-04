@@ -1,0 +1,73 @@
+!! SPDX-FileCopyrightText: 2023 SAP SE
+!!
+!! SPDX-License-Identifier: Apache-2.0
+!!
+!! This file is part of FEDEM - https://openfedem.org
+!!==============================================================================
+
+!> @brief Unit tests for the chain shape module.
+!>
+!> @author Knut Morten Okstad, SAP SE
+!>
+!> @date 14 Oct 2019
+
+@test
+subroutine testChainShape
+  use ChainModel, only : ChainType, calcChainShape
+#if FT_PFUNIT > 3
+  use funit     , only : assertEqual, sourceLocation, anyExceptions
+#else
+  use pfunit_mod, only : assertEqual, sourceLocation, anyExceptions
+#endif
+
+  implicit none
+
+  integer, parameter :: nprint  = 0 ! Print av iterasjonsdata
+  integer, parameter :: nPt  =   19 ! Antall massepunkt
+  real*8 , parameter :: Ltot = 60.0 ! Total kjedelengde
+  real*8 , parameter :: dX   = 50.0 ! Horisontal avsgand mellom endepunktene
+  real*8 , parameter :: dY   = 20.0 ! Vertikal avstand mellom endepunktene
+  integer, external  :: cable_shape ! Global function
+
+  integer         :: i,ierr
+  real*8          :: X(nPt+2), Y(nPt+2)
+  real*8, pointer :: XY(:,:)
+  type(ChainType) :: kjede
+
+  allocate(kjede%l(nPt+1),kjede%m(nPt),stat=ierr)
+  @assertEqual(0,ierr)
+
+  kjede%dX =  dX
+  kjede%dY = -dY
+
+  kjede%l = Ltot/real(nPt+1) ! Lengde pr. element (konstant)
+  kjede%m = 1.0; ! Antar uniform masse-fordeling
+ !kjede%m(6) = -3.0; kjede%m(13) = 7.0 ! Her er noen tilleggs-masser
+
+  call calcChainShape (kjede,XY,nprint,6,ierr)
+  @assertEqual(0,ierr)
+  @assertEqual(2,size(XY,1))
+  @assertEqual(nPt+1,size(XY,2))
+
+  print '(A)','# Her er posisjonen til punkt-massene inkl. start- og ende-punkt'
+  print 1,1,0.0,0.0
+  print 1,(1+i,XY(:,i),i=1,size(XY,2))
+1 format(I3,2F8.4)
+  deallocate(kjede%l,kjede%m)
+
+  !! Verify that the global function gives the same result
+  ierr = cable_shape(nPt+1,Ltot,kjede%dX,kjede%dY,X,Y)
+  @assertEqual(0,ierr)
+  @assertEqual(0.0d0,X(1))
+  @assertEqual(0.0d0,Y(1))
+  do i = 1, nPt+1
+     @assertEqual(XY(1,i),X(i+1))
+     @assertEqual(XY(2,i),Y(i+1))
+  end do
+  @assertEqual(dX,X(nPt+2),1.0d-8)
+  @assertEqual(dY,Y(nPt+2),1.0d-8)
+
+  deallocate(XY)
+  print '(A)','# Ferdig!'
+
+end subroutine testChainShape
