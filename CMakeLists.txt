@@ -87,10 +87,14 @@ string ( APPEND CMAKE_CXX_FLAGS_DEBUG " -DFM_DEBUG=${FT_DEBUG}" )
 include_directories ( "${CMAKE_CURRENT_SOURCE_DIR}" )
 add_subdirectory ( vpmDB )
 
-# Build the shared library
+# Build and install the shared library
 message ( STATUS "Building shared library ${LIB_ID}" )
 add_library ( ${LIB_ID} SHARED FedemDB.C )
 target_link_libraries ( ${LIB_ID} vpmDB )
+
+install ( TARGETS ${LIB_ID}
+          RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
+          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" )
 
 
 # Perform the unit- and regression tests

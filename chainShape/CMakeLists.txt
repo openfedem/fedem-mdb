@@ -16,7 +16,12 @@ foreach ( FOLDER ${LIB_ID_LIST} )
   add_subdirectory ( ${FOLDER} )
 endforeach ( FOLDER ${LIB_ID_LIST} )
 
+# Build and install
+
 file ( GLOB F90_SOURCE_FILES *.f90 )
 add_library ( ${LIB_ID} SHARED ${F90_SOURCE_FILES} )
 target_link_libraries ( ${LIB_ID} LINK_PRIVATE Minpack )
-do_install ( ${LIB_ID} "${CMAKE_INSTALL_PREFIX}" )
+
+install ( TARGETS ${LIB_ID}
+          RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
+          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" )
