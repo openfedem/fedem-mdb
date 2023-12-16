@@ -43,7 +43,8 @@ def _internal_eq(int_eq):
 if "FEDEM_SOLVER" not in environ:
     exit(0)  # Nothing to do here without solvers
 
-srcdir = environ["TEST_DIR"] + "/InversePy/beam_transversal/"
+srcdir = environ["TEST_DIR"] + "/beam_transversal/"
+srcdir = srcdir.replace("TimeDomain", "InversePy")
 fmfile = "Cantilever4_twin.fmm"
 copyfile(srcdir + fmfile, "./" + fmfile)
 print("\n#### Running inverse solver on", fmfile)
@@ -60,7 +61,7 @@ inp = _internal_eq(
 solver = FmmInverse(fmfile, inp)
 
 # Read input data
-ref = loadtxt(open(srcdir + "refData.txt", "rb"), delimiter=",")
+ref = loadtxt(open(srcdir + "refData.asc", "rb"), delimiter=",")
 
 # List of function IDs to extract results for
 funcId = ["Mz_17", "Qy_113", "Disp_114"]

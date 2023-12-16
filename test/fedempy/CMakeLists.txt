@@ -11,7 +11,7 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 ################################################################################
 # Set up regression tests for the FEDEM model database shared object library.
 # Each test uses a python driver (test_<name>.py) which is invoked by specifying
-# the ${PYTHON_EXECUTABLE} as the command in the add_test() calls, and with a
+# ${PYTHON_EXECUTABLE} as the command in the add_test() calls, and with a
 # generated wrapper that invokes the actual test driver scripts as argument.
 
 if ( PYTHON_DIR )
@@ -29,7 +29,7 @@ endif ( NOT CMAKE_BUILD_TYPE )
 # Generate a Python wrapper that loads the correct shared object library
 # for current build configuration, while executing some modeling tests.
 # The generated models will also be tried solved, but only if
-# the ${FEDEM_SOLVER} has been defined.
+# the environment variable FEDEM_SOLVER has been defined.
 file ( GENERATE OUTPUT
        ${CMAKE_CURRENT_BINARY_DIR}/test_modeler_$<CONFIGURATION>.py
        CONTENT "from os import environ
@@ -55,7 +55,7 @@ set_tests_properties ( fedempy_modeler PROPERTIES ENVIRONMENT
 # Generate a Python wrapper that loads the correct shared object library
 # for current build configuration, while executing the no-code modeling test.
 # The generated model will also be tried solved, but only if
-# the ${FEDEM_SOLVER} has been defined.
+# the environment variable FEDEM_SOLVER has been defined.
 file ( GENERATE OUTPUT
        ${CMAKE_CURRENT_BINARY_DIR}/test_YAML_$<CONFIGURATION>.py
        CONTENT "from os import environ
@@ -92,8 +92,8 @@ endmacro ( add_fedempy_test )
 
 # The following tests will be active only if the fedem-solvers repository
 # has been cloned into a parallel folder named fedem-solvers.
-# They will not do anything if the ${FEDEM_SOLVER} is not defined.
-set ( TEST_DIR "${PROJECT_PARENT_DIR}/fedem-solvers/solverTests" )
+# They will not do anything if the environment variable FEDEM_SOLVER is undefined.
+set ( TEST_DIR "${PROJECT_PARENT_DIR}/fedem-solvers/solverTests/TimeDomain" )
 if ( IS_DIRECTORY ${TEST_DIR} )
   add_fedempy_test ( reducer TEST_DIR=${TEST_DIR} )
   add_fedempy_test ( solver TEST_DIR=${TEST_DIR} )
