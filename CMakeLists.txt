@@ -21,10 +21,11 @@ set ( LIB_ID_LIST Admin FFaLib FFlLib FFaFunctionLib FFaMathExpr
 
 set ( USE_VISUALS ON ) # Visualization attribute classes must be included
 option ( USE_FORTRAN "Build with Fortran code included" OFF )
+option ( USE_CHSHAPE "Use ChainShape library for mooring line calculation" OFF )
 option ( USE_QT "Use Qt file system handling" OFF )
 option ( USE_MEMPOOL "Use memory pool for heap allocation in FE library" OFF )
 option ( USE_PROFILER "Use CPU and Memory profiler" OFF )
-mark_as_advanced ( USE_FORTRAN USE_QT USE_MEMPOOL USE_PROFILER )
+mark_as_advanced ( USE_FORTRAN USE_CHSHAPE USE_QT USE_MEMPOOL USE_PROFILER )
 
 if ( USE_FORTRAN)
   project ( ${APPLICATION_ID} CXX C Fortran )
@@ -73,9 +74,9 @@ include_directories ( "${PROJECT_SOURCE_DIR}/fedem-foundation/src" )
 foreach ( FOLDER ${LIB_ID_LIST} )
   add_subdirectory ( fedem-foundation/src/${FOLDER} "${CMAKE_CURRENT_BINARY_DIR}/${FOLDER}" )
 endforeach ( FOLDER ${LIB_ID_LIST} )
-if ( USE_FORTRAN )
+if ( USE_FORTRAN AND USE_CHSHAPE )
   add_subdirectory ( chainShape )
-endif ( USE_FORTRAN )
+endif ( USE_FORTRAN AND USE_CHSHAPE )
 
 # Exclude some targets from sub-projects that are not needed here
 set_target_properties ( FFaOperation FFlVisualization
