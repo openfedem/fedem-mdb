@@ -67,7 +67,9 @@ We use the packages [googletest](https://github.com/google/googletest) and
 some unit tests for the C++ and Fortran code, respectively. Therefore,
 you need to set the environment variables `GTEST_ROOT` and `PFUNIT` to point to
 the root path of valid installations of the googletest and pFUnit frameworks,
-respectively, before executing the cmake command shown below.
+respectively, before executing the cmake command shown below. See
+[Installing googletest and pFUnit](https://github.com/SAP/fedem-foundation/blob/main/pFUnit/README.md#installing-googletest-and-pfunit)
+for instructions on how to install these packages on your system.
 
 - From a bash shell or command prompt, clone the sources of this repository:
 
@@ -83,7 +85,7 @@ respectively, before executing the cmake command shown below.
       cmake .. -DCMAKE_BUILD_TYPE=Release
       make check
 
-  If you also want to build and test a shared object library for
+  If you also want to build and test the shared object library for
   [chainShape](chainShape), you need to include `-DUSE_FORTRAN=ON`
   as command-line option to the cmake command above.
 
@@ -143,7 +145,11 @@ See also the [README.md](test/fedempy/README.md) file for `fedempy`.
 
 ## Contributing
 
-This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/SAP/fedem-mdb/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
+This project is open to feature requests, suggestions, bug reports, etc.,
+via [GitHub issues](https://github.com/SAP/fedem-mdb/issues).
+Contributions and feedback are encouraged and always welcome.
+For more information about how to contribute,
+see our [Contribution Guidelines](.github/CONTRIBUTING.md).
 
 ## Security / Disclosure
 

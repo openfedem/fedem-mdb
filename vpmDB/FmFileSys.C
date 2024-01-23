@@ -7,8 +7,8 @@
 
 #include "vpmDB/FmFileSys.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
-#include "FFaLib/FFaDefinitions/FFaMsg.H"
 
+#include <iostream>
 #ifdef FT_HAS_QT
 #include <QDateTime>
 #include <QFileInfo>
@@ -19,7 +19,6 @@
 #include <unistd.h>
 #ifdef FT_HAS_DIRENT
 #include <dirent.h>
-#include <iostream>
 #endif
 #endif
 #include <string.h>
@@ -407,11 +406,13 @@ int FmFileSys::removeDir(const std::string& dirName, bool removeFiles)
     if (FmFileSys::isDirectory(FFaFilePath::makeItAbsolute(fName,dirName)))
       ret = FmFileSys::removeDir(fName,removeFiles);
     else if (removeFiles)
+    {
       ret = FmFileSys::deleteFile(fName) ? 1 : -1;
+      if (ret < 0)
+        std::cerr <<" *** Could not delete file "<< fName << std::endl;
+    }
     else
       ret = -1;
-    if (ret < 0)
-      ListUI <<"  -> Could not delete "<< fName <<"\n";
     if (ret < 0 && ndel >= 0)
       ndel = ret;
     else if (ret < 0 || ndel >= 0)
@@ -420,9 +421,12 @@ int FmFileSys::removeDir(const std::string& dirName, bool removeFiles)
   if (ndel < 0) return ndel;
 
 #ifdef FT_HAS_QT
-  return dir.rmdir(".") ? ndel : -1;
+  ret = dir.rmdir(".") ? ndel : -1;
 #else
   ret = rmdir(dirName.c_str());
-  return ret < 0 ? ret : ndel;
+  if (ret == 0) ret = ndel;
 #endif
+  if (ret < 0)
+    std::cerr <<" *** Could not delete directory "<< dirName << std::endl;
+  return ret;
 }
