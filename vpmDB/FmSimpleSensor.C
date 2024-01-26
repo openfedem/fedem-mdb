@@ -67,15 +67,17 @@ std::string FmSimpleSensor::getInfoString() const
 }
 
 
-#ifdef FT_HAS_EXTCTRL
 bool FmSimpleSensor::isExternalCtrlSys() const
 {
+#ifdef FT_HAS_EXTCTRL
   if (itsMeasuredPt.isNull())
     return false;
 
   return itsMeasuredPt->isOfType(FmExternalCtrlSys::getClassTypeID());
-}
+#else
+  return false;
 #endif
+}
 
 
 bool FmSimpleSensor::isControlOutput() const

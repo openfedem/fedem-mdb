@@ -419,7 +419,9 @@ void FmDB::removeInstances()
     delete head.second;
   ourHeadMap.clear();
 
+  FFaFieldContainer::removeDictInstance();
   FmSignalConnector::removeInstance();
+  FFaSwitchBoard::removeInstance();
 }
 
 
