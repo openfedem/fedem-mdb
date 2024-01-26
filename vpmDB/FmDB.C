@@ -85,6 +85,7 @@
 #include "vpmDB/FmUserDefinedElement.H"
 #include "vpmDB/FmModelExpOptions.H"
 #include "vpmDB/Icons/FmIconPixmaps.H"
+#include "vpmDB/FmModelMemberConnector.H"
 #ifdef USE_INVENTOR
 #include "vpmDisplay/FdDB.H"
 #endif
@@ -397,6 +398,28 @@ void FmDB::init()
 
   // Initialize the version number of current executable
   ourCurrentFedemVersion.parseLine(FedemAdmin::getVersion());
+}
+
+
+/*!
+  This method cleans up the heap-allocated singelton objects
+  in FmDB which are not related to a mechanism model as such.
+  Used mainly in test programs to verify no memory leaks, etc.
+*/
+
+void FmDB::removeInstances()
+{
+  itsEarthLink->erase();
+  itsEarthLink = NULL;
+
+  delete itsFuncTree;
+  itsFuncTree = NULL;
+
+  for (FmHeadMap::value_type& head : ourHeadMap)
+    delete head.second;
+  ourHeadMap.clear();
+
+  FmSignalConnector::removeInstance();
 }
 
 
