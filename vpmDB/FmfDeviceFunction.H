@@ -24,10 +24,12 @@ public:
   virtual bool initGetValue();
   virtual double getValue(double x, int& ierr) const;
   virtual int getSmartPoints(double start, double stop,
-			     std::vector<double>& x, std::vector<double>& y);
+                             DoubleVec& x, DoubleVec& y);
 
   virtual bool isLegalSprDmpFunc() const;
   virtual bool hasSmartPoints() const;
+
+  static int checkFunctions();
 
   virtual int printSolverEntry(FILE* fp);
 
@@ -39,17 +41,16 @@ public:
   virtual const char* getFunctionFsiName() const { return "DEVICE_FUNCTION"; }
   virtual const char** getPixmap() const;
 
-  int checkFileValidity(); // returns channel index, if valid multi-channel file
-
   std::string getActualDeviceName(bool fullPath = false) const;
 
   bool getDevice(std::string& fileName, std::string& channelName) const;
-  bool setDevice(const std::string& fileName, const std::string& channelName = "Not set");
+  bool setDevice(const std::string& fileName,
+                 const std::string& channelName = "Not set");
 
   FmFileReference* getFileReference() const { return fileReference.getPointer(); }
   bool setFileReference(FmFileReference* ref);
 
-  bool getChannelList(std::vector<std::string>& channels) const;
+  bool getChannelList(Strings& channels) const;
 
   void close();
 
@@ -67,8 +68,13 @@ private:
   FFaReference<FmFileReference> fileReference;
   FFaField<FFaReferenceBase*>   fileReferenceField;
 
-  int fileInd, chanInd; // used by getValue
-  double myHs, myTz;    // user-defined wave function parameters
+  int fileInd; //!< File handle used by getValue()
+  int chanInd; //!< Channel index used by getValue(), if multi-column file
+  double myHs; //!< User-defined wave function parameter
+  double myTz; //!< User-defined wave function parameter
+
+  //! \brief Sets the \ref fileInd and \ref chanInd members, if file is valid.
+  int checkFileValidity(bool keepOpen = false);
 
 protected:
   virtual ~FmfDeviceFunction() {}

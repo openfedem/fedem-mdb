@@ -83,13 +83,8 @@ bool FmSolverParser::preSimuleCheck()
   errorCount += FmJointDamper::checkJointDampers();
   errorCount += FmDofMotion::checkMotions();
   errorCount += FmfSpline::checkSplines();
+  errorCount += FmfDeviceFunction::checkFunctions();
   errorCount += FmControlAdmin::checkControl();
-
-  std::vector<FmfDeviceFunction*> allDevFuncs;
-  FmDB::getAllDeviceFunctions(allDevFuncs);
-  for (FmfDeviceFunction* func : allDevFuncs)
-    if (!func->checkFileValidity())
-      errorCount++;
 
   if (errorCount > 0)
   {
@@ -284,7 +279,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
 
       // Stress and/or gage recovery during dynamics simulation
       int recover = activePart->recoveryDuringSolve.getValue();
-      if (recover > 1 &&  activePart->hasStrainRosettes())
+      if (recover > 1 && activePart->hasStrainRosettes())
         gageParts.push_back(activePart);
 
       // Beta feature: Specify element groups for stress recovery
