@@ -106,6 +106,7 @@ public:
 
   bool    setFunctionUsage(int usage);
   bool    setFunctionUse(FuncUse newUse, bool checkUniqueID = false);
+  bool    isUsedAs(FuncUse usage) const { return myUse.getValue() == usage; }
   FuncUse getFunctionUse() const { return myUse.getValue(); }
 
   virtual void onEventSwitched(const FmSimulationEvent*);

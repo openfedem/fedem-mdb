@@ -53,7 +53,6 @@ public:
 
   void close();
 
-  bool isWaveFunction() const;
   double getHs() const { return myHs; }
   double getTz() const { return myTz; }
 

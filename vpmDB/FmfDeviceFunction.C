@@ -9,7 +9,6 @@
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaString/FFaParse.H"
-#include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
 #include "FiDeviceFunctions/FiDeviceFunctionFactory.H"
 #include "vpmDB/FuncPixmaps/userDefinedWaveSpectrum.xpm"
@@ -48,38 +47,20 @@ FmfDeviceFunction::FmfDeviceFunction(const char* fname, const char* cname)
 
 const char* FmfDeviceFunction::getFunctionUIName() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return "User defined wave spectrum";
-  else
-    return "Poly line from file";
+
+  return "Poly line from file";
 }
 
 
 const char** FmfDeviceFunction::getPixmap() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return userDefinedWaveSpectrum_xpm;
 
   // No pixmap yet for "poly line form file" functions
   return this->FmMathFuncBase::getPixmap();
-}
-
-
-bool FmfDeviceFunction::isWaveFunction() const
-{
-  if (this->getFunctionUse() == WAVE_FUNCTION)
-    return true;
-  else if (this->getFunctionUse() == GENERAL)
-  {
-    std::vector<FmEngine*> engines;
-    this->getEngines(engines);
-    for (FmEngine* engine : engines)
-      if (!engine->isFunctionLinked())
-	if (engine->getUserDescription().find("#Wave") != std::string::npos)
-	  return true; // Beta feature: Explicit wave function read from file
-  }
-
-  return false;
 }
 
 
@@ -112,12 +93,11 @@ bool FmfDeviceFunction::initGetValue()
 
   std::string fileName(this->getActualDeviceName(true));
 
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
   {
     // Count the number of sine waves in file
     int nWaves = countSineWaves(fileName);
-    int rnSeed = FFaString(this->getUserDescription()).getIntAfter("#seed");
-    if (rnSeed == 0) rnSeed = randomSeed.getValue();
+    int rnSeed = randomSeed.getValue();
     myExplType = 4; // WAVE_SINUS_p
     if (!FFaFunctionManager::initWaveFunction(fileName,nWaves,rnSeed,myExplData))
       return false;
@@ -150,7 +130,7 @@ bool FmfDeviceFunction::initGetValue()
 
 double FmfDeviceFunction::getValue(double x, int& ierr) const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return this->FmMathFuncBase::getValue(x,ierr);
 
   if (fileInd <= 0)
@@ -197,19 +177,19 @@ std::ostream& FmfDeviceFunction::writeFMF(std::ostream& os)
 
 bool FmfDeviceFunction::isLegalSprDmpFunc() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return false;
-  else
-    return this->FmMathFuncBase::isLegalSprDmpFunc();
+
+  return this->FmMathFuncBase::isLegalSprDmpFunc();
 }
 
 
 bool FmfDeviceFunction::hasSmartPoints() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return false;
-  else
-    return this->FmMathFuncBase::hasSmartPoints();
+
+  return this->FmMathFuncBase::hasSmartPoints();
 }
 
 
@@ -228,8 +208,7 @@ int FmfDeviceFunction::printSolverData(FILE* fp)
   if (chanIdx == -2)
   {
     int nWaves = countSineWaves(this->getActualDeviceName(true));
-    int rnSeed = FFaString(this->getUserDescription()).getIntAfter("#seed");
-    if (rnSeed == 0) rnSeed = randomSeed.getValue();
+    int rnSeed = randomSeed.getValue();
     fprintf(fp,"  realDataSize = %d\n", 3*nWaves);
     fprintf(fp,"  seed = %d\n", rnSeed);
   }
@@ -246,7 +225,7 @@ int FmfDeviceFunction::printSolverData(FILE* fp)
 
 int FmfDeviceFunction::printSolverEntry(FILE* fp)
 {
-  if (!this->isWaveFunction())
+  if (!this->isUsedAs(WAVE_FUNCTION))
     return this->FmMathFuncBase::printSolverEntry(fp);
 
   fprintf(fp,"&FUNCTION\n");
@@ -307,7 +286,7 @@ int FmfDeviceFunction::checkFileValidity()
     return 0;
   }
 
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
   {
     if (FmFileSys::isFile(fileName))
       return -2;
