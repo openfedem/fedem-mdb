@@ -92,6 +92,25 @@ bool FmSolverParser::preSimuleCheck()
     return false;
   }
 
+  std::vector<FmSensorBase*> allSensors;
+  FmDB::getAllSensors(allSensors);
+  for (FmSensorBase* sens : allSensors)
+  {
+    FmStrainRosette* ros = dynamic_cast<FmStrainRosette*>(sens->getMeasured());
+    if (ros)
+    {
+      std::vector<FmEngine*> engines;
+      sens->getEngines(engines);
+      for (FmEngine* eng : engines)
+        if (eng->isActive())
+          if (ros->rosetteLink->enforceStrainRosetteRecovery())
+            ListUI <<"  -> Activating strain rosette recovery during dynamics"
+                   <<" simulation\n     for "<< ros->rosetteLink->getIdString()
+                   <<" since it is used as argument in "<< eng->getIdString()
+                   <<"\n";
+    }
+  }
+
   FmfSpline::setAllSplineICODE();
   return true;
 }

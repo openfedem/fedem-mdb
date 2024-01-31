@@ -175,6 +175,7 @@ public:
   void delayedCheckSumUpdate() { needsCSupdate.setValue(true); }
   void getCheckSum(FFaCheckSum& cs);
   void forceSave() { savedCS.setValue(0); }
+  bool enforceStrainRosetteRecovery();
   bool hasChangedFEdata() const;
   bool hasStrainRosettes() const;
   bool hasStrainCoat() const;

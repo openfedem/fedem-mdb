@@ -3175,3 +3175,12 @@ bool FmPart::interactiveErase()
 
   return true;
 }
+
+
+bool FmPart::enforceStrainRosetteRecovery()
+{
+  int recover = recoveryDuringSolve.getValue();
+  if (recover > 1) return false;
+
+  return recoveryDuringSolve.setValue(recover+2);
+}
