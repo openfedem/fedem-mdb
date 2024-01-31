@@ -86,6 +86,7 @@ class FmDB
 
 public:
   static void init();
+  static void removeInstances();
 
   static void initHeadMap(FmHeadMap& headMap, FmFuncTree*& funcTree);
   static void sortHeadMap(const FmHeadMap& headMap, FmHeadMap& sortedHeadMap,

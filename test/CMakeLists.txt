@@ -21,6 +21,12 @@ if ( Qt4_FOUND )
 elseif ( LINUX )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_HAS_DIRENT" )
 endif ( Qt4_FOUND )
+if ( USE_MEMPOOL )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
+endif ( USE_MEMPOOL )
+if ( USE_VISUALS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
+endif ( USE_VISUALS )
 
 
 # Add some unit tests using gtest (executed via ctest)
