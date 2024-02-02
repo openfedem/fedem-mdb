@@ -312,6 +312,7 @@ DLLexport(void) FmClose (bool removeSingletons = false)
   cleanUpMemory();
   if (removeSingletons)
   {
+    FmDB::removeInstances();
     FFaCmdLineArg::removeInstance();
     FFaUserFuncPlugin::removeInstance();
     FiUserElmPlugin::removeInstance();

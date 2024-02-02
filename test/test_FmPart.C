@@ -54,6 +54,8 @@ int main (int argc, char** argv)
   // Invoke the google test driver
   int status = RUN_ALL_TESTS();
 
+  // Clean up heap memory
+  FmDB::removeInstances();
   FFaCmdLineArg::removeInstance();
   return status;
 }

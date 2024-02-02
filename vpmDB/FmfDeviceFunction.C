@@ -9,7 +9,6 @@
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaString/FFaParse.H"
-#include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
 #include "FiDeviceFunctions/FiDeviceFunctionFactory.H"
 #include "vpmDB/FuncPixmaps/userDefinedWaveSpectrum.xpm"
@@ -48,38 +47,20 @@ FmfDeviceFunction::FmfDeviceFunction(const char* fname, const char* cname)
 
 const char* FmfDeviceFunction::getFunctionUIName() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return "User defined wave spectrum";
-  else
-    return "Poly line from file";
+
+  return "Poly line from file";
 }
 
 
 const char** FmfDeviceFunction::getPixmap() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return userDefinedWaveSpectrum_xpm;
 
   // No pixmap yet for "poly line form file" functions
   return this->FmMathFuncBase::getPixmap();
-}
-
-
-bool FmfDeviceFunction::isWaveFunction() const
-{
-  if (this->getFunctionUse() == WAVE_FUNCTION)
-    return true;
-  else if (this->getFunctionUse() == GENERAL)
-  {
-    std::vector<FmEngine*> engines;
-    this->getEngines(engines);
-    for (FmEngine* engine : engines)
-      if (!engine->isFunctionLinked())
-	if (engine->getUserDescription().find("#Wave") != std::string::npos)
-	  return true; // Beta feature: Explicit wave function read from file
-  }
-
-  return false;
 }
 
 
@@ -108,16 +89,15 @@ static int countSineWaves(const std::string& waveFile)
 
 bool FmfDeviceFunction::initGetValue()
 {
-  if (!this->checkFileValidity()) return false;
+  if (this->checkFileValidity(true) == 0)
+    return false;
 
-  std::string fileName(this->getActualDeviceName(true));
-
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
   {
     // Count the number of sine waves in file
+    std::string fileName(this->getActualDeviceName(true));
     int nWaves = countSineWaves(fileName);
-    int rnSeed = FFaString(this->getUserDescription()).getIntAfter("#seed");
-    if (rnSeed == 0) rnSeed = randomSeed.getValue();
+    int rnSeed = randomSeed.getValue();
     myExplType = 4; // WAVE_SINUS_p
     if (!FFaFunctionManager::initWaveFunction(fileName,nWaves,rnSeed,myExplData))
       return false;
@@ -129,7 +109,7 @@ bool FmfDeviceFunction::initGetValue()
       double Aj = myExplData[3*j];
       double omega = myExplData[3*j+1];
       if (j > 0)
-	dOmega += omega - myExplData[3*j-2];
+        dOmega += omega - myExplData[3*j-2];
       m0 += Aj*Aj;
       m2 += omega*omega*Aj*Aj;
     }
@@ -141,16 +121,13 @@ bool FmfDeviceFunction::initGetValue()
     myTz = 2.0*M_PI*sqrt(m0/m2);
   }
 
-  fileInd = FiDeviceFunctionFactory::instance()->open(fileName);
-  chanInd = FiDeviceFunctionFactory::instance()->channelIndex(fileInd,channel.getValue());
-
   return true;
 }
 
 
 double FmfDeviceFunction::getValue(double x, int& ierr) const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return this->FmMathFuncBase::getValue(x,ierr);
 
   if (fileInd <= 0)
@@ -168,8 +145,11 @@ double FmfDeviceFunction::getValue(double x, int& ierr) const
 
 
 int FmfDeviceFunction::getSmartPoints(double start, double stop,
-				      std::vector<double>& x, std::vector<double>& y)
+                                      DoubleVec& x, DoubleVec& y)
 {
+  if (this->isUsedAs(WAVE_FUNCTION))
+    return -4;
+
   if (start > stop)
     return -1;
   else if (!this->initGetValue())
@@ -197,39 +177,50 @@ std::ostream& FmfDeviceFunction::writeFMF(std::ostream& os)
 
 bool FmfDeviceFunction::isLegalSprDmpFunc() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return false;
-  else
-    return this->FmMathFuncBase::isLegalSprDmpFunc();
+
+  return this->FmMathFuncBase::isLegalSprDmpFunc();
 }
 
 
 bool FmfDeviceFunction::hasSmartPoints() const
 {
-  if (this->isWaveFunction())
+  if (this->isUsedAs(WAVE_FUNCTION))
     return false;
-  else
-    return this->FmMathFuncBase::hasSmartPoints();
+
+  return this->FmMathFuncBase::hasSmartPoints();
+}
+
+
+int FmfDeviceFunction::checkFunctions()
+{
+  int errCount = 0;
+  std::vector<FmfDeviceFunction*> allDevFuncs;
+  FmDB::getAllDeviceFunctions(allDevFuncs);
+
+  for (FmfDeviceFunction* func : allDevFuncs)
+    if (func->checkFileValidity() == 0)
+      errCount++;
+
+  return errCount;
 }
 
 
 int FmfDeviceFunction::printSolverData(FILE* fp)
 {
-  int chanIdx = this->checkFileValidity();
-  if (chanIdx == 0) return 1;
-
-  std::string fileName(this->getActualDeviceName(false));
+  std::string fileName(this->getActualDeviceName());
   if (FFaFilePath::isRelativePath(fileName) && !relPathCorrection.empty())
     fileName = relPathCorrection + fileName;
   fprintf(fp,"  fileName = '%s'\n", fileName.c_str());
 
-  if (chanIdx > 0) fprintf(fp,"  channel = %d\n", chanIdx);
+  if (chanInd > 0)
+    fprintf(fp,"  channel = %d\n", chanInd);
 
-  if (chanIdx == -2)
+  if (chanInd == -2)
   {
     int nWaves = countSineWaves(this->getActualDeviceName(true));
-    int rnSeed = FFaString(this->getUserDescription()).getIntAfter("#seed");
-    if (rnSeed == 0) rnSeed = randomSeed.getValue();
+    int rnSeed = randomSeed.getValue();
     fprintf(fp,"  realDataSize = %d\n", 3*nWaves);
     fprintf(fp,"  seed = %d\n", rnSeed);
   }
@@ -246,7 +237,7 @@ int FmfDeviceFunction::printSolverData(FILE* fp)
 
 int FmfDeviceFunction::printSolverEntry(FILE* fp)
 {
-  if (!this->isWaveFunction())
+  if (!this->isUsedAs(WAVE_FUNCTION))
     return this->FmMathFuncBase::printSolverEntry(fp);
 
   fprintf(fp,"&FUNCTION\n");
@@ -292,54 +283,58 @@ bool FmfDeviceFunction::cloneLocal(FmBase* obj, int)
 
 
 /*!
-  \return channel index if multi-channel file, and the file is exists.
+  \return channel index if multi-channel file, and the file exists.
   \return 0 if no file, or invalid channel for a multi-channel file.
   \return -1 if single-channel file, and the file exists.
   \return -2 if wave data file, and the file exists.
 */
 
-int FmfDeviceFunction::checkFileValidity()
+int FmfDeviceFunction::checkFileValidity(bool keepOpen)
 {
+  if (fileInd >= 0)
+    return chanInd;
+
+  chanInd = 0;
   std::string fileName(this->getActualDeviceName(true));
   if (fileName.empty())
   {
     ListUI <<"ERROR: No file specified for "<< this->getIdString() <<".\n";
-    return 0;
+    return chanInd;
   }
 
-  if (this->isWaveFunction())
-  {
-    if (FmFileSys::isFile(fileName))
-      return -2;
-
-    ListUI <<"EXTERNAL FUNCTION ERROR: Could not open file "<< fileName <<".\n";
-    return 0;
-  }
-
-  int chanIndex = -1;
-  int fileType  = FiDeviceFunctionFactory::identify(fileName);
-  int fileIndex = FiDeviceFunctionFactory::instance()->open(fileName);
-  if (fileIndex <= 0)
-  {
-    ListUI <<"EXTERNAL FUNCTION ERROR: Could not open file "<< fileName <<".\n";
-    return 0;
-  }
-  else if (fileType == ASC_MC_FILE || fileType == RPC_TH_FILE)
-  {
-    // TODO: Store chanIndex (and maybe fileIndex) as a class member(s),
-    // to avoid file opening and channel searching more than neccesary.
-    chanIndex = FiDeviceFunctionFactory::instance()->channelIndex(fileIndex,channel.getValue());
-    if (chanIndex <= 0)
+  if (keepOpen || !this->isUsedAs(WAVE_FUNCTION))
+    if ((fileInd = FiDeviceFunctionFactory::instance()->open(fileName)) <= 0)
     {
-      chanIndex = 0;
-      ListUI <<"EXTERNAL FUNCTION ERROR: Could not locate channel '"
-	     << channel.getValue()
-	     <<"'\n                         in file "<< fileName <<".\n";
+      ListUI <<"ERROR: Could not open device function file "<< fileName <<".\n";
+      return chanInd;
+    }
+
+  if (this->isUsedAs(WAVE_FUNCTION))
+  {
+    if (keepOpen || FmFileSys::isFile(fileName))
+      chanInd = -2;
+    else
+      ListUI <<"ERROR: Could not open wave function file "<< fileName <<".\n";
+    return chanInd;
+  }
+
+  int fileType = FiDeviceFunctionFactory::identify(fileName);
+  if (fileType == ASC_MC_FILE || fileType == RPC_TH_FILE)
+  {
+    chanInd = FiDeviceFunctionFactory::instance()->channelIndex(fileInd,channel.getValue());
+    if (chanInd <= 0)
+    {
+      chanInd = 0;
+      ListUI <<"ERROR: Could not locate channel '"<< channel.getValue()
+             <<"'\n                         in device function file "
+             << fileName <<".\n";
     }
   }
 
-  FiDeviceFunctionFactory::instance()->close(fileIndex);
-  return chanIndex;
+  if (!keepOpen)
+    this->close();
+
+  return chanInd;
 }
 
 
@@ -351,7 +346,8 @@ std::string FmfDeviceFunction::getActualDeviceName(bool fullPath) const
   else
     fileName = deviceName.getValue();
 
-  if (!fullPath || fileName.empty()) return fileName;
+  if (!fullPath || fileName.empty())
+    return fileName;
 
   std::string modelFilePath(FmDB::getMechanismObject()->getAbsModelFilePath());
   return FFaFilePath::makeItAbsolute(fileName,modelFilePath);
@@ -385,6 +381,9 @@ bool FmfDeviceFunction::setDevice(const std::string& fileName, const std::string
   else
     changed |= channel.setValue(channelName);
 
+  if (changed)
+    this->close();
+
   return changed;
 }
 
@@ -395,13 +394,8 @@ bool FmfDeviceFunction::setFileReference(FmFileReference* ref)
     return false;
 
   fileReference.setPointer(ref);
+  this->close();
   return true;
-}
-
-
-bool FmfDeviceFunction::getChannelList(std::vector<std::string>& channels) const
-{
-  return FiDeviceFunctionFactory::getChannelList(this->getActualDeviceName(true),channels);
 }
 
 
@@ -409,4 +403,15 @@ void FmfDeviceFunction::close()
 {
   if (fileInd > 0)
     FiDeviceFunctionFactory::instance()->close(fileInd);
+
+  fileInd = -1;
+}
+
+
+bool FmfDeviceFunction::getChannelList(Strings& channels) const
+{
+  if (fileInd > 0)
+    return FiDeviceFunctionFactory::instance()->getChannelList(fileInd,channels);
+
+  return FiDeviceFunctionFactory::getChannelList(this->getActualDeviceName(true),channels);
 }

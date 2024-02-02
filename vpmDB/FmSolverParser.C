@@ -83,18 +83,32 @@ bool FmSolverParser::preSimuleCheck()
   errorCount += FmJointDamper::checkJointDampers();
   errorCount += FmDofMotion::checkMotions();
   errorCount += FmfSpline::checkSplines();
+  errorCount += FmfDeviceFunction::checkFunctions();
   errorCount += FmControlAdmin::checkControl();
-
-  std::vector<FmfDeviceFunction*> allDevFuncs;
-  FmDB::getAllDeviceFunctions(allDevFuncs);
-  for (FmfDeviceFunction* func : allDevFuncs)
-    if (!func->checkFileValidity())
-      errorCount++;
 
   if (errorCount > 0)
   {
     ListUI <<"\n---> A total of "<< errorCount <<" errors were found.\n";
     return false;
+  }
+
+  std::vector<FmSensorBase*> allSensors;
+  FmDB::getAllSensors(allSensors);
+  for (FmSensorBase* sens : allSensors)
+  {
+    FmStrainRosette* ros = dynamic_cast<FmStrainRosette*>(sens->getMeasured());
+    if (ros)
+    {
+      std::vector<FmEngine*> engines;
+      sens->getEngines(engines);
+      for (FmEngine* eng : engines)
+        if (eng->isActive())
+          if (ros->rosetteLink->enforceStrainRosetteRecovery())
+            ListUI <<"  -> Activating strain rosette recovery during dynamics"
+                   <<" simulation\n     for "<< ros->rosetteLink->getIdString()
+                   <<" since it is used as argument in "<< eng->getIdString()
+                   <<"\n";
+    }
   }
 
   FmfSpline::setAllSplineICODE();
@@ -284,7 +298,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
 
       // Stress and/or gage recovery during dynamics simulation
       int recover = activePart->recoveryDuringSolve.getValue();
-      if (recover > 1 &&  activePart->hasStrainRosettes())
+      if (recover > 1 && activePart->hasStrainRosettes())
         gageParts.push_back(activePart);
 
       // Beta feature: Specify element groups for stress recovery
