@@ -10,8 +10,8 @@
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaString/FFaParse.H"
 
-#include "vpmDB/FmCurveSet.H"
 #include "vpmDB/FmGraph.H"
+#include "vpmDB/FmCurveSet.H"
 
 
 /**********************************************************************
