@@ -79,7 +79,7 @@ if ( USE_FORTRAN AND USE_CHSHAPE )
 endif ( USE_FORTRAN AND USE_CHSHAPE )
 
 # Exclude some targets from sub-projects that are not needed here
-set_target_properties ( FFaOperation FFlVisualization
+set_target_properties ( FFaOperation
                         PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1 )
 
 # Include the main library
