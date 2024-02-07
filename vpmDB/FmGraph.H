@@ -8,8 +8,8 @@
 #ifndef FM_GRAPH_H
 #define FM_GRAPH_H
 
-#include "vpmDB/FmResultBase.H"
 #include "vpmDB/FmArray.H"
+#include "vpmDB/FmResultBase.H"
 
 class FmCurveSet;
 class FmColor;

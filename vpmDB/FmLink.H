@@ -8,11 +8,12 @@
 #ifndef FM_LINK_H
 #define FM_LINK_H
 
-#include "vpmDB/FmIsPositionedBase.H"
-#include "vpmDB/FmColor.H"
 #include "FFaLib/FFaAlgebra/FFaUnitCalculator.H"
 #include "FFaLib/FFaContainers/FFaByteArray.H"
 #include "FFaLib/FFaString/FFaEnum.H"
+
+#include "vpmDB/FmColor.H"
+#include "vpmDB/FmIsPositionedBase.H"
 
 
 template<>

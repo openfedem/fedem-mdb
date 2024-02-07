@@ -37,7 +37,7 @@
 #include "vpmDB/FmElementGroupProxy.H"
 #include "vpmDB/FmUserDefinedElement.H"
 #include "FiUserElmPlugin/FiUserElmPlugin.H"
-#include "ChainShape/ChainShape.H"
+#include "chainShape/ChainShape.H"
 
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
