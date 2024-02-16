@@ -594,7 +594,7 @@ int FmTurbine::writeAeroDynFile(const std::string& fileName) const
 
   // Write out the airfoil files with absolute path
   std::vector<std::string> airfoilsNotFound;
-  for (const std::pair<std::string,int>& file : fileSet)
+  for (const std::pair<const std::string,int>& file : fileSet)
   {
     std::string afFile = FFaFilePath::appendFileNameToPath(aPath,file.first);
     // Check if file exists

@@ -558,11 +558,11 @@ void FmDB::getTypeQuery(std::vector<FmModelMemberBase*>& toBeFilled,
   if (query.empty()) return;
 
   std::vector<int> dontWantTypes;
-  for (const std::pair<int,bool>& qp : query)
+  for (const std::pair<const int,bool>& qp : query)
     if (!qp.second)
       dontWantTypes.push_back(qp.first);
 
-  for (const std::pair<int,bool>& qp : query)
+  for (const std::pair<const int,bool>& qp : query)
     if (qp.second)
       FmDB::appendAllOfType(toBeFilled, qp.first, dontWantTypes);
 }
@@ -2229,7 +2229,7 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
 
   if (!unknownKeywords.empty())
   {
-    for (const std::pair<std::string,int>& unknown : unknownKeywords)
+    for (const std::pair<const std::string,int>& unknown : unknownKeywords)
       ListUI <<" ==> "<< unknown.first <<" ("<< unknown.second <<").\n";
     unknownKeywords.clear();
   }
@@ -2355,7 +2355,7 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
   FFaMsg::list("\n\nObject type:                   Count:\n"
 	       "-------------------------------------\n");
   char tmpChar[256];
-  for (const std::pair<int,int>& log : readLog)
+  for (const std::pair<const int,int>& log : readLog)
   {
     snprintf(tmpChar, 256, "%-26s%8i\n", key_words[log.first], log.second);
     FFaMsg::list(tmpChar);
