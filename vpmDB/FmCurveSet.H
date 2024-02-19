@@ -8,14 +8,17 @@
 #ifndef FM_CURVE_SET_H
 #define FM_CURVE_SET_H
 
-#include "vpmDB/FmResultBase.H"
+#include "vpmDB/FmArray.H"
+#include "vpmDB/FmColor.H"
+
+#include "FFaLib/FFaString/FFaEnum.H"
+#include "FFaLib/FFaDefinitions/FFaResultDescription.H"
+#include "FFaLib/FFaContainers/FFaReferenceList.H"
+
+#include "vpmDB/FmGraph.H"
 #include "vpmDB/FmIsPlottedBase.H"
 #include "vpmDB/FmMathFuncBase.H"
-#include "vpmDB/FmGraph.H"
-#include "vpmDB/FmColor.H"
-#include "FFaLib/FFaString/FFaEnum.H"
-#include "FFaLib/FFaContainers/FFaReferenceList.H"
-#include "FFaLib/FFaDefinitions/FFaResultDescription.H"
+
 #include "FFpLib/FFpCurveData/FFpDFTparams.H"
 
 

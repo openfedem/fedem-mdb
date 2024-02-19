@@ -22,7 +22,8 @@ set ( LIB_ID_LIST Admin FFaLib FFlLib FFaFunctionLib FFaMathExpr
 set ( USE_VISUALS ON ) # Visualization attribute classes must be included
 option ( USE_FORTRAN "Build with Fortran code included" OFF )
 option ( USE_CHSHAPE "Use ChainShape library for mooring line calculation" OFF )
-option ( USE_QT "Use Qt file system handling" OFF )
+set ( USE_QT "OFF" CACHE STRING "Use Qt file system handling" )
+set_property ( CACHE USE_QT PROPERTY STRINGS Qt6 Qt5 Qt4 OFF )
 option ( USE_MEMPOOL "Use memory pool for heap allocation in FE library" OFF )
 option ( USE_PROFILER "Use CPU and Memory profiler" OFF )
 mark_as_advanced ( USE_FORTRAN USE_CHSHAPE USE_QT USE_MEMPOOL USE_PROFILER )

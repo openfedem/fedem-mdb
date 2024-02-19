@@ -274,7 +274,7 @@ void FmModelMemberBase::resolveBaseIDProblems()
 #endif
 
   int troubleCounter = 0;
-  for (const std::pair<FmModelMemberBase*,int>& bit : baseIDProblems)
+  for (const std::pair<FmModelMemberBase* const,int>& bit : baseIDProblems)
     if (!FmDB::insertInBaseIDMap(bit.first))
     {
       if (bit.first->isOfType(FmIsPlottedBase::getClassTypeID()))

@@ -17,9 +17,12 @@
 #ifndef FM_BASE_H
 #define FM_BASE_H
 
-#include "FFaLib/FFaContainers/FFaFieldContainer.H"
-#include "FFaLib/FFaContainers/FFaField.H"
+#include "vpmDB/FmArray.H"
+
+#include "FFaLib/FFaContainers/FFaByteArray.H"
 #include "FFaLib/FFaContainers/FFaReference.H"
+#include "FFaLib/FFaContainers/FFaField.H"
+#include "FFaLib/FFaContainers/FFaFieldContainer.H"
 
 class FmRingStart;
 class FmSubAssembly;
