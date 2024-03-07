@@ -18,11 +18,17 @@
 #include "FFaLib/FFaDefinitions/FFaAppInfo.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 
+#include "FFlLib/FFlInit.H"
 #include "FFlLib/FFlIOAdaptors/FFlReaders.H"
-#include "FFlLib/FFlIOAdaptors/FFlAllIOAdaptors.H"
 #include "FFlLib/FFlIOAdaptors/FFlFedemWriter.H"
 #include "FFlLib/FFlIOAdaptors/FFlVTFWriter.H"
-#include "FFlLib/FFlFEParts/FFlAllFEParts.H"
+#include "FFlLib/FFlFEParts/FFlNode.H"
+#include "FFlLib/FFlFEParts/FFlRGD.H"
+#ifdef FT_USE_VISUALS
+#include "FFlLib/FFlFEParts/FFlVDetail.H"
+#endif
+#include "FFlLib/FFlGroup.H"
+#include "FFlLib/FFlAttributeBase.H"
 #include "FFlLib/FFlConnectorItems.H"
 #include "FFlLib/FFlLinkHandler.H"
 
@@ -563,6 +569,7 @@ bool FmPart::hasResults() const
 bool FmPart::setVisDetail(const std::vector<FmElementGroupProxy*>& groups,
                           int dType)
 {
+#ifdef FT_USE_VISUALS
   if (!myFEData)
     // Geometry visualization
     return this->setModelType(dType == FFlVDetail::ON ?
@@ -593,6 +600,9 @@ bool FmPart::setVisDetail(const std::vector<FmElementGroupProxy*>& groups,
 #endif
   myFEData->updateGroupVisibilityStatus();
   return true;
+#else
+  return false;
+#endif
 }
 
 

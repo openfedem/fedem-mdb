@@ -52,11 +52,9 @@
 #include "FiUserElmPlugin/FiUserElmPlugin.H"
 #include "FFaFunctionLib/FFaUserFuncPlugin.H"
 
-#define FFL_INIT_ONLY
+#include "FFlLib/FFlInit.H"
 #include "FFlLib/FFlMemPool.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
-#include "FFlLib/FFlFEParts/FFlAllFEParts.H"
-#include "FFlLib/FFlIOAdaptors/FFlAllIOAdaptors.H"
 
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
