@@ -7,10 +7,12 @@
 
 #include "FFaLib/FFaAlgebra/FFaMath.H"
 #include "FFaLib/FFaAlgebra/FFaBody.H"
+#ifdef FT_USE_CONNECTORS
 #include "FFaLib/FFaGeometry/FFaLineGeometry.H"
 #include "FFaLib/FFaGeometry/FFaPlaneGeometry.H"
 #include "FFaLib/FFaGeometry/FFaCylinderGeometry.H"
 #include "FFaLib/FFaGeometry/FFaPointSetGeometry.H"
+#endif
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaString/FFaParse.H"
@@ -800,10 +802,12 @@ bool FmPart::attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent)
   // apply it after disconnect/connect when we have no part data
   int FENodeNr = oldTr->FENodeNo.getValue();
 
+#ifdef FT_USE_CONNECTORS
   // Store the connector elements from the old triad
   FFlConnectorItems conItems = oldTr->itsConnectorItems.getValue();
   // Remove them, to avoid that they are erased from the part on disconnect
   oldTr->itsConnectorItems = FFlConnectorItems();
+#endif
 
   // Disconnect both triads so that the coordinate system is correct
   oldTr->disconnect();
@@ -832,8 +836,10 @@ bool FmPart::attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent)
   if (!myFEData)
     attachTr->FENodeNo.setValue(FENodeNr);
 
+#ifdef FT_USE_CONNECTORS
   // Set the connector elements into the new triad
   attachTr->itsConnectorItems = conItems;
+#endif
 
   // Remove the cloned triad
   return oldTr->erase();
@@ -956,7 +962,7 @@ FFlNode* FmPart::getNodeAtPoint(const FaVec3& point, double tolerance,
       // Use the position of the existing dependent node instead of given point
       // to ensure the new node is created at exactly the same location.
       FaVec3 pos = attachNode->getPos();
-      attachNode = myFEData->createAttachableNode(attachNode,pos,*addItems);
+      attachNode = myFEData->createAttachableNode(attachNode,pos,addItems);
       needsCSupdate.setValue(true);
     }
 
@@ -2656,12 +2662,14 @@ void FmPart::readyForUpdate(bool useExistingFmx)
   externalSource.setValue(false);
   lockLevel.setValue(FM_ALLOW_MODIFICATIONS);
 
+#ifdef FT_USE_CONNECTORS
   // Clear connector elements and nodes for all triads attached to the part,
   // since they have to be regenerated anyway when loading a new FE model
   std::vector<FmTriad*> triads;
   this->getTriads(triads);
   for (FmTriad* triad : triads)
     triad->itsConnectorItems.getValue().clear();
+#endif
 }
 
 
@@ -2965,8 +2973,10 @@ char FmPart::isTriadConnectable(FmTriad* triad) const
   {
     if (triad->FENodeNo.getValue() == -1)
       return 1; // Attached to this part but has no FE node assigned ==> can use
+#ifdef FT_USE_CONNECTORS
     else if (!triad->itsConnectorItems.getValue().empty())
       return 1; // Attached to this part and has connector info ==> can redefine it
+#endif
 
     FFaMsg::dialog("You can not use the selected Triad as attach point of the connector\n"
                    "because the Triad is already attached directly to the FE model.\n"
@@ -2982,6 +2992,7 @@ char FmPart::isTriadConnectable(FmTriad* triad) const
 }
 
 
+#ifdef FT_USE_CONNECTORS
 bool FmPart::createConnector(const IntVec& nodes, const FaVec3& refNodePos,
                              FmTriad* triad, int spiderType)
 {
@@ -3170,6 +3181,7 @@ bool FmPart::createLineConnector(const FaVec3Vec& linePoints,
   // Create the spider element
   return this->createConnector(geometry,localRefNodePos,lineCS.direction(),triad,spiderType);
 }
+#endif
 
 
 bool FmPart::interactiveErase()

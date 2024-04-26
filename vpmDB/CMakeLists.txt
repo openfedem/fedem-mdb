@@ -45,6 +45,10 @@ if ( USE_VISUALS )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
 endif ( USE_VISUALS )
 
+if ( USE_CONNECTORS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_CONNECTORS" )
+endif ( USE_CONNECTORS )
+
 
 ## Files with header and source with same name
 set ( COMPONENT_FILE_LIST  Fm1DMaster FmAnalysis FmAnimation FmArcSegmentMaster
@@ -116,7 +120,11 @@ endforeach ( FILE ${HPP_FILE_LIST} )
 
 set ( FT_COMMON_LIBRARIES Admin FFlIOAdaptors FFlFEParts FFlLib
                           FFaAlgebra FFaCmdLineArg FFaContainers FFaDefinitions
-                          FFaDynCalls FFaGeometry FFaOS FFaTypeCheck )
+                          FFaDynCalls FFaOS FFaTypeCheck )
+if ( USE_CONNECTORS )
+  list ( INSERT FT_COMMON_LIBRARIES 9 FFaGeometry )
+endif ( USE_CONNECTORS )
+
 set ( FT_KERNEL_LIBRARIES FiDeviceFunctions FiUserElmPlugin
                           FFaFunctionLib FFaMathExpr )
 if ( NO_FATIGUE )

@@ -20,6 +20,7 @@ set ( LIB_ID_LIST Admin FFaLib FFlLib FFaFunctionLib FFaMathExpr
                   FiDeviceFunctions FiUserElmPlugin )
 
 set ( USE_VISUALS ON ) # Visualization attribute classes must be included
+set ( USE_CONNECTORS ON ) # Connector geometry items must be included
 option ( USE_FORTRAN "Build with Fortran code included" OFF )
 option ( USE_CHSHAPE "Use ChainShape library for mooring line calculation" OFF )
 set ( USE_QT "OFF" CACHE STRING "Use Qt file system handling" )
