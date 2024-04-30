@@ -48,14 +48,18 @@
 #include "vpmDB/FmFileSys.H"
 #include "vpmDB/FmCreate.H"
 #include "vpmDB/Icons/FmIconPixmapsMain.H"
+
 #include "FiUserElmPlugin/FiUserElmPlugin.H"
 #include "FFaFunctionLib/FFaUserFuncPlugin.H"
+
+#include "FFlLib/FFlInit.H"
 #include "FFlLib/FFlMemPool.H"
-#include "FFlLib/FFlFEParts/FFlAllFEParts.H"
-#include "FFlLib/FFlIOAdaptors/FFlAllIOAdaptors.H"
+#include "FFlLib/FFlFEParts/FFlNode.H"
+
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
+
 #include <cstring>
 #include <cstdlib>
 #include <fstream>

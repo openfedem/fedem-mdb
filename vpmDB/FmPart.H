@@ -153,6 +153,7 @@ public:
 
   double getConnectorTolerance() const;
   char isTriadConnectable(FmTriad* triad) const;
+#ifdef FT_USE_CONNECTORS
   bool createConnector(const IntVec& nodes, const FaVec3& refNodePos,
                        FmTriad* triad = NULL, int spiderType = 0);
   bool createConnector(const FFaCompoundGeometry& geometry,
@@ -170,6 +171,7 @@ public:
                            const FaVec3* refNodePos = NULL,
                            bool projectRefNodeToAxis = false,
                            FmTriad* triad = NULL, int spiderType = 2);
+#endif
 
   void updateCachedCheckSum();
   void delayedCheckSumUpdate() { needsCSupdate.setValue(true); }

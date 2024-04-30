@@ -64,15 +64,18 @@ void FmRingStart::displayRingMembers() const
   if (myRingMemberType == FmPart::getClassTypeID())
   {
     int partNumber = 0;
-    FFaMsg::enableSubSteps(this->countRingMembers());
+    int numOfParts = this->countRingMembers();
+    FFaMsg::enableSubSteps(numOfParts);
     for (FmBase* p = this->getNext(); p != (FmBase*)this; p = p->getNext())
     {
       FFaMsg::setSubStep(++partNumber);
+      FFaMsg::setProgress(numOfParts+partNumber);
       FFaMsg::setSubTask(static_cast<FmPart*>(p)->getBaseFTLName());
       p->drawObject();
     }
     FFaMsg::disableSubSteps();
     FFaMsg::setSubTask("");
+    FFaMsg::setProgress(2*numOfParts+1);
   }
   else
     for (FmBase* p = this->getNext(); p != (FmBase*)this; p = p->getNext())

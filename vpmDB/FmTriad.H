@@ -10,6 +10,7 @@
 
 #include "vpmDB/FmHasDOFsBase.H"
 #include "vpmDB/FmLink.H"
+#ifdef FT_USE_CONNECTORS
 #include "FFlLib/FFlConnectorItems.H"
 #include "FFaLib/FFaGeometry/FFaCompoundGeometry.H"
 
@@ -25,6 +26,7 @@ bool FFaField<FFlConnectorItems>::isPrintable() const
 {
   return !myData.empty();
 }
+#endif
 
 
 class FmBeam;
@@ -205,15 +207,19 @@ public:
     FFaEnumEntryEnd;
   };
 
+#ifdef FT_USE_CONNECTORS
   bool updateConnector(ConnectorType type, FmPart* ownerPart = NULL);
+#endif
 
   typedef std::vector<FmHasDOFsBase::DOFStatusEnum> DOFStatusVec;
 
   FFaFieldUnsignedInt           FENodeNo;
   FFaField<LocalDirectionEnum>  itsLocalDir;
+#ifdef FT_USE_CONNECTORS
   FFaField<FFaCompoundGeometry> itsConnectorGeometry;
   FFaField<FFlConnectorItems>   itsConnectorItems;
   FFaField<ConnectorTypeEnum>   itsConnectorType;
+#endif
 
 private:
   FFaReferenceList<FmLink>        myAttachedLinks;
@@ -228,11 +234,13 @@ private:
 };
 
 
+#ifdef FT_USE_CONNECTORS
 template<> inline
 bool FFaField<FmTriad::ConnectorTypeEnum>::isPrintable() const
 {
   return myData > FmTriad::NONE;
 }
+#endif
 
 
 template<> inline

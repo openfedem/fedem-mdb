@@ -74,9 +74,11 @@ void FmTriad::init()
   FFA_FIELD_INIT(FENodeNo, -1, "FE_NODE_NO");
   FFA_FIELD_INIT(itsLocalDir, GLOBAL, "LOCAL_DIRECTIONS");
 
+#ifdef FT_USE_CONNECTORS
   FFA_FIELD_DEFAULT_INIT(itsConnectorGeometry, "CONNECTOR_GEOMETRY");
   FFA_FIELD_DEFAULT_INIT(itsConnectorItems, "CONNECTOR_FE_ITEMS");
   FFA_FIELD_INIT(itsConnectorType, NONE, "CONNECTOR_TYPE");
+#endif
 
   FFA_REFERENCELIST_FIELD_INIT(myAttachedLinksField, myAttachedLinks, "OWNER_LINK");
 
@@ -124,6 +126,7 @@ bool FmTriad::highlight(bool trueOrFalse)
 }
 
 
+#ifdef FT_USE_CONNECTORS
 /*!
   Updates a connector using the triad's stored info.
   Unless \a ownerPart is NULL, the connector is recreated even if its type is
@@ -159,6 +162,7 @@ bool FmTriad::updateConnector(ConnectorType type, FmPart* ownerPart)
 
   return changed;
 }
+#endif
 
 
 /**********************************************************************
@@ -659,9 +663,13 @@ bool FmTriad::updateFENodeAndDofs(FmPart* ownerPart)
     return this->setNDOFs(6);
 
   // For triads on FE parts, find the FE-node number of DOFs
+#ifdef FT_USE_CONNECTORS
+  FFlConnectorItems* ci = &(itsConnectorItems.getValue());
+#else
+  FFlConnectorItems* ci = NULL;
+#endif
   FFlNode* tmpNode = ownerPart->getNodeAtPoint(this->getLocalCS().translation(),
-					       FmDB::getPositionTolerance(),
-					       &(itsConnectorItems.getValue()));
+                                               FmDB::getPositionTolerance(),ci);
 
   // If no node => the FE data is most likely not loaded, don't touch anything.
   if (!tmpNode) return false;
@@ -752,10 +760,12 @@ void FmTriad::initAfterResolve()
     itsBndC.getValue().clear();
   }
 
+#ifdef FT_USE_CONNECTORS
   // Clear the connector type field if the connector geometry field
   // also is empty (to minimize the model file size)
   if (itsConnectorGeometry.getValue().empty())
     itsConnectorType.setValue(NONE);
+#endif
 
   this->updateFENodeAndDofs(this->getOwnerPart(0));
 
@@ -787,12 +797,17 @@ int FmTriad::syncOnFEmodel()
   FmPart* owner = this->getOwnerFEPart();
   if (!owner) return -1;
 
-  FFlConnectorItems& items = itsConnectorItems.getValue();
-  FFaCompoundGeometry& geo = itsConnectorGeometry.getValue();
+#ifdef FT_USE_CONNECTORS
+  FFlConnectorItems* items = &(itsConnectorItems.getValue());
+  bool haveGeometry = !itsConnectorGeometry.getValue().empty();
+#else
+  FFlConnectorItems* items = NULL;
+  bool haveGeometry = false;
+#endif
 
   // Find an FE node at the triad's location
   FFlNode* node = owner->getNodeAtPoint(this->getLocalTranslation(),
-                                        FmDB::getPositionTolerance(),&items);
+                                        FmDB::getPositionTolerance(),items);
 
   // If it was a dependent node, consider as no node
   // Unless the same as the connector used, we need to recreate the connector
@@ -800,17 +815,19 @@ int FmTriad::syncOnFEmodel()
   {
     if (node->isSlaveNode())
       node = NULL;
-    else if (!geo.empty() && FENodeNo.getValue() != node->getID())
+    else if (haveGeometry && FENodeNo.getValue() != node->getID())
       node = NULL;
   }
-  if (!node && !geo.empty())
+  if (!node && haveGeometry)
   {
+#ifdef FT_USE_CONNECTORS
     // Recreate connector
     if (this->updateConnector(itsConnectorType.getValue(),owner))
       owner->delayedCheckSumUpdate();
+#endif
 
     node = owner->getNodeAtPoint(this->getLocalTranslation(),
-                                 FmDB::getPositionTolerance(),&items);
+                                 FmDB::getPositionTolerance(),items);
   }
 
   // Set triads FE node status
@@ -838,6 +855,7 @@ bool FmTriad::disconnect()
   FmPart* owner = this->getOwnerFEPart();
   if (owner)
   {
+#ifdef FT_USE_CONNECTORS
     // remove the spider connector, if any
     if (this->updateConnector(NONE,owner))
     {
@@ -852,6 +870,7 @@ bool FmTriad::disconnect()
 #endif
       connector.deleteGeometry();
     }
+#endif
 
     // remove the FE node connectivity
     FFlNode* tmpNode = owner->getNode(FENodeNo.getValue());
@@ -1697,9 +1716,11 @@ bool FmTriad::readAndConnect(std::istream& is, std::ostream&)
   FFA_OBSOLETE_FIELD_REMOVE("CONNECTOR_GEOMETRY_TOLERANCE", obj);
   FFA_OBSOLETE_FIELD_REMOVE("ADD_BND", obj);
 
+#ifdef FT_USE_CONNECTORS
   // Update from old model file
   if (geoTol.wasOnFile())
     obj->itsConnectorGeometry.getValue().setTolerance(geoTol.getValue());
+#endif
 
   FFaString tDesc = obj->getUserDescription();
   if (oldBndC.wasOnFile())
