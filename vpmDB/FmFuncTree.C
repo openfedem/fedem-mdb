@@ -12,37 +12,37 @@
 #include "vpmDB/FmFuncTree.H"
 
 
-FmFuncStart::FmFuncStart(const std::string& UIString, const char** pixmap, int fUse)
-  : FmRingStart(UIString,pixmap)
+FmFuncStart::FmFuncStart(const std::string& uis, const char** pixmap, int fUse)
+: FmRingStart(uis,pixmap)
 {
   myFuncUse = fUse;
   myRingMemberType = FmMathFuncBase::getClassTypeID();
 }
 
 
-bool FmFuncStart::hasRingMembers() const
+bool FmFuncStart::hasRingMembers(bool) const
 {
   std::vector<FmMathFuncBase*> allFuncs;
-  FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(this->getParentAssembly());
-  FmDB::getAllFunctions(allFuncs,subAss,true);
+  FmSubAssembly* sAss = dynamic_cast<FmSubAssembly*>(this->getParentAssembly());
+  FmDB::getAllFunctions(allFuncs,sAss,true);
 
-  for (size_t i = 0; i < allFuncs.size(); i++)
-    if (allFuncs[i]->getFunctionUse() == myFuncUse)
+  for (FmMathFuncBase* func : allFuncs)
+    if (func->getFunctionUse() == myFuncUse)
       return true;
 
   return false;
 }
 
 
-void FmFuncStart::getModelMembers(std::vector<FmModelMemberBase*>& list)
+void FmFuncStart::getModelMembers(std::vector<FmModelMemberBase*>& list) const
 {
   std::vector<FmMathFuncBase*> allFuncs;
-  FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(this->getParentAssembly());
-  FmDB::getAllFunctions(allFuncs,subAss,true);
+  FmSubAssembly* sAss = dynamic_cast<FmSubAssembly*>(this->getParentAssembly());
+  FmDB::getAllFunctions(allFuncs,sAss,true);
 
-  for (size_t i = 0; i < allFuncs.size(); i++)
-    if (allFuncs[i]->getFunctionUse() == myFuncUse)
-      list.push_back(allFuncs[i]);
+  for (FmMathFuncBase* func : allFuncs)
+    if (func->getFunctionUse() == myFuncUse)
+      list.push_back(func);
 }
 
 
@@ -115,8 +115,8 @@ FmFuncTree::FmFuncTree(FmRingStart* root) : myNodes(15,NULL)
 
 FmFuncTree::~FmFuncTree()
 {
-  for (size_t i = 0; i < myNodes.size(); i++)
-    myNodes[i]->erase();
+  for (FmRingStart* node : myNodes)
+    node->erase();
 
   myHead->erase();
 }
@@ -124,6 +124,6 @@ FmFuncTree::~FmFuncTree()
 
 void FmFuncTree::setParentAssembly(FmBase* subAss)
 {
-  for (size_t i = 0; i < myNodes.size(); i++)
-    myNodes[i]->setParentAssembly(subAss);
+  for (FmRingStart* node : myNodes)
+    node->setParentAssembly(subAss);
 }
