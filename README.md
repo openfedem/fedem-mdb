@@ -6,18 +6,18 @@
   This file is part of FEDEM - https://openfedem.org
 --->
 
-[![REUSE status](https://api.reuse.software/badge/github.com/SAP/fedem-mdb)](https://api.reuse.software/info/github.com/SAP/fedem-mdb)
+[![REUSE status](https://api.reuse.software/badge/github.com/openfedem/fedem-mdb)](https://api.reuse.software/info/github.com/openfedem/fedem-mdb)
 
 # FEDEM model database
 
-![Fedem Logo](https://github.com/SAP/fedem-foundation/blob/main/cfg/FedemLogo.png)
+![Fedem Logo](https://github.com/openfedem/.github/blob/main/profile/FedemLogo.png)
 
 ## About this project
 
 This project contains the source code of the C++ library that implements
 the model database of FEDEM, with an API for accessing the model from
 a shared object library (or DLL on windows). It is consumed as a submodule in
-[fedem-gui](https://github.com/SAP/fedem-gui).
+[fedem-gui](https://github.com/openfedem/fedem-gui).
 
 ## Source code organization
 
@@ -27,7 +27,7 @@ object types of a FEDEM model. See the file [README.md](vpmDB/README.md)
 for more detailed information on this code.
 
 The classes in `vpmDB` use some
-[fedem-foundation](https://github.com/SAP/fedem-foundation) classes
+[fedem-foundation](https://github.com/openfedem/fedem-foundation) classes
 as building blocks, especially some `FFaLib` classes for handling the
 object fields and inter-object topology, and `FFlLib` for accessing the
 FE part data. Therefore, this repository is consumed as submodule here.
@@ -51,8 +51,8 @@ model database library can be accessed from python scripts.
 
 A static build of the libraries `vpmDB`, `assemblyCreators` and `chainShape`
 for use in the FEDEM GUI is governed by the build system of the supermodule
-[fedem-gui](https://github.com/SAP/fedem-gui). However, it is also possible
-to build them separately from this project, as described below.
+[fedem-gui](https://github.com/openfedem/fedem-gui). However, it is also
+possible to build them separately from this project, as described below.
 
 ### Build instructions for FedemDB
 
@@ -68,14 +68,14 @@ some unit tests for the C++ and Fortran code, respectively. Therefore,
 you need to set the environment variables `GTEST_ROOT` and `PFUNIT` to point to
 the root path of valid installations of the googletest and pFUnit frameworks,
 respectively, before executing the cmake command shown below. See
-[Installing googletest and pFUnit](https://github.com/SAP/fedem-foundation/blob/main/pFUnit/README.md#installing-googletest-and-pfunit)
+[Installing googletest and pFUnit](https://github.com/openfedem/fedem-foundation/blob/main/pFUnit/README.md#installing-googletest-and-pfunit)
 for instructions on how to install these packages on your system.
 
 - From a bash shell or command prompt, clone the sources of this repository:
 
       mkdir ~/Fedem-src
       cd ~/Fedem-src
-      git clone --recurse-submodules git@github.com:SAP/fedem-mdb.git
+      git clone --recurse-submodules git@github.com:openfedem/fedem-mdb.git
 
 - On Linux, the FEDEM model database library and tests can be built
   and executed by:
@@ -130,7 +130,7 @@ for instructions on how to install these packages on your system.
 The regression tests invoked by building the `check` target are defined
 in the subfolder [test/fedempy](test/fedempy). Since they rely on the
 `fedempy` module, they will be active only if the repository
-[fedem-solvers](https://github.com/SAP/fedem-solvers),
+[fedem-solvers](https://github.com/openfedem/fedem-solvers),
 which contains the sources of `fedempy` has been cloned into a folder
 named `fedem-solvers`, in parallel to the clone of this repository.
 
@@ -146,19 +146,14 @@ See also the [README.md](test/fedempy/README.md) file for `fedempy`.
 ## Contributing
 
 This project is open to feature requests, suggestions, bug reports, etc.,
-via [GitHub issues](https://github.com/SAP/fedem-mdb/issues).
+via [GitHub issues](https://github.com/openfedem/fedem-mdb/issues).
 Contributions and feedback are encouraged and always welcome.
 For more information about how to contribute,
 see our [Contribution Guidelines](.github/CONTRIBUTING.md).
 
-## Security / Disclosure
-
-If you find any bug that may be a security problem, please follow our instructions at [in our security policy](https://github.com/SAP/fedem-mdb/security/policy) on how to report it. Please do not create GitHub issues for security-related doubts or problems.
-
-## Code of Conduct
-
-We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone. By participating in this project, you agree to abide by its [Code of Conduct](https://github.com/SAP/.github/blob/main/CODE_OF_CONDUCT.md) at all times.
-
 ## Licensing
 
-Copyright 2023 SAP SE or an SAP affiliate company and fedem-mdb contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/SAP/fedem-mdb).
+Copyright 2023 SAP SE or an SAP affiliate company and fedem-mdb contributors.
+Please see our [LICENSE](LICENSE) for copyright and license information.
+Detailed information including third-party components and their licensing/copyright information
+is available via the [REUSE tool](https://api.reuse.software/info/github.com/openfedem/fedem-mdb).

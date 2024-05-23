@@ -14,11 +14,11 @@ regression testing of the capabilities in the FEDEM model database library.
 ## Using fedempy
 
 The regression tests use the `fedempy` python module of the
-[fedem-solvers](https://github.com/SAP/fedem-solvers) repository.
+[fedem-solvers](https://github.com/openfedem/fedem-solvers) repository.
 The latest version of `fedempy` therefore needs to be installed
 before executing the tests. Alternatively,
 the variable `PYTHON_DIR` can be defined and point to the local path of the
-[fedempy root folder](https://github.com/SAP/fedem-solvers/tree/main/PythonAPI/src)
+[fedempy root folder](https://github.com/openfedem/fedem-solvers/tree/main/PythonAPI/src)
 within the local clone of `fedem-solvers.git`.
 By this, the tests in here also serve as regression tests for `fedempy` itself.
 
