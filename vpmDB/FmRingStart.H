@@ -17,7 +17,7 @@ class FmRingStart : public FmModelMemberBase
   Fmd_HEADER_INIT();
 
 public:
-  FmRingStart(const std::string& UIString, const char** pixmap = NULL,
+  FmRingStart(const std::string& uistr, const char** pixmap = NULL,
               bool doPrintHeader = false);
   virtual ~FmRingStart() {}
 
@@ -31,7 +31,7 @@ public:
   void printHeader(bool doPrint) { myPrintHeader = doPrint; }
   bool printHeader() const { return myPrintHeader; }
   virtual int countRingMembers() const;
-  virtual bool hasRingMembers() const;
+  virtual bool hasRingMembers(bool noChildren = false) const;
   virtual void displayRingMembers() const;
   virtual bool eraseRingMembers(bool showProgress = false);
 
@@ -43,8 +43,8 @@ public:
   FmRingStart* getParent() const { return myParent; }
   const std::vector<FmRingStart*>& getChildren() const { return myChildren; }
 
-  virtual void getModelMembers(std::vector<FmModelMemberBase*>& list)
-  { this->getMembers(list); }
+  virtual void getModelMembers(std::vector<FmModelMemberBase*>& list) const
+  { const_cast<FmRingStart*>(this)->getMembers(list); }
 
   template<class T> void getMembers(std::vector<T*>& list)
   {
@@ -63,11 +63,14 @@ public:
 protected:
   void addChild(FmRingStart* child);
 
-  int                  myRingMemberType;
+private:
   std::string          myUIString;
   const char**         myPixmap;
   FmRingStart*         myParent;
   std::vector<FmRingStart*> myChildren;
+
+protected:
+  int myRingMemberType;
 
 private:
   bool myPrintHeader; //<! Should myUIString be used as a model file header?

@@ -14,14 +14,14 @@
 class FmFuncStart : public FmRingStart
 {
 public:
-  FmFuncStart(const std::string& UIString, const char** pixmap, int fUse);
+  FmFuncStart(const std::string& uis, const char** pixmap, int fUse);
   virtual ~FmFuncStart() {}
 
-  virtual bool hasRingMembers() const;
-  virtual void getModelMembers(std::vector<FmModelMemberBase*>& list);
+  virtual bool hasRingMembers(bool) const;
+  virtual void getModelMembers(std::vector<FmModelMemberBase*>& list) const;
 
   virtual void displayRingMembers() const {}
-  virtual bool eraseRingMembers(bool = false) { return true; }
+  virtual bool eraseRingMembers(bool) { return true; }
 
   virtual FmRingStart* searchFuncHead(int fUse) const;
 

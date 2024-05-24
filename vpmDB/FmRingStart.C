@@ -36,13 +36,13 @@ void FmRingStart::setUITypeName(const std::string& name, const char** pixmap)
 }
 
 
-bool FmRingStart::hasRingMembers() const
+bool FmRingStart::hasRingMembers(bool noChildren) const
 {
-  if (myChildren.empty())
-    return (this->getNext() != (FmBase*)this) ? true : false;
+  if (noChildren || myChildren.empty())
+    return this->getNext() != const_cast<FmRingStart*>(this);
 
-  for (size_t i = 0; i < myChildren.size(); i++)
-    if (myChildren[i]->hasRingMembers())
+  for (FmRingStart* child : myChildren)
+    if (child->hasRingMembers())
       return true;
 
   return false;
@@ -51,8 +51,10 @@ bool FmRingStart::hasRingMembers() const
 
 int FmRingStart::countRingMembers() const
 {
+  FmRingStart* last = const_cast<FmRingStart*>(this);
+
   int count = 0;
-  for (FmBase* p = this->getNext(); p != (FmBase*)this; p = p->getNext())
+  for (FmBase* p = this->getNext(); p != last; p = p->getNext())
     count++;
 
   return count;
@@ -61,41 +63,45 @@ int FmRingStart::countRingMembers() const
 
 void FmRingStart::displayRingMembers() const
 {
+  if (!this->hasRingMembers(true)) return;
+
+  FmRingStart* last = const_cast<FmRingStart*>(this);
+
   if (myRingMemberType == FmPart::getClassTypeID())
   {
     int partNumber = 0;
     int numOfParts = this->countRingMembers();
     FFaMsg::enableSubSteps(numOfParts);
-    for (FmBase* p = this->getNext(); p != (FmBase*)this; p = p->getNext())
+    FFaMsg::enableProgress(numOfParts);
+    for (FmBase* p = this->getNext(); p != last; p = p->getNext())
     {
       FFaMsg::setSubStep(++partNumber);
-      FFaMsg::setProgress(numOfParts+partNumber);
       FFaMsg::setSubTask(static_cast<FmPart*>(p)->getBaseFTLName());
+      FFaMsg::setProgress(partNumber);
       p->drawObject();
     }
+    FFaMsg::disableProgress();
     FFaMsg::disableSubSteps();
     FFaMsg::setSubTask("");
-    FFaMsg::setProgress(2*numOfParts+1);
   }
   else
-    for (FmBase* p = this->getNext(); p != (FmBase*)this; p = p->getNext())
+    for (FmBase* p = this->getNext(); p != last; p = p->getNext())
       p->drawObject();
 }
 
 
 bool FmRingStart::eraseRingMembers(bool showProgress)
 {
-  int count = this->countRingMembers();
-  if (count == 0) return false;
+  if (!this->hasRingMembers(true)) return false;
 
   if (showProgress)
   {
-    FFaMsg::enableSubSteps(count);
+    FFaMsg::enableSubSteps(this->countRingMembers());
     FFaMsg::setSubTask(this->getUITypeName());
-    count = 0;
   }
 
-  while (this->getNext() != (FmBase*)this)
+  int count = 0;
+  while (this->getNext() != const_cast<FmRingStart*>(this))
     if (this->getNext()->erase())
       if (showProgress)
         FFaMsg::setSubStep(++count);
@@ -118,7 +124,7 @@ const char* FmRingStart::getChildrenUITypeName() const
 {
   if (!myChildren.empty())
     return myChildren.front()->getUITypeName();
-  else if (this->getNext() != (FmBase*)this)
+  else if (this->getNext() != const_cast<FmRingStart*>(this))
     return this->getNext()->getUITypeName();
   else
     return NULL;
@@ -141,8 +147,9 @@ void FmRingStart::setParent(FmRingStart* parent)
 FmRingStart* FmRingStart::searchFuncHead(int funcUse) const
 {
   FmRingStart* found = NULL;
-  for (size_t i = 0; i < myChildren.size() && !found; i++)
-    found = myChildren[i]->searchFuncHead(funcUse);
+  for (FmRingStart* child : myChildren)
+    if ((found = child->searchFuncHead(funcUse)))
+      break;
 
   return found;
 }

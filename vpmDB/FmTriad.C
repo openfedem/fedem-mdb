@@ -330,9 +330,9 @@ bool FmTriad::eraseOptions()
       {
         // The joint has two or less triads connected and this is one of them.
         // Try to erase the independent joint triads. Note: For line joints
-	// the independent triads  are assumed to always be in the same 
+        // the independent triads are assumed to always be in the same
         // assembly as the joint itself.
-        // Therefore we do not check for the other possibility here.
+        // Therefore, we do not check for the other possibility here.
         if (line)
         {
           static_cast<FmMMJointBase*>(joint)->setMaster(NULL);
@@ -984,7 +984,7 @@ bool FmTriad::showSymbol() const
   if (this->isMasterTriad() || this->isSlaveTriad())
     return false;
 
-  // Check if the triad is connected to at least one beam link
+  // Check if the triad is connected to at least one beam element
   // and no links of other type
   if (this->hasBeamBinding() && myAttachedLinks.empty())
     return FmDB::getActiveViewSettings()->visibleBeamTriads();
@@ -1139,7 +1139,7 @@ bool FmTriad::isAttached(const FmLink* link, bool exceptForThis) const
 
 /*!
   Check if this triad is attached to a link. If \a ignoreGPandEarth is \e true,
-  only FE links are considered. If \a allowMultipleLinks is \e false,
+  only FE parts are considered. If \a allowMultipleLinks is \e false,
   this method returns \e true only when the triad is attached to one single link
   and \e false if it is attached to more than one or not at all.
   If \a allowMultipleLinks is \e true, this method returns \e true no matter
@@ -1468,7 +1468,7 @@ FaMat34 FmTriad::getRelativeCS(const FmLink* link) const
 
 /*!
   Sets the position of this triad to be aligned with the provided matrix,
-  taking into account the link it could be attached to.
+  taking into account the part it could be attached to.
 
   If moveRelationsAlong == true, the triads in the joints this triad is a member
   of is moved as well, if the joints constraint system demands it.
@@ -1479,7 +1479,7 @@ FaMat34 FmTriad::getRelativeCS(const FmLink* link) const
 
 void FmTriad::setGlobalCS(const FaMat34& globalMat, bool moveRelationsAlong)
 {
-  FmLink* owner = this->getOwnerPart(0);
+  FmPart* owner = this->getOwnerPart(0);
 
   FaMat34 oldGlobalMat = this->getGlobalCS();
   if (owner)
@@ -2098,8 +2098,8 @@ int FmTriad::printAdditionalMass(FILE* fp)
 /*!
   This method is used in the Origin tab and the align CS commands
   to find out if it is possible to translate the triad.
-  If it is attached to an FE link, in a line joint, or in a point 
-  joint and its movability is connected to and "owning" joint,
+  If it is attached to an FE part, in a line joint, or in a point
+  joint and its movability is connected to an "owning" joint,
   then it is not allowed to translate it.
 */
 
