@@ -70,7 +70,8 @@ std::string FmSimpleSensor::getInfoString() const
 #ifdef FT_HAS_EXTCTRL
 bool FmSimpleSensor::isExternalCtrlSys() const
 {
-  if (itsMeasuredPt.isNull()) return false;
+  if (itsMeasuredPt.isNull())
+    return false;
 
   return itsMeasuredPt->isOfType(FmExternalCtrlSys::getClassTypeID());
 }
@@ -79,7 +80,8 @@ bool FmSimpleSensor::isExternalCtrlSys() const
 
 bool FmSimpleSensor::isControlOutput() const
 {
-  if (itsMeasuredPt.isNull()) return false;
+  if (itsMeasuredPt.isNull())
+    return false;
 
   return itsMeasuredPt->isOfType(FmcOutput::getClassTypeID());
 }
@@ -87,7 +89,8 @@ bool FmSimpleSensor::isControlOutput() const
 
 bool FmSimpleSensor::isDrawable() const
 {
-  if (itsMeasuredPt.isNull()) return false;
+  if (itsMeasuredPt.isNull())
+    return false;
 
   return (itsMeasuredPt->isOfType(FmTriad::getClassTypeID()) ||
 	  itsMeasuredPt->isOfType(FmJointBase::getClassTypeID()) ||
@@ -99,7 +102,8 @@ bool FmSimpleSensor::isDrawable() const
 bool FmSimpleSensor::isListable() const
 {
   // Note: return true to get Output List message on interactive erase
-  if (itsMeasuredPt.isNull()) return true;
+  if (itsMeasuredPt.isNull())
+    return true;
 
   return !(itsMeasuredPt->isOfType(FmcOutput::getClassTypeID()) ||
 #ifdef FT_HAS_EXTCTRL
@@ -111,7 +115,8 @@ bool FmSimpleSensor::isListable() const
 
 bool FmSimpleSensor::hasEntityChoice() const
 {
-  if (itsMeasuredPt.isNull()) return false;
+  if (itsMeasuredPt.isNull())
+    return false;
 
   return (itsMeasuredPt->isOfType(FmTriad::getClassTypeID()) ||
 	  itsMeasuredPt->isOfType(FmJointBase::getClassTypeID()) ||
@@ -126,7 +131,8 @@ bool FmSimpleSensor::hasEntityChoice() const
 
 bool FmSimpleSensor::hasDofChoice() const
 {
-  if (itsMeasuredPt.isNull()) return false;
+  if (itsMeasuredPt.isNull())
+    return false;
 
   return (itsMeasuredPt->isOfType(FmTriad::getClassTypeID()) ||
 	  itsMeasuredPt->isOfType(FmJointBase::getClassTypeID()) ||
@@ -217,7 +223,10 @@ bool FmSimpleSensor::readAndConnect(std::istream& is, std::ostream&)
     std::stringstream activeStatement;
     char keyWord[BUFSIZ];
     if (FaParse::parseFMFASCII(keyWord, is, activeStatement, '=', ';'))
-      parentParse(keyWord, activeStatement, obj);
+      // Skip sensors on obsolete TIME object (R4.1.1 and earlier)
+      if (strcmp(keyWord,"MEASURED") ||
+          activeStatement.str().find("FcTIME") == std::string::npos)
+        parentParse(keyWord, activeStatement, obj);
   }
 
   obj->connect();
