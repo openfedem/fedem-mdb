@@ -385,3 +385,9 @@ void FmMechanism::syncPath(const std::string& name, bool updateRSD)
     this->getResultStatusData(false)->copy(this->getResultStatusData());
   }
 }
+
+
+std::string FmMechanism::getRelativePath(const std::string& fullName) const
+{
+  return FFaFilePath::getRelativeFilename(myAbsModelFilePath,fullName);
+}

@@ -1065,8 +1065,7 @@ void FmPart::updateMassProperties()
     {
       ListUI <<"  -> Calculating mass properties for "<< this->getIdString(true)
              <<"\n     based on CAD geometry in "
-             << FFaFilePath::getRelativeFilename(FmDB::getMechanismObject()->getAbsModelFilePath(),cadFile)
-             <<"\n";
+             << FmDB::getMechanismObject()->getRelativePath(cadFile) <<"\n";
       double Volume = 0.0;
       FFaTensor3 Inertia;
       FFaBody::prefix = FFaFilePath::getPath(cadFile);
@@ -1394,10 +1393,7 @@ bool FmPart::importPart(const std::string& fileName,
   // Set the name of the imported FE data file
   std::string newFEFile;
   if (storeRelativePath)
-  {
-    const std::string& path = FmDB::getMechanismObject()->getAbsModelFilePath();
-    newFEFile = FFaFilePath::getRelativeFilename(path,fileName);
-  }
+    newFEFile = FmDB::getMechanismObject()->getRelativePath(fileName);
   else
     newFEFile = fileName;
 
@@ -1504,8 +1500,7 @@ bool FmPart::importPart(const std::string& fileName,
   else if (FFaFilePath::isExtension(fileName,"ftl"))
   {
     // Lambda function checking for externally reduced matrix file
-    const std::string& path = FmDB::getMechanismObject()->getAbsModelFilePath();
-    auto&& checkExt = [path,fileName](FFaField<std::string>& field, char mType)
+    auto&& checkExt = [fileName](FFaField<std::string>& field, char mType)
     {
       std::string matrixFile = FFaFilePath::getBaseName(fileName);
       matrixFile.append(1,'_');
@@ -1519,7 +1514,7 @@ bool FmPart::importPart(const std::string& fileName,
       if (!FmFileSys::isFile(matrixFile))
         return false;
 
-      field.setValue(FFaFilePath::getRelativeFilename(path,matrixFile));
+      field.setValue(FmDB::getMechanismObject()->getRelativePath(matrixFile));
       ListUI <<"  -> Using externally reduced "<< field.getValue() <<"\n";
       return true;
     };
@@ -1874,12 +1869,11 @@ bool FmPart::convertOP2files(const std::string& absPartPath)
 
   // The S, M and G fmx-files should now reside in the directory absPartPath
   myFEData->clearOP2files();
-  const std::string& mPath = FmDB::getMechanismObject()->getAbsModelFilePath();
-  std::string partPath = FFaFilePath::getRelativeFilename(mPath,absPartPath);
-  FFaFilePath::appendToPath(partPath,FFaFilePath::getFileName(partName));
-  SMatFile.setValue(partPath + "_S.fmx");
-  MMatFile.setValue(partPath + "_M.fmx");
-  GMatFile.setValue(partPath + "_G.fmx");
+  std::string path = FmDB::getMechanismObject()->getRelativePath(absPartPath);
+  FFaFilePath::appendToPath(path,FFaFilePath::getFileName(partName));
+  SMatFile.setValue(path + "_S.fmx");
+  MMatFile.setValue(path + "_M.fmx");
+  GMatFile.setValue(path + "_G.fmx");
   return true;
 }
 
