@@ -466,7 +466,7 @@ bool FmPart::useFEModelAsVisualization() const
 {
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
-    if (((FdPart*)itsDisplayPt)->isUsingGenPartVis())
+    if (static_cast<FdPart*>(itsDisplayPt)->isUsingGenPartVis())
       return false;
 #endif
   return myFEData != NULL;
@@ -598,7 +598,7 @@ bool FmPart::setVisDetail(const std::vector<FmElementGroupProxy*>& groups,
   // Update the visuals of the part
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
-    ((FdPart*)itsDisplayPt)->updateElementVisibility();
+    static_cast<FdPart*>(itsDisplayPt)->updateElementVisibility();
 #endif
   myFEData->updateGroupVisibilityStatus();
   return true;
@@ -909,7 +909,7 @@ std::pair<FmTriad*,bool> FmPart::getExistingTriad(const FmTriad* triad)
   ListUI <<"       Also verify that the modeling tolerance ("<< positionTol
 	 <<") used by\n       the point coincidence check is appropriate.\n";
 
-  return std::make_pair((FmTriad*)NULL,false);
+  return { static_cast<FmTriad*>(NULL), false };
 }
 
 
@@ -1255,7 +1255,7 @@ bool FmPart::setVisualizationFile(const std::string& fileName, bool updateViz)
     FFaMsg::pushStatus("Deleting FE Data");
 #ifdef USE_INVENTOR
     if (itsDisplayPt && updateViz)
-      ((FdPart*)itsDisplayPt)->removeVisualizationData(true);
+      static_cast<FdPart*>(itsDisplayPt)->removeVisualizationData(true);
 #endif
     this->setLinkHandler(NULL);
     FFaMsg::popStatus();
@@ -2781,6 +2781,9 @@ bool FmPart::isTranslatable() const
   std::vector<FmJointBase*> joints;
   this->getJoints(joints);
 
+  std::vector<FmTriad*> triads;
+  triads.reserve(2);
+
   // Check if the (ball, revolute and rigid) joints attached
   // to this part also are attached to (at least) one other part.
   // In that case, this part is not translatable.
@@ -2789,13 +2792,11 @@ bool FmPart::isTranslatable() const
 	joint->isOfType(FmRevJoint::getClassTypeID()) ||
 	joint->isOfType(FmRigidJoint::getClassTypeID()))
     {
-      FmTriad* triad = ((FmSMJointBase*)joint)->getItsMasterTriad();
-      if (triad && triad->isAttached(this,true))
-        return false;
-
-      triad = joint->getSlaveTriad();
-      if (triad && triad->isAttached(this,true))
-        return false;
+      joint->getMasterTriads(triads);
+      triads.push_back(joint->getSlaveTriad());
+      for (FmTriad* triad : triads)
+        if (triad && triad->isAttached(this,true))
+          return false;
     }
 
   return true;
@@ -2993,6 +2994,15 @@ char FmPart::isTriadConnectable(FmTriad* triad) const
 
 
 #ifdef FT_USE_CONNECTORS
+void FmPart::updateConnectorVisualization()
+{
+#ifdef USE_INVENTOR
+  if (itsDisplayPt && myFEData)
+    static_cast<FdPart*>(itsDisplayPt)->updateSpecialLines();
+#endif
+}
+
+
 bool FmPart::createConnector(const IntVec& nodes, const FaVec3& refNodePos,
                              FmTriad* triad, int spiderType)
 {
@@ -3071,11 +3081,7 @@ bool FmPart::createConnector(const FFaCompoundGeometry& geometry,
   triad->itsConnectorGeometry = geometry;
   triad->itsConnectorType = static_cast<FmTriad::ConnectorType>(spiderType);
   triad->itsConnectorItems = cItems;
-
-#ifdef USE_INVENTOR
-  if (itsDisplayPt && myFEData)
-    ((FdPart*)itsDisplayPt)->updateConnectorElements();
-#endif
+  this->updateConnectorVisualization();
   triad->draw();
 
   return true;

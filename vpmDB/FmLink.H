@@ -139,6 +139,7 @@ public:
   bool saveCadData();
   bool isCADLoaded() const;
   bool isUsingGenPartVis() const;
+  void updateGPVisualization();
 
   virtual std::string getAbsFilePath(bool createDir = false) const;
   std::string getBaseCadFile(bool createDir = false) const;

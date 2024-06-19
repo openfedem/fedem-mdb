@@ -866,8 +866,8 @@ bool FmTriad::disconnect()
       for (size_t i = 0; i < connector.size(); i++)
         if (connector[i]->getAddExclude())
           FdExtraGraphics::highlight(connector[i],owner->getGlobalCS(),false);
-      static_cast<FdPart*>(owner->getFdPointer())->updateConnectorElements();
 #endif
+      owner->updateConnectorVisualization();
       connector.deleteGeometry();
     }
 #endif
@@ -889,12 +889,8 @@ bool FmTriad::disconnect()
   if (owner)
   {
     this->setGlobalCS(owner->getGlobalCS() * this->getLocalCS());
-
-#ifdef USE_INVENTOR
-    // Redraw generic part spider after removal of this triad
-    if (owner->useGenericProperties.getValue())
-      static_cast<FdPart*>(owner->getFdPointer())->updateSimplifiedViz();
-#endif
+    // Redraw generic part spider (if any) after removal of this triad
+    owner->updateGPVisualization();
   }
 
   return true;
@@ -1653,11 +1649,9 @@ void FmTriad::updateChildrenDisplayTopology()
   for (FmTire* tire : tires)
     tire->updateTopologyInViewer();
 
-  // Update attached generic parts
   myAttachedLinks.getPtrs(links);
   for (FmLink* link : links)
-    if (link->isGenericPart())
-      static_cast<FdLink*>(link->getFdPointer())->updateSimplifiedViz();
+    link->updateGPVisualization();
 
   FmHasDOFsBase::updateChildrenDisplayTopology();
 #endif

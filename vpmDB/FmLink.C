@@ -146,7 +146,7 @@ bool FmLink::isCADLoaded() const
 {
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
-    if (((FdLink*)itsDisplayPt)->getCadComponent())
+    if (static_cast<FdLink*>(itsDisplayPt)->getCadComponent())
       return true;
 #endif
   return false;
@@ -161,9 +161,22 @@ bool FmLink::isUsingGenPartVis() const
 {
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
-    return ((FdLink*)itsDisplayPt)->isUsingGenPartVis();
+    return static_cast<FdLink*>(itsDisplayPt)->isUsingGenPartVis();
 #endif
   return false;
+}
+
+
+/*!
+  Updates the simplified generic part visualization.
+*/
+
+void FmLink::updateGPVisualization()
+{
+#ifdef USE_INVENTOR
+  if (itsDisplayPt && this->isGenericPart())
+    static_cast<FdLink*>(itsDisplayPt)->updateSimplifiedViz();
+#endif
 }
 
 
@@ -754,7 +767,7 @@ FaVec3 FmLink::getExtents() const
 bool FmLink::getBBox(FaVec3& max, FaVec3& min) const
 {
 #ifdef USE_INVENTOR
-  if (((FdLink*)itsDisplayPt)->getGenPartBoundingBox(max,min))
+  if (static_cast<FdLink*>(itsDisplayPt)->getGenPartBoundingBox(max,min))
     return true;
 #endif
 
@@ -930,7 +943,7 @@ bool FmLink::openCadData()
   if (!in)
     ListUI <<"  -> Error: Could not open "<< filename <<" for reading.\n";
   else if (itsDisplayPt)
-    return ((FdLink*)itsDisplayPt)->readCad(in);
+    return static_cast<FdLink*>(itsDisplayPt)->readCad(in);
 #endif
 
   return false;
@@ -949,7 +962,7 @@ bool FmLink::saveCadData()
 #ifdef USE_INVENTOR
   else if (itsDisplayPt)
   {
-    ((FdLink*)itsDisplayPt)->writeCad(os);
+    static_cast<FdLink*>(itsDisplayPt)->writeCad(os);
     return true;
   }
 #endif
