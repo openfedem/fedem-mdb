@@ -162,6 +162,7 @@ bool FmcOutput::cloneLocal(FmBase* obj, int depth)
   FmCtrlLine* cpLine = copyObj->getLine();
   copyObj->setLine(1,NULL);
   this->setLine(1,cpLine);
+
   return true;
 }
 
@@ -178,7 +179,9 @@ bool FmcOutput::setLine(int portNo, FmCtrlLine* line)
     return false;
 
   itsInput = line;
-  line->setEndElement(this);
+  if (line)
+    line->setEndElement(this);
+
   return true;
 }
 
@@ -188,8 +191,10 @@ bool FmcOutput::releaseFromPort(FmCtrlLine* line)
   if (line != itsInput)
     return false;
 
-  line->setEndElement(NULL);
+  if (line)
+    line->setEndElement(NULL);
   itsInput = NULL;
+
   return true;
 }
 
