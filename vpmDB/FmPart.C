@@ -466,7 +466,7 @@ bool FmPart::useFEModelAsVisualization() const
 {
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
-    if (((FdPart*)itsDisplayPt)->isUsingGenPartVis())
+    if (static_cast<FdPart*>(itsDisplayPt)->isUsingGenPartVis())
       return false;
 #endif
   return myFEData != NULL;
@@ -598,7 +598,7 @@ bool FmPart::setVisDetail(const std::vector<FmElementGroupProxy*>& groups,
   // Update the visuals of the part
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
-    ((FdPart*)itsDisplayPt)->updateElementVisibility();
+    static_cast<FdPart*>(itsDisplayPt)->updateElementVisibility();
 #endif
   myFEData->updateGroupVisibilityStatus();
   return true;
@@ -909,7 +909,7 @@ std::pair<FmTriad*,bool> FmPart::getExistingTriad(const FmTriad* triad)
   ListUI <<"       Also verify that the modeling tolerance ("<< positionTol
 	 <<") used by\n       the point coincidence check is appropriate.\n";
 
-  return std::make_pair((FmTriad*)NULL,false);
+  return { static_cast<FmTriad*>(NULL), false };
 }
 
 
@@ -1065,8 +1065,7 @@ void FmPart::updateMassProperties()
     {
       ListUI <<"  -> Calculating mass properties for "<< this->getIdString(true)
              <<"\n     based on CAD geometry in "
-             << FFaFilePath::getRelativeFilename(FmDB::getMechanismObject()->getAbsModelFilePath(),cadFile)
-             <<"\n";
+             << FmDB::getMechanismObject()->getRelativePath(cadFile) <<"\n";
       double Volume = 0.0;
       FFaTensor3 Inertia;
       FFaBody::prefix = FFaFilePath::getPath(cadFile);
@@ -1255,7 +1254,7 @@ bool FmPart::setVisualizationFile(const std::string& fileName, bool updateViz)
     FFaMsg::pushStatus("Deleting FE Data");
 #ifdef USE_INVENTOR
     if (itsDisplayPt && updateViz)
-      ((FdPart*)itsDisplayPt)->removeVisualizationData(true);
+      static_cast<FdPart*>(itsDisplayPt)->removeVisualizationData(true);
 #endif
     this->setLinkHandler(NULL);
     FFaMsg::popStatus();
@@ -1394,10 +1393,7 @@ bool FmPart::importPart(const std::string& fileName,
   // Set the name of the imported FE data file
   std::string newFEFile;
   if (storeRelativePath)
-  {
-    const std::string& path = FmDB::getMechanismObject()->getAbsModelFilePath();
-    newFEFile = FFaFilePath::getRelativeFilename(path,fileName);
-  }
+    newFEFile = FmDB::getMechanismObject()->getRelativePath(fileName);
   else
     newFEFile = fileName;
 
@@ -1504,8 +1500,7 @@ bool FmPart::importPart(const std::string& fileName,
   else if (FFaFilePath::isExtension(fileName,"ftl"))
   {
     // Lambda function checking for externally reduced matrix file
-    const std::string& path = FmDB::getMechanismObject()->getAbsModelFilePath();
-    auto&& checkExt = [path,fileName](FFaField<std::string>& field, char mType)
+    auto&& checkExt = [fileName](FFaField<std::string>& field, char mType)
     {
       std::string matrixFile = FFaFilePath::getBaseName(fileName);
       matrixFile.append(1,'_');
@@ -1519,7 +1514,7 @@ bool FmPart::importPart(const std::string& fileName,
       if (!FmFileSys::isFile(matrixFile))
         return false;
 
-      field.setValue(FFaFilePath::getRelativeFilename(path,matrixFile));
+      field.setValue(FmDB::getMechanismObject()->getRelativePath(matrixFile));
       ListUI <<"  -> Using externally reduced "<< field.getValue() <<"\n";
       return true;
     };
@@ -1874,12 +1869,11 @@ bool FmPart::convertOP2files(const std::string& absPartPath)
 
   // The S, M and G fmx-files should now reside in the directory absPartPath
   myFEData->clearOP2files();
-  const std::string& mPath = FmDB::getMechanismObject()->getAbsModelFilePath();
-  std::string partPath = FFaFilePath::getRelativeFilename(mPath,absPartPath);
-  FFaFilePath::appendToPath(partPath,FFaFilePath::getFileName(partName));
-  SMatFile.setValue(partPath + "_S.fmx");
-  MMatFile.setValue(partPath + "_M.fmx");
-  GMatFile.setValue(partPath + "_G.fmx");
+  std::string path = FmDB::getMechanismObject()->getRelativePath(absPartPath);
+  FFaFilePath::appendToPath(path,FFaFilePath::getFileName(partName));
+  SMatFile.setValue(path + "_S.fmx");
+  MMatFile.setValue(path + "_M.fmx");
+  GMatFile.setValue(path + "_G.fmx");
   return true;
 }
 
@@ -2781,6 +2775,9 @@ bool FmPart::isTranslatable() const
   std::vector<FmJointBase*> joints;
   this->getJoints(joints);
 
+  std::vector<FmTriad*> triads;
+  triads.reserve(2);
+
   // Check if the (ball, revolute and rigid) joints attached
   // to this part also are attached to (at least) one other part.
   // In that case, this part is not translatable.
@@ -2789,13 +2786,11 @@ bool FmPart::isTranslatable() const
 	joint->isOfType(FmRevJoint::getClassTypeID()) ||
 	joint->isOfType(FmRigidJoint::getClassTypeID()))
     {
-      FmTriad* triad = ((FmSMJointBase*)joint)->getItsMasterTriad();
-      if (triad && triad->isAttached(this,true))
-        return false;
-
-      triad = joint->getSlaveTriad();
-      if (triad && triad->isAttached(this,true))
-        return false;
+      joint->getMasterTriads(triads);
+      triads.push_back(joint->getSlaveTriad());
+      for (FmTriad* triad : triads)
+        if (triad && triad->isAttached(this,true))
+          return false;
     }
 
   return true;
@@ -2993,6 +2988,15 @@ char FmPart::isTriadConnectable(FmTriad* triad) const
 
 
 #ifdef FT_USE_CONNECTORS
+void FmPart::updateConnectorVisualization()
+{
+#ifdef USE_INVENTOR
+  if (itsDisplayPt && myFEData)
+    static_cast<FdPart*>(itsDisplayPt)->updateSpecialLines();
+#endif
+}
+
+
 bool FmPart::createConnector(const IntVec& nodes, const FaVec3& refNodePos,
                              FmTriad* triad, int spiderType)
 {
@@ -3071,11 +3075,7 @@ bool FmPart::createConnector(const FFaCompoundGeometry& geometry,
   triad->itsConnectorGeometry = geometry;
   triad->itsConnectorType = static_cast<FmTriad::ConnectorType>(spiderType);
   triad->itsConnectorItems = cItems;
-
-#ifdef USE_INVENTOR
-  if (itsDisplayPt && myFEData)
-    ((FdPart*)itsDisplayPt)->updateConnectorElements();
-#endif
+  this->updateConnectorVisualization();
   triad->draw();
 
   return true;

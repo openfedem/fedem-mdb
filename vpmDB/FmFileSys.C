@@ -32,7 +32,7 @@ std::string FmFileSys::getHomeDir()
   if (HOME) return HOME;
 
 #ifdef FT_HAS_QT
-  return QDir::homePath().toStdString();
+  return QDir::toNativeSeparators(QDir::homePath()).toStdString();
 #else
   return "";
 #endif

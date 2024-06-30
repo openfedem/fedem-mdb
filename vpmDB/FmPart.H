@@ -154,6 +154,7 @@ public:
   double getConnectorTolerance() const;
   char isTriadConnectable(FmTriad* triad) const;
 #ifdef FT_USE_CONNECTORS
+  void updateConnectorVisualization();
   bool createConnector(const IntVec& nodes, const FaVec3& refNodePos,
                        FmTriad* triad = NULL, int spiderType = 0);
   bool createConnector(const FFaCompoundGeometry& geometry,

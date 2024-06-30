@@ -39,6 +39,7 @@ public:
   const std::string& getAbsModelFilePath() const { return myAbsModelFilePath; }
   const std::string& getAbsModelRDBPath() const  { return myAbsModelRDBPath; }
 
+  std::string getRelativePath(const std::string& fullName) const;
   std::string getModelName(bool keepExt = false) const;
   std::string getAbsModelLRDBPath(bool createDir = false) const;
   std::string getPropertyLibPath(bool createDir = true) const;
