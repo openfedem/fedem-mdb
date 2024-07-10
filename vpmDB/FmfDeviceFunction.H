@@ -18,8 +18,7 @@ class FmfDeviceFunction : public FmMathFuncBase
   Fmd_DB_HEADER_INIT();
 
 public:
-  FmfDeviceFunction(const char* fname = NULL,
-                    const char* cname = NULL);
+  FmfDeviceFunction(const char* fname = NULL, const char* cname = NULL);
 
   virtual bool initGetValue();
   virtual double getValue(double x, int& ierr) const;
@@ -47,7 +46,7 @@ public:
   bool setDevice(const std::string& fileName,
                  const std::string& channelName = "Not set");
 
-  FmFileReference* getFileReference() const { return fileReference.getPointer(); }
+  FmFileReference* getFileReference() const { return fileRef.getPointer(); }
   bool setFileReference(FmFileReference* ref);
 
   bool getChannelList(Strings& channels) const;
@@ -65,8 +64,8 @@ public:
   FFaField<std::string> deviceName;
 
 private:
-  FFaReference<FmFileReference> fileReference;
-  FFaField<FFaReferenceBase*>   fileReferenceField;
+  FFaReference<FmFileReference> fileRef;
+  FFaField<FFaReferenceBase*>   fileRefField;
 
   int fileInd; //!< File handle used by getValue()
   int chanInd; //!< Channel index used by getValue(), if multi-column file

@@ -18,6 +18,7 @@
 #include "vpmDB/FmDB.H"
 #include "vpmDB/FmFileSys.H"
 
+#define DFF FiDeviceFunctionFactory::instance()
 
 Fmd_DB_SOURCE_INIT(FcfDEVICE_FUNCTION, FmfDeviceFunction, FmMathFuncBase);
 
@@ -34,13 +35,14 @@ FmfDeviceFunction::FmfDeviceFunction(const char* fname, const char* cname)
   FFA_FIELD_DEFAULT_INIT(deviceName,"DEVICE_NAME");
   FFA_FIELD_DEFAULT_INIT(channel,"CHANNEL");
 
-  FFA_REFERENCE_FIELD_INIT(fileReferenceField,fileReference,"FILE_REFERENCE");
-  fileReference.setPrintIfZero(false);
+  FFA_REFERENCE_FIELD_INIT(fileRefField,fileRef,"FILE_REFERENCE");
+  fileRef.setPrintIfZero(false);
 
   if (fname) deviceName.setValue(fname);
   if (cname) channel.setValue(cname);
 
-  fileInd = chanInd = -1;
+  fileInd = -1;
+  chanInd = 0;
   myHs = myTz = 0.0;
 }
 
@@ -95,15 +97,15 @@ bool FmfDeviceFunction::initGetValue()
   if (this->isUsedAs(WAVE_FUNCTION))
   {
     // Count the number of sine waves in file
-    std::string fileName(this->getActualDeviceName(true));
-    int nWaves = countSineWaves(fileName);
+    std::string fName(this->getActualDeviceName(true));
+    int nWaves = countSineWaves(fName);
     int rnSeed = randomSeed.getValue();
     myExplType = 4; // WAVE_SINUS_p
-    if (!FFaFunctionManager::initWaveFunction(fileName,nWaves,rnSeed,myExplData))
+    if (!FFaFunctionManager::initWaveFunction(fName,nWaves,rnSeed,myExplData))
       return false;
 
     // Calculate the significant wave height (Hs) and mean wave period (Tz)
-    double m0 = 0.0, m2 = 0.0, dOmega = 0;
+    double m0 = 0.0, m2 = 0.0, dOmega = 0.0;
     for (int j = 0; j < nWaves; j++)
     {
       double Aj = myExplData[3*j];
@@ -114,7 +116,7 @@ bool FmfDeviceFunction::initGetValue()
       m2 += omega*omega*Aj*Aj;
     }
     if (nWaves > 2)
-      dOmega /= double(nWaves-1);
+      dOmega /= static_cast<double>(nWaves-1);
     m0 *= 0.5/dOmega;
     m2 *= 0.5/dOmega;
     myHs = 0.5*sqrt(m0);
@@ -130,17 +132,16 @@ double FmfDeviceFunction::getValue(double x, int& ierr) const
   if (this->isUsedAs(WAVE_FUNCTION))
     return this->FmMathFuncBase::getValue(x,ierr);
 
-  if (fileInd <= 0)
+  if (fileInd == 0)
   {
     ierr = -1;
     return 0.0;
   }
 
-  return FiDeviceFunctionFactory::instance()->getValue(fileInd,
-						       x, ierr, chanInd,
-						       zeroAdjust.getValue() ? 1 : 0,
-						       verticalShift.getValue(),
-						       scaleFactor.getValue());
+  return DFF->getValue(fileInd, x, ierr, chanInd,
+                       zeroAdjust.getValue() ? 1 : 0,
+                       verticalShift.getValue(),
+                       scaleFactor.getValue());
 }
 
 
@@ -155,14 +156,10 @@ int FmfDeviceFunction::getSmartPoints(double start, double stop,
   else if (!this->initGetValue())
     return -2;
 
-  if (!FiDeviceFunctionFactory::instance()->getValues(fileInd,
-						      start, stop, x, y, chanInd,
-						      zeroAdjust.getValue() ? 1 : 0,
-						      verticalShift.getValue(),
-						      scaleFactor.getValue()))
-    return -4;
-  else
-    return 0;
+  return DFF->getValues(fileInd, start, stop, x, y, chanInd,
+                        zeroAdjust.getValue() ? 1 : 0,
+                        verticalShift.getValue(),
+                        scaleFactor.getValue()) ? 0 : -4;
 }
 
 
@@ -294,7 +291,6 @@ int FmfDeviceFunction::checkFileValidity(bool keepOpen)
   if (fileInd >= 0)
     return chanInd;
 
-  chanInd = 0;
   std::string fileName(this->getActualDeviceName(true));
   if (fileName.empty())
   {
@@ -303,7 +299,7 @@ int FmfDeviceFunction::checkFileValidity(bool keepOpen)
   }
 
   if (keepOpen || !this->isUsedAs(WAVE_FUNCTION))
-    if ((fileInd = FiDeviceFunctionFactory::instance()->open(fileName)) <= 0)
+    if ((fileInd = DFF->open(fileName)) <= 0)
     {
       ListUI <<"ERROR: Could not open device function file "<< fileName <<".\n";
       return chanInd;
@@ -318,18 +314,26 @@ int FmfDeviceFunction::checkFileValidity(bool keepOpen)
     return chanInd;
   }
 
-  int fileType = FiDeviceFunctionFactory::identify(fileName);
-  if (fileType == ASC_MC_FILE || fileType == RPC_TH_FILE)
-  {
-    chanInd = FiDeviceFunctionFactory::instance()->channelIndex(fileInd,channel.getValue());
-    if (chanInd <= 0)
+  switch (FiDeviceFunctionFactory::identify(fileName))
     {
-      chanInd = 0;
-      ListUI <<"ERROR: Could not locate channel '"<< channel.getValue()
-             <<"'\n                         in device function file "
-             << fileName <<".\n";
+    case ASC_MC_FILE:
+    case RPC_TH_FILE:
+      if (!(chanInd = DFF->channelIndex(fileInd,channel.getValue())))
+        ListUI <<"ERROR: Could not locate channel '"<< channel.getValue()
+               <<"'\n       in device function file "<< fileName <<".\n";
+      break;
+
+    case DAC_FILE:
+    case ASC_FILE:
+    case EXT_FUNC:
+      chanInd = -1; // existing single-channel file
+      break;
+
+    default:
+      // Non-existing or invalid file type
+      ListUI <<"ERROR: Invalid device function file "<< fileName <<".\n";
+      break;
     }
-  }
 
   if (!keepOpen)
     this->close();
@@ -341,8 +345,8 @@ int FmfDeviceFunction::checkFileValidity(bool keepOpen)
 std::string FmfDeviceFunction::getActualDeviceName(bool fullPath) const
 {
   std::string fileName;
-  if (fileReference.getPointer())
-    fileName = fileReference->fileName.getValue();
+  if (fileRef.getPointer())
+    fileName = fileRef->fileName.getValue();
   else
     fileName = deviceName.getValue();
 
@@ -354,17 +358,15 @@ std::string FmfDeviceFunction::getActualDeviceName(bool fullPath) const
 }
 
 
-bool FmfDeviceFunction::getDevice(std::string& fileName, std::string& channelName) const
+bool FmfDeviceFunction::getDevice(std::string& fileName,
+                                  std::string& channelName) const
 {
   fileName = deviceName.getValue();
   switch (FiDeviceFunctionFactory::identify(this->getActualDeviceName(true)))
     {
     case RPC_TH_FILE:
     case ASC_MC_FILE:
-      if (channel.getValue().empty())
-	channelName = "Not set";
-      else
-	channelName = channel.getValue();
+      channelName = channel.getValue().empty() ? "Not set" : channel.getValue();
       return true;
     default:
       channelName = "Not set";
@@ -373,7 +375,8 @@ bool FmfDeviceFunction::getDevice(std::string& fileName, std::string& channelNam
 }
 
 
-bool FmfDeviceFunction::setDevice(const std::string& fileName, const std::string& channelName)
+bool FmfDeviceFunction::setDevice(const std::string& fileName,
+                                  const std::string& channelName)
 {
   bool changed = deviceName.setValue(fileName);
   if (channelName.empty() || channelName == "Not set")
@@ -390,10 +393,10 @@ bool FmfDeviceFunction::setDevice(const std::string& fileName, const std::string
 
 bool FmfDeviceFunction::setFileReference(FmFileReference* ref)
 {
-  if (ref == fileReference.getPointer())
+  if (ref == fileRef.getPointer())
     return false;
 
-  fileReference.setPointer(ref);
+  fileRef.setPointer(ref);
   this->close();
   return true;
 }
@@ -402,7 +405,7 @@ bool FmfDeviceFunction::setFileReference(FmFileReference* ref)
 void FmfDeviceFunction::close()
 {
   if (fileInd > 0)
-    FiDeviceFunctionFactory::instance()->close(fileInd);
+    DFF->close(fileInd);
 
   fileInd = -1;
 }
@@ -411,7 +414,7 @@ void FmfDeviceFunction::close()
 bool FmfDeviceFunction::getChannelList(Strings& channels) const
 {
   if (fileInd > 0)
-    return FiDeviceFunctionFactory::instance()->getChannelList(fileInd,channels);
+    return DFF->getChannelList(fileInd,channels);
 
   return FiDeviceFunctionFactory::getChannelList(this->getActualDeviceName(true),channels);
 }
