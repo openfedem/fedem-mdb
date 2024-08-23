@@ -12,6 +12,19 @@ set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 
+if ( USE_MEMPOOL )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
+endif ( USE_MEMPOOL )
+
+if ( USE_VISUALS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
+endif ( USE_VISUALS )
+
+if ( USE_CONNECTORS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_CONNECTORS" )
+endif ( USE_CONNECTORS )
+
+
 ## Files with header and source with same name
 set ( COMPONENT_FILE_LIST eventCreator turbineConverter )
 ## Pure header files, i.e., header files without a corresponding source file

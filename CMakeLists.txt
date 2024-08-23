@@ -89,6 +89,9 @@ set ( NO_FATIGUE true )
 string ( APPEND CMAKE_CXX_FLAGS_DEBUG " -DFM_DEBUG=${FT_DEBUG}" )
 include_directories ( "${CMAKE_CURRENT_SOURCE_DIR}" )
 add_subdirectory ( vpmDB )
+if ( GTest_FOUND )
+  add_subdirectory ( assemblyCreators )
+endif ( GTest_FOUND )
 
 # Build and install the shared library
 message ( STATUS "Building shared library ${LIB_ID}" )
