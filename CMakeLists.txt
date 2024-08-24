@@ -52,22 +52,24 @@ unset ( _MODULES CACHE )
 include ( CheckPFUnit )
 include ( FedemConfig )
 
+if ( BUILD_TESTS )
 
 # Enable unit- and regression testing
 
-enable_testing ()
-set ( CTEST_OPTIONS --force-new-ctest-process --output-on-failure -O CTest.txt )
-if ( CMAKE_CONFIGURATION_TYPES )
-  list ( APPEND CTEST_OPTIONS --build-config \"$<CONFIGURATION>\" )
-endif ( CMAKE_CONFIGURATION_TYPES )
-add_custom_target ( check COMMAND ${CMAKE_CTEST_COMMAND} ${CTEST_OPTIONS} )
+  enable_testing ()
+  set ( CTEST_OPTIONS --force-new-ctest-process --output-on-failure -O CTest.txt )
+  if ( CMAKE_CONFIGURATION_TYPES )
+    list ( APPEND CTEST_OPTIONS --build-config \"$<CONFIGURATION>\" )
+  endif ( CMAKE_CONFIGURATION_TYPES )
+  add_custom_target ( check COMMAND ${CMAKE_CTEST_COMMAND} ${CTEST_OPTIONS} )
 
-include ( GTest ) # Using the google test framework for C++ unit tests
-if ( USE_FORTRAN )
-  include ( pFUnit ) # Using the pFUnit test framework for Fortran unit tests
-endif ( USE_FORTRAN )
-find_package ( PythonInterp 3 ) # Enforce using python3
+  include ( GTest ) # Using the google test framework for C++ unit tests
+  if ( USE_FORTRAN )
+    include ( pFUnit ) # Using the pFUnit test framework for Fortran unit tests
+  endif ( USE_FORTRAN )
+  find_package ( PythonInterp 3 ) # Enforce using python3
 
+endif ( BUILD_TESTS )
 
 # Library setup
 
@@ -108,9 +110,9 @@ install ( TARGETS ${LIB_ID}
 if ( GTest_FOUND )
   add_subdirectory ( test )
 endif ( GTest_FOUND )
-if ( TARGET ChainShape )
+if ( TARGET ChainShape AND BUILD_TESTS )
   add_subdirectory ( test/chainShape )
-endif ( TARGET ChainShape )
+endif ( TARGET ChainShape AND BUILD_TESTS )
 set ( PYTHON_DIR "${PROJECT_PARENT_DIR}/fedem-solvers/PythonAPI/src" )
 if ( PythonInterp_FOUND AND IS_DIRECTORY "${PYTHON_DIR}" )
   add_subdirectory ( test/fedempy )
