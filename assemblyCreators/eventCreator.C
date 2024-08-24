@@ -209,7 +209,7 @@ bool FWP::createEvents(std::istream& is)
   if (errors == 0) return true;
 
   // Clean up the failed events to maintain model consistency
-  for (const std::pair<FmSimulationEvent*,bool>& fail : failedEvents)
+  for (std::pair<FmSimulationEvent* const,bool>& fail : failedEvents)
     if (fail.second)
       fail.first->clearTmpFields();
     else
@@ -223,18 +223,17 @@ bool FWP::createEvents(std::istream& is)
 }
 
 
-static void isSimulationEvent(bool& retVal, FmBase* obj)
-{
-  retVal = obj->isOfType(FmSimulationEvent::getClassTypeID());
-}
-
-
 /*!
   Finalizes the simulation event definitions by resolving the field values.
 */
 
 void FWP::resolveEvents()
 {
+  auto&& isSimulationEvent = [](bool& retVal, FmBase* obj)
+  {
+    retVal = obj->isOfType(FmSimulationEvent::getClassTypeID());
+  };
+
   FFaMsg::pushStatus("Resolving event data fields");
   FFaDynCB2<bool&,FmBase*> headCB = FFaDynCB2S(isSimulationEvent,bool&,FmBase*);
   FFaDynCB1<FmBase*> allCB = FFaDynCB1S(FmDB::initAfterResolveObject,FmBase*);
