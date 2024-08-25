@@ -8,72 +8,41 @@
 #ifndef FWP_H
 #define FWP_H
 
+#include <string>
 #include <vector>
-#include <cstddef>
 
 class FmBladeDesign;
 class FmBladeProperty;
-class FmBeamProperty;
-class FmTurbine;
-class FmTower;
-class FmNacelle;
-class FmGenerator;
-class FmGearBox;
-class FmShaft;
 class FmRotor;
-class FmLink;
-class FmTriad;
+class FmTurbine;
 class FmRevJoint;
+class FmLink;
 class FmModelMemberBase;
-class FaMat33;
 
 
-class FWP
+namespace FWP
 {
-public:
-  static bool updateTurbine(int turbineID = 0);
-  static bool updateTurbineTower(int turbineID = 0);
+  FmBladeDesign* readBladeDesign(const std::string& bladeDesignFile,
+                                 FmBladeDesign* oldDesign);
 
-private:
-  static bool createTurbine(FmTurbine* theTurbine,
-			    FmTower* theTower,
-			    FmNacelle* theNacelle,
-			    FmGenerator* theGenerator,
-			    FmGearBox* theGearBox,
-			    FmShaft* theShaft,
-			    FmShaft* hsShaft,
-			    FmRotor* theRotor);
+  bool updateTurbine(int turbineID = 0);
+  bool updateTurbineTower(int turbineID = 0);
 
-  static bool updateTurbine(FmTurbine* theTurbine,
-			    FmTower* theTower,
-			    FmNacelle* theNacelle,
-			    FmGenerator* theGenerator,
-			    FmGearBox* theGearBox,
-			    FmShaft* theShaft,
-			    FmShaft* hsShaft,
-			    FmRotor* theRotor);
+  bool createTriadForceGraph(FmModelMemberBase* triad);
+  bool createBeamForceGraph(FmModelMemberBase* beam, int iend = 1);
 
-  static bool updateTower(FmTower* theTower);
+  bool createBladeElements(FmRotor* theRotor, FmLink* hub,
+                           FmBladeDesign* bladeDef,
+                           const std::vector<FmBladeProperty*>& blSeg);
+  bool updateBladeElements(FmRotor* theRotor, FmBladeDesign* bladeDef,
+                           const std::vector<FmBladeProperty*>& blSeg);
 
-  static bool updateShaftProps(const FmShaft* shaft, FmBeamProperty* prop);
+  bool createRegulationSystem(FmTurbine* turbine, FmRotor* rotor,
+                              FmRevJoint* generator);
 
-  static bool createBladeElements(FmRotor* theRotor, FmLink* hub,
-				  FmBladeDesign* bladeDef,
-				  const std::vector<FmBladeProperty*>& blSeg);
-
-  static bool updateBladeElements(FmRotor* theRotor, FmBladeDesign* bladeDef,
-				  const std::vector<FmBladeProperty*>& blSeg);
-
-  static bool createRegulationSystem(FmTurbine* turbine, FmRotor* rotor,
-				     FmRevJoint* generator);
-
-  static bool createGraphs(FmModelMemberBase* hub,
-			   FmModelMemberBase* tower,
-			   FmModelMemberBase* generator);
-
-public:
-  static bool createTriadForceGraph(FmModelMemberBase* triad);
-  static bool createBeamForceGraph(FmModelMemberBase* beam, int iend = 1);
-};
+  bool createGraphs(FmModelMemberBase* hub,
+                    FmModelMemberBase* tower,
+                    FmModelMemberBase* generator);
+}
 
 #endif

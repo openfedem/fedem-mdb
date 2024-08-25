@@ -27,9 +27,7 @@ class FmCtrlInputElementBase;
 class FmCtrlLine;
 class FmcInput;
 class FmcOutput;
-#ifdef FT_HAS_EXTCTRL
 class FmExternalCtrlSys;
-#endif
 class FmJointBase;
 class FmRigidJoint;
 class FmRevJoint;
@@ -71,9 +69,7 @@ class FmAnalysis;
 class FmModesOptions;
 class FmGageOptions;
 class FmFppOptions;
-#ifdef FT_HAS_NCODE
 class FmDutyCycleOptions;
-#endif
 class FmModelExpOptions;
 class FmGlobalViewSettings;
 class FaMat34;
@@ -194,9 +190,7 @@ public:
 
   static void getAllSensors(std::vector<FmSensorBase*>& toFill);
   static void getAllEngines(std::vector<FmEngine*>& engines);
-#ifdef FT_HAS_EXTCTRL
   static void getAllExternalCtrlSys(std::vector<FmExternalCtrlSys*>& toFill);
-#endif
   static void getAllRefPlanes(std::vector<FmRefPlane*>& toFill);
   static void getAllStickers(std::vector<FmSticker*>& toFill);
 
@@ -216,9 +210,7 @@ public:
   static FmModesOptions* getModesOptions(bool createIfNone = true);
   static FmGageOptions* getGageOptions(bool createIfNone = true);
   static FmFppOptions* getFppOptions(bool createIfNone = true);
-#ifdef FT_HAS_NCODE
   static FmDutyCycleOptions* getDutyCycleOptions(bool createIfNone = true);
-#endif
   static FmModelExpOptions* getModelExportOptions(bool createIfNone = true);
   static FmVesselMotion* getActiveRAO();
 

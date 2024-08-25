@@ -20,9 +20,7 @@ class FmSimpleSensor : public FmSensorBase
 public:
   FmSimpleSensor();
 
-#ifdef FT_HAS_EXTCTRL
   virtual bool isExternalCtrlSys() const;
-#endif
   virtual bool isControlOutput() const;
   virtual bool isDrawable() const;
   virtual bool isListable() const;

@@ -7,17 +7,101 @@
 
 #include "turbineConverter.H"
 #include "vpmDB/FmDB.H"
+#include "vpmDB/FmMechanism.H"
 #include "vpmDB/FmPart.H"
 #include "vpmDB/FmBeam.H"
 #include "vpmDB/FmBeamProperty.H"
+#include "vpmDB/FmBladeProperty.H"
 #include "vpmDB/FmRevJoint.H"
 #include "vpmDB/FmFreeJoint.H"
 #include "vpmDB/FmRigidJoint.H"
 #include "vpmDB/FmTurbine.H"
 #include "vpmDB/FmGear.H"
+#include "vpmDB/FmFileSys.H"
+#include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
+
+
+namespace FWP
+{
+  bool createTurbine(FmTurbine* theTurbine,
+                     FmTower* theTower,
+                     FmNacelle* theNacelle,
+                     FmGenerator* theGenerator,
+                     FmGearBox* theGearBox,
+                     FmShaft* theShaft,
+                     FmShaft* hsShaft,
+                     FmRotor* theRotor);
+
+  bool updateTurbine(FmTurbine* theTurbine,
+                     FmTower* theTower,
+                     FmNacelle* theNacelle,
+                     FmGenerator* theGenerator,
+                     FmGearBox* theGearBox,
+                     FmShaft* theShaft,
+                     FmShaft* hsShaft,
+                     FmRotor* theRotor);
+
+  bool updateTower(FmTower* theTower);
+
+  bool updateShaftProps(const FmShaft* shaft, FmBeamProperty* prop);
+}
+
+
+FmBladeDesign* FWP::readBladeDesign (const std::string& bladeDesignFile,
+                                     FmBladeDesign* oldBladeDesign)
+{
+  // Read blade-design from selected file
+  FmBladeDesign* newDesign = FmBladeDesign::readFromFMM(bladeDesignFile);
+  if (!newDesign) return NULL;
+
+  std::string srcBladePath = newDesign->myModelFile.getValue();
+  if (oldBladeDesign)
+  {
+    const std::string& oldBladePath = oldBladeDesign->myModelFile.getValue();
+    oldBladeDesign->erase();
+    if (srcBladePath != oldBladePath)
+      FmFileSys::removeDir(FFaFilePath::getBaseName(oldBladePath).append("_airfoils"));
+  }
+
+  // Copy the blade to the model's blade-folder. Create new folder if necessary
+  std::string dstBladePath = bladeDesignFile;
+  std::string dstBladeFolder = FmDB::getMechanismObject()->getAbsBladeFolderPath();
+  if (FmFileSys::verifyDirectory(dstBladeFolder))
+  {
+    // Clean the directory for any existing fmm-files
+    std::vector<std::string> oldBlades;
+    if (FmFileSys::getFiles(oldBlades,dstBladeFolder,"*.fmm"))
+      for (const std::string& bladeFile : oldBlades)
+        if (!FmFileSys::deleteFile(FFaFilePath::appendFileNameToPath(dstBladeFolder,bladeFile)))
+          std::cerr <<"  ** Could not delete file "<< bladeFile
+                    <<" from folder "<< dstBladeFolder << std::endl;
+
+    // Get the source blade's path and copy to folder
+    dstBladePath = FFaFilePath::appendFileNameToPath(dstBladeFolder,
+                                                     FFaFilePath::getFileName(srcBladePath));
+    newDesign->myModelFile.setValue(dstBladePath);
+    newDesign->writeToFMM(dstBladePath);
+  }
+
+  // Get the blade's airfoil paths and copy to this model's airfoil folder
+  std::string srcAirfoilFolder = FFaFilePath::getBaseName(srcBladePath).append("_airfoils");
+  std::string dstAirfoilFolder = FFaFilePath::getBaseName(dstBladePath).append("_airfoils");
+  if (FmFileSys::verifyDirectory(dstAirfoilFolder))
+  {
+    std::vector<FmBladeProperty*> bprops;
+    newDesign->getBladeSegments(bprops);
+    for (FmBladeProperty* prop : bprops)
+      if (!FmFileSys::copyFile(prop->AirFoil.getValue(),srcAirfoilFolder,dstAirfoilFolder))
+        std::cerr <<"  ** Could not copy file "<< prop->AirFoil.getValue()
+                  <<"\n     from folder "<< srcAirfoilFolder
+                  <<"\n     to folder "<< dstAirfoilFolder << std::endl;
+  }
+
+  return newDesign;
+}
 
 
 bool FWP::updateTurbine (int turbineID)

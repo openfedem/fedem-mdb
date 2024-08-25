@@ -11,6 +11,8 @@ set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
+
+# Check if the Qt package is available (not needed on Linux)
 set ( NO_QT6 FALSE )
 if ( "${USE_QT}" STREQUAL "Qt6" )
   find_package ( Qt6 COMPONENTS Core )
@@ -38,12 +40,18 @@ elseif ( Qt4_FOUND )
 elseif ( LINUX )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_HAS_DIRENT" )
 endif ( Qt6_FOUND )
+
 if ( USE_MEMPOOL )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
 endif ( USE_MEMPOOL )
+
 if ( USE_VISUALS )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
 endif ( USE_VISUALS )
+
+if ( USE_CONNECTORS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_CONNECTORS" )
+endif ( USE_CONNECTORS )
 
 
 # Add some unit tests using gtest (executed via ctest)
@@ -59,3 +67,6 @@ elseif ( Qt5_FOUND )
 elseif ( Qt4_FOUND )
   target_link_libraries ( test_FmFileSys Qt4::QtCore )
 endif ( Qt6_FOUND )
+
+add_executable ( test_creators test_creators.C )
+add_cpp_test ( test_creators assemblyCreators )
