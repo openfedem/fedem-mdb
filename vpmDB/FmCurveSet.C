@@ -61,12 +61,15 @@ FmCurveSet::FmCurveSet(InputMode defaultMode)
   FFA_FIELD_DEFAULT_INIT(myRDBResults[YAXIS],         "Y_AXIS_RESULT");
   FFA_FIELD_DEFAULT_INIT(myRDBResultOpers[YAXIS],     "Y_AXIS_RESULT_OPER");
 
-  FFA_REFERENCE_FIELD_INIT(myResultObjectField[XAXIS], myResultObject[XAXIS], "X_AXIS_RESULT_OBJECT");
-  FFA_REFERENCE_FIELD_INIT(myResultObjectField[YAXIS], myResultObject[YAXIS], "Y_AXIS_RESULT_OBJECT");
+  FFA_REFERENCE_FIELD_INIT(myResultObjectField[XAXIS],
+                           myResultObject[XAXIS],     "X_AXIS_RESULT_OBJECT");
+  FFA_REFERENCE_FIELD_INIT(myResultObjectField[YAXIS],
+                           myResultObject[YAXIS],     "Y_AXIS_RESULT_OBJECT");
   myResultObject[XAXIS].setPrintIfZero(false);
   myResultObject[YAXIS].setPrintIfZero(false);
 
-  FFA_REFERENCELIST_FIELD_INIT(mySpatialObjectsField, mySpatialObjects, "SPATIAL_OBJECTS");
+  FFA_REFERENCELIST_FIELD_INIT(mySpatialObjectsField,
+                               mySpatialObjects, "SPATIAL_OBJECTS");
 
   FFA_FIELD_INIT(myTimeRange, FmRange(0.0,1.0), "TIME_RANGE");
   if (defaultMode == SPATIAL_RESULT) {
@@ -97,11 +100,11 @@ FmCurveSet::FmCurveSet(InputMode defaultMode)
   FFA_FIELD_INIT(myDftResample,          false, "DFT_RESAMPLE_DATA");
 
   FFA_FIELD_INIT(myFatigueDomain, FmRange(0.0,1.0), "FATIGUE_DOMAIN");
-  FFA_FIELD_INIT(myFatigueEntireDomain,       true, "FATIGUE_USING_ENTIRE_DOMAIN");
-  FFA_FIELD_INIT(myFatigueLifeUnit,        REPEATS, "FATIGUE_LIFE_UNIT");
-  FFA_FIELD_INIT(myFatigueGateValue,           1.0, "FATIGUE_GATE_VALUE");
-  FFA_FIELD_INIT(myFatigueSNCurve,               0, "FATIGUE_SN_CURVE");
-  FFA_FIELD_INIT(myFatigueSNStd,                 0, "FATIGUE_SN_STD");
+  FFA_FIELD_INIT(myFatigueEntireDomain, true, "FATIGUE_USING_ENTIRE_DOMAIN");
+  FFA_FIELD_INIT(myFatigueLifeUnit,  REPEATS, "FATIGUE_LIFE_UNIT");
+  FFA_FIELD_INIT(myFatigueGateValue,     1.0, "FATIGUE_GATE_VALUE");
+  FFA_FIELD_INIT(myFatigueSNCurve,         0, "FATIGUE_SN_CURVE");
+  FFA_FIELD_INIT(myFatigueSNStd,           0, "FATIGUE_SN_STD");
 
   myXYDataChanged = false;
   myScaleOrOffsetChanged = false;
@@ -197,7 +200,7 @@ bool FmCurveSet::setChannelName(const std::string& name)
 static const char* curveCompNames[17] = {
   "A", "B", "C", "D", "E", "F", "G", "H",
   "I", "J", "K", "L", "M", "N", "O", "P",
-  0 };
+  NULL };
 
 const char** FmCurveSet::getCompNames()
 {
@@ -442,7 +445,7 @@ bool FmCurveSet::setFunctionRef(FmModelMemberBase* func)
 bool FmCurveSet::setAnalysisFlag(Analysis flag, bool mChange)
 {
   bool wasNone = myAnalysisFlag.getValue() == NONE;
-  if (myAnalysisFlag.setValue(flag))
+  if (!myAnalysisFlag.setValue(flag))
     return false;
 
   if (mChange)
@@ -520,20 +523,20 @@ bool FmCurveSet::setDftResampleRate(double rate)
 
 DFTparams FmCurveSet::getDFTparameters() const
 {
-  DFTparams dft;
-  dft.zeroAdjustX   = myZeroAdjust[XAXIS].getValue();
-  dft.offsetX       = myOffset[XAXIS].getValue();
-  dft.scaleX        = myScaleFactor[XAXIS].getValue();
-  dft.zeroAdjustY   = myZeroAdjust[YAXIS].getValue();
-  dft.offsetY       = myOffset[YAXIS].getValue();
-  dft.scaleY        = myScaleFactor[YAXIS].getValue();
-  dft.removeComp    = myDftRemoveComp.getValue();
-  dft.startDomain   = myDftDomain.getValue().first;
-  dft.endDomain     = myDftDomain.getValue().second;
-  dft.entiredomain  = myDftEntireDomain.getValue();
-  dft.resample      = myDftResample.getValue();
-  dft.resampleRate  = myDftResampleRate.getValue();
-  return dft;
+  return { DFTparams::MAGNITUDE,
+    myDftEntireDomain.getValue(),
+    myDftResample.getValue(),
+    myZeroAdjust[XAXIS].getValue(),
+    myZeroAdjust[YAXIS].getValue(),
+    myDftRemoveComp.getValue(),
+    myDftDomain.getValue().first,
+    myDftDomain.getValue().second,
+    myDftResampleRate.getValue(),
+    myOffset[XAXIS].getValue(),
+    myScaleFactor[XAXIS].getValue(),
+    myOffset[YAXIS].getValue(),
+    myScaleFactor[YAXIS].getValue()
+  };
 }
 
 
@@ -757,14 +760,14 @@ bool FmCurveSet::setAutoLegend(bool yesOrNo)
     else if (!myResultObject[axis].isNull())
     {
       // Insert the user description of the plotted object
-      std::string description = this->myResultObject[axis]->getUserDescription();
-      if (!description.empty())
+      std::string descr = this->myResultObject[axis]->getUserDescription();
+      if (!descr.empty())
       {
         tPos = text.find(",");
         if (tPos != std::string::npos)
-          text.insert(tPos, " " + description);
+          text.insert(tPos, " " + descr);
         else
-          text += " " + description;
+          text += " " + descr;
       }
     }
 
@@ -1132,7 +1135,7 @@ bool FmCurveSet::localParse(const char* keyWord, std::istream& activeStatement,
 				    "COLORVEC",
 				    "INC_X",
 				    "USE_SMART_POINTS",
-				    0};
+				    NULL};
 
   switch (FaParse::findIndex(key_words, keyWord))
     {
