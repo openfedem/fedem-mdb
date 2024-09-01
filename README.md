@@ -7,6 +7,7 @@
 --->
 
 [![REUSE status](https://api.reuse.software/badge/github.com/openfedem/fedem-mdb)](https://api.reuse.software/info/github.com/openfedem/fedem-mdb)
+[![Test status](https://github.com/openfedem/fedem-mdb/actions/workflows/run-test.yml/badge.svg)](https://github.com/openfedem/fedem-mdb/actions/workflows/run-test.yml)
 
 # FEDEM model database
 
@@ -21,7 +22,7 @@ a shared object library (or DLL on windows). It is consumed as a submodule in
 
 ## Source code organization
 
-The main bulk of the code is located in the [vpmDB](vpmDB) sub-folder,
+The main bulk of the code is located in the [vpmDB](vpmDB) subfolder,
 which consists of an elaborate class hierarhcy representing the various
 object types of a FEDEM model. See the file [README.md](vpmDB/README.md)
 for more detailed information on this code.
@@ -32,11 +33,11 @@ as building blocks, especially some `FFaLib` classes for handling the
 object fields and inter-object topology, and `FFlLib` for accessing the
 FE part data. Therefore, this repository is consumed as submodule here.
 
-In addition, we have the following sub-folders in this repository:
+In addition, we have the following subfolders in this repository:
 
 * [assemblyCreators](assemblyCreators)
   A library for generation of some parameterized higher-level
-  mechanism components as sub-assemblies.
+  mechanism components as subassemblies.
 * [chainShape](chainShape)
   A Fortran library for calculation of nodal points along a beamstring
   with the shape of a free-hanging chain between two fixed points.
