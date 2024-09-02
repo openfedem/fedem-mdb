@@ -67,7 +67,6 @@ if ( BUILD_TESTS )
   if ( USE_FORTRAN )
     include ( pFUnit ) # Using the pFUnit test framework for Fortran unit tests
   endif ( USE_FORTRAN )
-  find_package ( PythonInterp 3 ) # Enforce using python3
 
 endif ( BUILD_TESTS )
 
@@ -114,6 +113,15 @@ if ( TARGET ChainShape AND BUILD_TESTS )
   add_subdirectory ( test/chainShape )
 endif ( TARGET ChainShape AND BUILD_TESTS )
 set ( PYTHON_DIR "${PROJECT_PARENT_DIR}/fedem-solvers/PythonAPI/src" )
-if ( PythonInterp_FOUND AND IS_DIRECTORY "${PYTHON_DIR}" )
-  add_subdirectory ( test/fedempy )
-endif ( PythonInterp_FOUND AND IS_DIRECTORY "${PYTHON_DIR}" )
+if ( IS_DIRECTORY "${PYTHON_DIR}" AND BUILD_TESTS )
+  if ( CMAKE_VERSION VERSION_LESS 3.12 )
+    find_package ( PythonInterp 3 ) # enforce using python3
+  else ( CMAKE_VERSION VERSION_LESS 3.12 )
+    find_package ( Python3 )
+    set ( PythonInterp_FOUND ${Python3_FOUND} )
+    set ( PYTHON_EXECUTABLE ${Python3_EXECUTABLE} )
+  endif ( CMAKE_VERSION VERSION_LESS 3.12 )
+  if ( PythonInterp_FOUND )
+    add_subdirectory ( test/fedempy )
+  endif ( PythonInterp_FOUND )
+endif ( IS_DIRECTORY "${PYTHON_DIR}" AND BUILD_TESTS )
