@@ -696,6 +696,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   FmDB::getAllOfType(allObjs,FmStraightMaster::getClassTypeID());
   for (FmModelMemberBase* obj : allObjs)
     if ((line = dynamic_cast<Fm1DMaster*>(obj)))
+    {
       if (firstTriad == line->getFirstTriad() &&
           lastTriad == line->getLastTriad())
       {
@@ -708,9 +709,9 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
         msg += ".\nDo you want the new joint to use the same line object?";
         if (FFaMsg::dialog(msg,FFaMsg::YES_NO))
           break;
-        else
-          line = NULL;
       }
+      line = NULL;
+    }
 
   // Define the joint coordinate system
   FaMat34 orientationMatrix;
