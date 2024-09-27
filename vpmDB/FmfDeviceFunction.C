@@ -11,6 +11,7 @@
 #include "FFaLib/FFaString/FFaParse.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
 #include "FiDeviceFunctions/FiDeviceFunctionFactory.H"
+#include "FiDeviceFunctions/FiASCFile.H"
 #include "vpmDB/FuncPixmaps/userDefinedWaveSpectrum.xpm"
 #include "vpmDB/FmfDeviceFunction.H"
 #include "vpmDB/FmMechanism.H"
@@ -364,12 +365,35 @@ bool FmfDeviceFunction::getDevice(std::string& fileName,
   fileName = deviceName.getValue();
   switch (FiDeviceFunctionFactory::identify(this->getActualDeviceName(true)))
     {
+    case ASC_FILE:
+      if (channel.getValue() == "Not set")
+      {
+        // A new two-column ASCII file has been assigned.
+        // Check if it has a column label and extract it as channel name if so.
+        Strings channels;
+        if (fileInd > 0)
+          DFF->getChannelList(fileInd,channels);
+        else
+        {
+          FiASCFile reader(this->getActualDeviceName(true).c_str());
+          if (reader.open(FiDeviceFunctionBase::Read_Only))
+            reader.getChannelList(channels);
+        }
+        if (!channels.empty() && channels.front() != "1")
+          const_cast<FmfDeviceFunction*>(this)->channel.setValue(channels.front());
+        else
+          const_cast<FmfDeviceFunction*>(this)->channel.setValue("");
+      }
+      channelName = channel.getValue().empty() ? "n/a" : channel.getValue();
+      return false;
     case RPC_TH_FILE:
     case ASC_MC_FILE:
       channelName = channel.getValue().empty() ? "Not set" : channel.getValue();
       return true;
     default:
-      channelName = "Not set";
+      if (channel.getValue() == "Not set")
+        const_cast<FmfDeviceFunction*>(this)->channel.setValue("");
+      channelName = fileName.empty() ? "Not set" : "n/a";
       return false;
     }
 }
@@ -379,10 +403,7 @@ bool FmfDeviceFunction::setDevice(const std::string& fileName,
                                   const std::string& channelName)
 {
   bool changed = deviceName.setValue(fileName);
-  if (channelName.empty() || channelName == "Not set")
-    changed |= channel.setValue("");
-  else
-    changed |= channel.setValue(channelName);
+  changed |= channel.setValue(channelName == "n/a" ? std::string() : channelName);
 
   if (changed)
     this->close();
