@@ -596,16 +596,14 @@ BoolVec FmStrainRosette::syncWithFEModel()
 
   if (this->useFEMaterial.getValue() || this->useFEThickness.getValue())
   {
-    std::vector<FFlTypeInfoSpec::Cathegory> elmBrands;
-    elmBrands.push_back(FFlTypeInfoSpec::SOLID_ELM);
-    elmBrands.push_back(FFlTypeInfoSpec::SHELL_ELM);
+    CathegoryVec elmBrands({ FFlTypeInfoSpec::SOLID_ELM, FFlTypeInfoSpec::SHELL_ELM });
     FFlLinkHandler* lh = this->rosetteLink->getLinkHandler();
-    ElementsCIter eIt = lh->findClosestElement(this->getCalculationPoint(), elmBrands);
-    if (eIt != lh->elementsEnd())
+    FFlElementBase* el = lh->findClosestElement(this->getCalculationPoint(), elmBrands);
+    if (el)
     {
-      if (this->useFEThickness.getValue() && (*eIt)->getCathegory() == FFlTypeInfoSpec::SHELL_ELM)
+      if (this->useFEThickness.getValue() && el->getCathegory() == FFlTypeInfoSpec::SHELL_ELM)
       {
-        FFlAttributeBase* pThick = (*eIt)->getAttribute("PTHICK");
+        FFlAttributeBase* pThick = el->getAttribute("PTHICK");
         if (pThick)
         {
           double newFEThickness = ((FFlPTHICK*)pThick)->thickness.getValue();
@@ -616,7 +614,7 @@ BoolVec FmStrainRosette::syncWithFEModel()
       }
       if (this->useFEMaterial.getValue())
       {
-        FFlAttributeBase* pMat = (*eIt)->getAttribute("PMAT");
+        FFlAttributeBase* pMat = el->getAttribute("PMAT");
         if (pMat)
         {
           double newEmod = ((FFlPMAT*)pMat)->youngsModule.getValue();
