@@ -64,7 +64,7 @@ public:
   virtual void initAfterResolve();
   virtual bool interactiveErase();
 
-  int syncOnFEmodel();
+  int syncOnFEmodel(bool useDialog);
 
   // linkIndex = -1 : Expect only one owner link and return 0 otherwise
   // linkIndex >= 0 : Return the linkIndex'th link this triad is attached to

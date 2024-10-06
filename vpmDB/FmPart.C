@@ -2451,7 +2451,7 @@ bool FmPart::updateTriadTopologyRefs(bool checkUnloaded, char useOutput)
     // Syncronize the FE node references
     int nodeNo = 0;
     for (FmTriad* triad : triads)
-      if ((nodeNo = triad->syncOnFEmodel()) < 0)
+      if ((nodeNo = triad->syncOnFEmodel(useOutput / 2)) < 0)
         badTriads.push_back(triad);
       else
         newExt.insert(nodeNo);
