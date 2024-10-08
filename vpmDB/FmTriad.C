@@ -147,13 +147,11 @@ bool FmTriad::updateConnector(ConnectorType type, FmPart* ownerPart)
 
   FFlConnectorItems& items = itsConnectorItems.getValue();
   if (!items.empty())
-    changed |= (FEdata->deleteConnectorElements(items.getElements()) +
-                FEdata->deleteConnectorNodes(items.getNodes()) +
-                FEdata->deleteConnectorProperties(items.getProperties()) > 0);
+    changed |= FEdata->deleteConnector(items) > 0;
 
   if (type > NONE)
-    changed |= (FEdata->createConnector(itsConnectorGeometry.getValue(),
-                                        this->getTranslation(),type,items) > 0);
+    changed |= FEdata->createConnector(itsConnectorGeometry.getValue(),
+                                       this->getTranslation(),type,items) > 0;
   else
     items.clear();
 
@@ -792,17 +790,16 @@ void FmTriad::initAfterResolve()
   Syncronizes the FE node reference of the triad
 */
 
-int FmTriad::syncOnFEmodel()
+int FmTriad::syncOnFEmodel(bool useDialog)
 {
   FmPart* owner = this->getOwnerFEPart();
   if (!owner) return -1;
 
 #ifdef FT_USE_CONNECTORS
-  FFlConnectorItems* items = &(itsConnectorItems.getValue());
   bool haveGeometry = !itsConnectorGeometry.getValue().empty();
+  FFlConnectorItems* items = &(itsConnectorItems.getValue());
 #else
   FFlConnectorItems* items = NULL;
-  bool haveGeometry = false;
 #endif
 
   // Find an FE node at the triad's location
@@ -810,25 +807,51 @@ int FmTriad::syncOnFEmodel()
                                         FmDB::getPositionTolerance(),items);
 
   // If it was a dependent node, consider as no node
+  if (node && node->isSlaveNode())
+    node = NULL;
+
+#ifdef FT_USE_CONNECTORS
   // Unless the same as the connector used, we need to recreate the connector
-  if (node)
+  // or remove it if the user prefers that option instead
+  // (the latter is now enforced if useDialog is false)
+  if (node && haveGeometry && FENodeNo.getValue() != node->getID())
   {
-    if (node->isSlaveNode())
+    std::string msg = this->getIdString() + " was connected to FE node " +
+      std::to_string(FENodeNo.getValue()) + "\nbut now matches node " +
+      std::to_string(node->getID()) + " in the new FE model.";
+
+    if (!useDialog)
+    {
+      FFaMsg::list("\nWarning: " + msg +
+                   "\nThe Triad will be attached to the new node"
+                   " while removing the surface connector.\n",true);
+      haveGeometry = false;
+    }
+    else if (FFaMsg::dialog(msg +
+                            "\n\nDo you want to connect to this node instead?"
+                            "\nThe existing spider connector will then be removed.",
+                            FFaMsg::YES_NO))
+      haveGeometry = false;
+
+    if (haveGeometry)
       node = NULL;
-    else if (haveGeometry && FENodeNo.getValue() != node->getID())
-      node = NULL;
+    else
+    {
+      itsConnectorType.setValue(NONE);
+      itsConnectorGeometry.reset();
+    }
   }
+
   if (!node && haveGeometry)
   {
-#ifdef FT_USE_CONNECTORS
     // Recreate connector
     if (this->updateConnector(itsConnectorType.getValue(),owner))
       owner->delayedCheckSumUpdate();
-#endif
 
     node = owner->getNodeAtPoint(this->getLocalTranslation(),
                                  FmDB::getPositionTolerance(),items);
   }
+#endif
 
   // Set triads FE node status
   int nodeNo = -1;
@@ -836,11 +859,9 @@ int FmTriad::syncOnFEmodel()
   {
     node->setExternal(true);
     nodeNo = node->getID();
-    if (FENodeNo.getValue() == nodeNo &&
-        itsNDOFs.getValue() == node->getMaxDOFs())
+    if (!this->setNDOFs(node->getMaxDOFs()) &&
+        FENodeNo.getValue() == nodeNo)
       return nodeNo;
-    else
-      this->setNDOFs(node->getMaxDOFs());
   }
 
   FENodeNo.setValue(nodeNo);

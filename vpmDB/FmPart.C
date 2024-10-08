@@ -950,12 +950,8 @@ FFlNode* FmPart::getNodeAtPoint(const FaVec3& point, double tolerance,
   // If more than one node matches the point, prefer the non-dependent nodes.
   // If 3-DOF nodes are allowed, prefer 6-DOF nodes if more than one
   // non-dependent nodes matches.
-  NodesCIter nit = myFEData->findFreeNodeAtPoint(point,tolerance,dofFilter);
-  if (nit == myFEData->nodesEnd())
-    return NULL;
-
-  FFlNode* attachNode = *nit;
-  if (attachNode->isSlaveNode() && addItems)
+  FFlNode* attachNode = myFEData->findFreeNodeAtPoint(point,tolerance,dofFilter);
+  if (attachNode && attachNode->isSlaveNode() && addItems)
     if (addItems->empty() && lockLevel.getValue() == FM_ALLOW_MODIFICATIONS)
     {
       // Must create a new node at this location.
@@ -1004,10 +1000,7 @@ int FmPart::getNodePos(int nodeNo, double* x, double* y, double* z) const
 
 FFlNode* FmPart::getClosestNode(const FaVec3& point) const
 {
-  if (!myFEData) return NULL;
-
-  NodesCIter nit = myFEData->findClosestNode(point);
-  return nit == myFEData->nodesEnd() ? NULL : *nit;
+  return myFEData ? myFEData->findClosestNode(point) : NULL;
 }
 
 
@@ -2458,7 +2451,7 @@ bool FmPart::updateTriadTopologyRefs(bool checkUnloaded, char useOutput)
     // Syncronize the FE node references
     int nodeNo = 0;
     for (FmTriad* triad : triads)
-      if ((nodeNo = triad->syncOnFEmodel()) < 0)
+      if ((nodeNo = triad->syncOnFEmodel(useOutput / 2)) < 0)
         badTriads.push_back(triad);
       else
         newExt.insert(nodeNo);
