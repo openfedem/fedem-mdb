@@ -7,6 +7,10 @@ Files: FedemDB.C assemblyCreators/* cfg/* chainShape/*.* test/* vpmDB/*
 Copyright: 2023 SAP SE or an SAP affiliate company and fedem-mdb contributors
 License: Apache-2.0
 
+Files: cmake/Modules/FindQt4.cmake
+Copyright: 2000-2020 Kitware, Inc. and Contributors
+License: BSD-3-Clause
+
 Files: chainShape/Minpack/src/*
 Copyright: 1999 University of Chicago
 License: BSD-4-Clause
