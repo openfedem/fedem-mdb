@@ -298,8 +298,8 @@ FmLoad* Fedem::createLoad(int lType, const FaVec3& createPos, FaVec3 globalDir,
   // scale the direction normal
   globalDir *= FmDB::getActiveViewSettings()->getSymbolScale();
 
-  FmTriad* tmpTr = getTriadOn(onObject,createPos);
-  FaVec3   from  = tmpTr->getGlobalTranslation();
+  FmTriad* triad = getTriadOn(onObject,createPos);
+  FaVec3   from  = triad->getGlobalTranslation();
 
   if (lType == FmLoad::TORQUE)
     FFaMsg::list("Creating Torque.\n");
@@ -310,12 +310,12 @@ FmLoad* Fedem::createLoad(int lType, const FaVec3& createPos, FaVec3 globalDir,
   if (subAssembly)
     force->setParentAssembly(subAssembly);
   else
-    force->setParentAssembly(tmpTr->getParentAssembly());
+    force->setParentAssembly(triad->getParentAssembly());
   force->setLoadType((FmLoad::LoadType)lType);
-  force->connect(tmpTr,FmDB::getEarthLink(),from,
+  force->connect(triad,FmDB::getEarthLink(),from,
                  FmDB::getEarthLink(),from+globalDir);
 
-  tmpTr->draw();
+  triad->draw();
   force->draw();
 
   return force;
@@ -596,28 +596,28 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
                                 const FaVec3* posJnt, FmBase* subAssembly)
 {
   FmSMJointBase* joint = NULL;
-  FmTriad* depTriad = dynamic_cast<FmTriad*>(second);
-  if (!depTriad) {
+  FmTriad* triad2 = dynamic_cast<FmTriad*>(second);
+  if (!triad2) {
     ListUI <<"ERROR: Unspecified dependent triad.\n";
     return joint;
   }
-  else if (depTriad->isAttached(FmDB::getEarthLink())) {
+  else if (triad2->isAttached(FmDB::getEarthLink())) {
     ListUI <<"ERROR: The dependent triad can not be attached to ground.\n";
     return joint;
   }
 
-  FmTriad* triad = NULL;
+  FmTriad* triad1 = NULL;
   FmRefPlane* refPlane = NULL;
   if (!first) {
     std::vector<FmRefPlane*> refPlanes;
     FmDB::getAllRefPlanes(refPlanes);
     if (!refPlanes.empty()) refPlane = refPlanes.front();
   }
-  else if (!(triad = dynamic_cast<FmTriad*>(first)))
+  else if (!(triad1 = dynamic_cast<FmTriad*>(first)))
     refPlane = dynamic_cast<FmRefPlane*>(first);
 
-  if (triad) {
-    if (depTriad->isAttached(triad->getOwnerLink(0))) {
+  if (triad1) {
+    if (triad2->isAttached(triad1->getOwnerLink(0))) {
       ListUI <<"ERROR: The dependent triad can not be on the same part"
              <<" as the independent triad.\n";
       return joint;
@@ -628,9 +628,9 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
     return joint;
   }
   else if (posJnt)
-    triad = new FmTriad(*posJnt);
+    triad1 = new FmTriad(*posJnt);
   else
-    triad = new FmTriad();
+    triad1 = new FmTriad();
 
   if (jType == FmFreeJoint::getClassTypeID())
     joint = new FmFreeJoint();
@@ -647,20 +647,20 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
   }
   ListUI <<"Creating "<< joint->getUITypeName() <<".\n";
 
-  joint->setAsMasterTriad(triad);
-  joint->setAsSlaveTriad(depTriad);
+  joint->setAsMasterTriad(triad1);
+  joint->setAsSlaveTriad(triad2);
   if (refPlane)
-    refPlane->attach(triad);
+    refPlane->attach(triad1);
   if (subAssembly)
     joint->setParentAssembly(subAssembly);
   else if (!refPlane)
-    joint->setParentAssembly(triad->getCommonAncestor(depTriad));
+    joint->setParentAssembly(triad1->getCommonAncestor(triad2));
 
   joint->updateLocation();
   joint->connect();
 
-  triad->draw();
-  depTriad->draw();
+  triad1->draw();
+  triad2->draw();
   joint->draw();
 
   return joint;
@@ -672,19 +672,19 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
                                 FmBase* subAssembly)
 {
   FmMMJointBase* joint = NULL;
-  FmTriad* firstTriad = dynamic_cast<FmTriad*>(first);
-  FmTriad* lastTriad = dynamic_cast<FmTriad*>(last);
-  if (!firstTriad || !lastTriad) {
+  FmTriad* triad1 = dynamic_cast<FmTriad*>(first);
+  FmTriad* triad2 = dynamic_cast<FmTriad*>(last);
+  if (!triad1 || !triad2) {
     ListUI <<"ERROR: Unspecified independent joint triad(s).\n";
     return joint;
   }
-  else if (firstTriad->getOwnerPart(0) != lastTriad->getOwnerPart(0)) {
+  else if (triad1->getOwnerPart(0) != triad2->getOwnerPart(0)) {
     ListUI <<"ERROR: The two triads must be on the same part.\n";
     return joint;
   }
 
-  FmTriad* depTriad  = dynamic_cast<FmTriad*>(slider);
-  if (depTriad && depTriad->isAttached(firstTriad->getOwnerPart(0))) {
+  FmTriad* triad3  = dynamic_cast<FmTriad*>(slider);
+  if (triad3 && triad3->isAttached(triad1->getOwnerPart(0))) {
     ListUI <<"ERROR: The dependent triad can not be on the same part"
            <<" as the independent triads of the joint.\n";
     return joint;
@@ -697,8 +697,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   for (FmModelMemberBase* obj : allObjs)
     if ((line = dynamic_cast<Fm1DMaster*>(obj)))
     {
-      if (firstTriad == line->getFirstTriad() &&
-          lastTriad == line->getLastTriad())
+      if (triad1 == line->getFirstTriad() && triad2 == line->getLastTriad())
       {
         std::string msg("The selected triads match the end triads of ");
         FmMMJointBase* other = NULL;
@@ -714,23 +713,23 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
     }
 
   // Define the joint coordinate system
-  FaMat34 orientationMatrix;
+  FaMat33 orientation;
   if (line)
-    orientationMatrix = firstTriad->getLocalCS();
+    orientation = triad1->getOrientation();
   else
   {
-    orientationMatrix[VW] = firstTriad->getGlobalTranslation();
-    FaVec3& xAxis = orientationMatrix[VX];
-    FaVec3& yAxis = orientationMatrix[VY];
-    FaVec3& zAxis = orientationMatrix[VZ];
+    FaVec3& xAxis = orientation[VX];
+    FaVec3& yAxis = orientation[VY];
+    FaVec3& zAxis = orientation[VZ];
 
-    FaVec3 endPos = lastTriad->getGlobalTranslation();
-    zAxis = endPos - firstTriad->getGlobalTranslation();
+    zAxis = triad2->getGlobalTranslation() - triad1->getGlobalTranslation();
     double zLen = zAxis.length();
     if (zLen >= FmDB::getPositionTolerance())
       zAxis /= zLen;
-    else
+    else {
+      ListUI <<"ERROR: The two triads are too close to each other.\n";
       return joint;
+    }
 
     // Checking for valid vectors:
     if (yAxisDir.length() >= FmDB::getPositionTolerance())
@@ -756,9 +755,8 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
     yAxis = (zAxis^xAxis).normalize();
 
     // Modify the orientation of the joint triads
-    firstTriad->setLocalCS(orientationMatrix);
-    lastTriad->setLocalCS(orientationMatrix);
-    lastTriad->setTranslation(endPos);
+    triad1->setOrientation(orientation);
+    triad2->setOrientation(orientation);
   }
 
   if (jType == FmCylJoint::getClassTypeID())
@@ -772,60 +770,53 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   }
   ListUI <<"Creating "<< joint->getUITypeName() <<".\n";
 
-  FaVec3 sliderPos;
-  if (depTriad)
-    sliderPos = depTriad->getTranslation();
-  else {
-    sliderPos = 0.5*(firstTriad->getGlobalTranslation() + lastTriad->getGlobalTranslation());
-    depTriad = new FmTriad();
-  }
-
-  depTriad->setLocalCS(orientationMatrix);
-  depTriad->setTranslation(sliderPos);
-
-  joint->setLocalCS(depTriad->getLocalCS());
-  joint->setAsSlaveTriad(depTriad);
+  joint->setLocalCS(triad3->getLocalCS());
   if (subAssembly)
     joint->setParentAssembly(subAssembly);
   else if (line)
-    joint->setParentAssembly(line->getCommonAncestor(depTriad));
+    joint->setParentAssembly(line->getCommonAncestor(triad3));
   else
-    joint->setParentAssembly(firstTriad->getCommonAncestor(lastTriad));
+    joint->setParentAssembly(triad1->getCommonAncestor(triad2));
+
+  if (!triad3) {
+    triad3 = new FmTriad(0.5*(triad1->getGlobalTranslation() +
+                              triad2->getGlobalTranslation()));
+    triad3->setParentAssembly(joint->getParentAssembly());
+  }
+  triad3->setOrientation(orientation);
+  joint->setAsSlaveTriad(triad3);
 
   if (!line)
   {
     line = new FmStraightMaster();
-    if (subAssembly)
-      line->setParentAssembly(subAssembly);
-    else
-      line->setParentAssembly(firstTriad->getCommonAncestor(lastTriad));
-    line->addTriad(firstTriad);
-    line->addTriad(lastTriad);
+    line->setParentAssembly(joint->getParentAssembly());
+    line->addTriad(triad1);
+    line->addTriad(triad2);
     line->connect();
   }
 
   joint->setMaster(line);
-  depTriad->connect();
+  triad3->connect();
   joint->connect();
 
-  firstTriad->draw();
-  lastTriad->draw();
-  depTriad->draw();
+  triad1->draw();
+  triad2->draw();
+  triad3->draw();
   joint->draw();
 
   // Check if the part connected to the line have other triads along the line
-  // between the two end triads, and offer to add those as joint triads also
-  FmPart* part = firstTriad->getOwnerPart(0);
+  // between the two end triads, and offer to add those as joint triads as well
+  FmPart* part = triad1->getOwnerPart(0);
   if (!part) return joint;
 
-  FaVec3 fstPos = firstTriad->getGlobalTranslation();
-  FaVec3 linVec = lastTriad->getGlobalTranslation() - fstPos;
+  FaVec3 fstPos = triad1->getGlobalTranslation();
+  FaVec3 linVec = triad2->getGlobalTranslation() - fstPos;
 
   std::vector<FmTriad*>::iterator it;
   std::vector<FmTriad*> triads;
   part->getTriads(triads);
   for (it = triads.begin(); it != triads.end();)
-    if (*it == firstTriad || *it == lastTriad)
+    if (*it == triad1 || *it == triad2)
       triads.erase(it);
     else if (linVec.isParallell((*it)->getGlobalTranslation() - fstPos, 1.0e-4))
       ++it;
@@ -854,18 +845,14 @@ FmBeam* Fedem::createBeam(FmTriad* tr1, FmTriad* tr2, FmBase* subAssembly)
 
   ListUI <<"Creating Beam element.\n";
 
-  FmBeam* beam = new FmBeam();
-  if (subAssembly)
-    beam->setParentAssembly(subAssembly);
-  else
-    beam->setParentAssembly(tr1->getCommonAncestor(tr2));
-  beam->connect(tr1,tr2);
-
-  beam->draw();
+  FmBeam* b = new FmBeam();
+  b->setParentAssembly(subAssembly ? subAssembly : tr1->getCommonAncestor(tr2));
+  b->connect(tr1,tr2);
+  b->draw();
   tr1->draw();
   tr2->draw();
 
-  return beam;
+  return b;
 }
 
 
@@ -913,14 +900,7 @@ bool Fedem::createMooringLine(FmTriad* tr1, FmTriad* tr2,
     return false;
   }
 
-
-  FmBase* parent = subAssembly;
-  if (parent == NULL)
-  {
-    parent = tr1->getParentAssembly();
-    if (parent != tr2->getParentAssembly())
-      parent = NULL;
-  }
+  FmBase* parent = subAssembly ? subAssembly : tr1->getCommonAncestor(tr2);
 
   char typeName[64];
   if (elmType > 0) // Determine which element type to use
