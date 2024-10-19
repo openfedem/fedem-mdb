@@ -56,7 +56,7 @@ public:
   bool getValue(double x, double& y) const;
 
   void setFunction(FmMathFuncBase* func);
-  void setSensor(FmSensorBase* sensor, size_t i = 0);
+  void setSensor(FmSensorBase* sensor, int argIdx = 0);
 
   void setEntityName(const std::string& name, size_t i = 0);
   void setEntity(int ent, size_t i = 0);

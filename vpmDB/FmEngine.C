@@ -71,9 +71,8 @@ FmEngine::~FmEngine()
   if (!myFunction.isNull())
   {
     myFunction->getEngines(engines);
-    if (engines.size() == 1)
-      if (engines.front() == this)
-	myFunction->erase();
+    if (engines.size() == 1 && engines.front() == this)
+      myFunction->erase();
   }
 
   // Clean up if this is used to link a function from
@@ -97,7 +96,7 @@ FmEngine::~FmEngine()
     sensor->getEngines(engines);
     if (engines.size() == 1 && engines.front() == this)
       if (!sensor->isListable() && !sensor->isTime())
-	sensor->erase();
+        sensor->erase();
   }
 
   this->disconnect();
@@ -373,23 +372,17 @@ bool FmEngine::getValue(double x, double& y) const
     return ierr == 0;
   }
 
-  std::vector<double> argVal(nArg);
+  DoubleVec args(nArg,0.0);
+  args.front() = x;
   for (size_t i = 0; i < nArg; i++)
   {
     FmSensorBase* s = this->getSensor(i);
-    if (!s)
-      argVal[i] = i == 0 ? x : 0.0;
-    else
-    {
-      FmEngine* e = dynamic_cast<FmEngine*>(s->getMeasured());
-      if (!e)
-	argVal[i] = i == 0 ? x : 0.0;
-      else if (!e->getValue(x,argVal[i]))
-	return false;
-    }
+    FmEngine* e = s ? dynamic_cast<FmEngine*>(s->getMeasured()) : NULL;
+    if (e && !e->getValue(x,args[i]))
+      return false;
   }
 
-  y = myFunction->getValue(argVal,ierr);
+  y = myFunction->getValue(args,ierr);
   return ierr == 0;
 }
 
@@ -406,9 +399,12 @@ FmSensorBase* FmEngine::getSensor(size_t i) const
 }
 
 
-void FmEngine::setSensor(FmSensorBase* sensor, size_t i)
+void FmEngine::setSensor(FmSensorBase* sensor, int argIdx)
 {
-  if (i > 0)
+  unsigned int i = 0;
+  if (argIdx < 0) // skip argument out-of-range check
+    i = -argIdx;
+  else if ((i = argIdx))
     if (myFunction.isNull() || i >= myFunction->getNoArgs())
       return;
 
@@ -566,7 +562,7 @@ bool FmEngine::readAndConnect(std::istream& is, std::ostream&)
   // so we need to resolve the reference to it manually here
   for (size_t i = 0; i < obj->mySensor.size(); i++)
     if (obj->mySensor[i].getRefTypeID() == FmTimeSensor::getClassTypeID())
-      obj->setSensor(FmDB::getTimeSensor(),i);
+      obj->setSensor(FmDB::getTimeSensor(),-i);
 
   obj->connect();
   return true;
@@ -590,7 +586,7 @@ bool FmEngine::cloneLocal(FmBase* obj, int depth)
   {
     size_t nArg = copyObj->mySensor.size();
     for (size_t i = 0; i < nArg; i++)
-      this->setSensor(copyObj->getSensor(i),i);
+      this->setSensor(copyObj->getSensor(i),-i);
   }
 
   if (depth >= FmBase::DEEP_APPEND)
