@@ -89,11 +89,11 @@ public:
   virtual const char* getUITypeName() const;
 
   //! \brief Returns the valid ASCII file extensions.
-  static std::vector<std::string> asc() { return { "asc", "txt" }; }
+  static Strings asc() { return { "asc", "csv", "txt" }; }
   //! \brief Returns the valid DAC file extensions.
-  static std::vector<std::string> dac() { return { "dac" }; }
+  static Strings dac() { return { "dac" }; }
   //! \brief Returns the valid RPC file extensions.
-  static std::vector<std::string> rpc() { return { "rsp", "drv", "tim" }; }
+  static Strings rpc() { return { "rsp", "drv", "tim" }; }
 
 protected:
   virtual ~FmGraph();
