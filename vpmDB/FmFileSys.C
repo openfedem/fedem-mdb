@@ -332,10 +332,11 @@ int FmFileSys::getNextDirIncrement(const std::string& dirName,
     return 1;
 
   int retvar = 1;
-  for (const std::string& dir : dirs)
+  for (const std::string& dirName : dirs)
   {
+    std::string dir = FFaFilePath::getBaseName(dirName);
     size_t us = dir.rfind("_");
-    if (us+1 < dir.size() && dir.substr(0,us) == baseDirName)
+    if (us+1 < dir.size())
     {
       int ver = atoi(dir.substr(us+1).c_str());
       if (ver+1 > retvar) retvar = ver+1;
