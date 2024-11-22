@@ -604,6 +604,13 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
       FmEngine::betaFeatureEngines.insert(stifSclEngine);
     }
 
+    // Beta feature: Time-dependent mass scaling
+    int massSclEngine = lDesc.getIntAfter("#MassScaleEngine");
+    if (massSclEngine > 0) {
+      fprintf(myFile,"  massEngineId = %d\n", massSclEngine);
+      FmEngine::betaFeatureEngines.insert(massSclEngine);
+    }
+
     // Structural damping coefficients
     fprintf(myFile,"  alpha1 =%17.9e," ,activePart->alpha1.getValue());
     fprintf(myFile,"  alpha2 =%17.9e\n",activePart->alpha2.getValue());

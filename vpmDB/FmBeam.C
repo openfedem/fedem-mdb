@@ -753,6 +753,13 @@ int FmBeam::printSolverEntry(FILE* fp, int propId, FmBeamProperty* bProp,
     FmEngine::betaFeatureEngines.insert(stifSclEngine);
   }
 
+  // Beta feature: Time-dependent mass scaling
+  int massSclEngine = bDesc.getIntAfter("#MassScaleEngine");
+  if (massSclEngine > 0) {
+    fprintf(fp,"  massEngineId = %d\n", massSclEngine);
+    FmEngine::betaFeatureEngines.insert(massSclEngine);
+  }
+
   // Structural damping coefficients
   fprintf(fp,"  alpha1 =%17.9e," , alpha1.getValue());
   fprintf(fp,"  alpha2 =%17.9e\n", alpha2.getValue());
