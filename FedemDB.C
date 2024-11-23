@@ -56,7 +56,6 @@
 #include "FFlLib/FFlMemPool.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
 
-#include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 
@@ -191,15 +190,6 @@ DLLexport(void) FmInit (const char* plugin1, const char* plugin2)
   if (plugin2) std::cout <<"\tPlugin2 = "<< plugin2 << std::endl;
 #endif
 
-  const char* program = "FedemDB";
-  FFaCmdLineArg::init(1,const_cast<char**>(&program));
-  // Add command-line options that will be attempted evaluated
-  FFaCmdLineArg::instance()->addOption("memPoll",false,"Stop execution for memory polling");
-  FFaCmdLineArg::instance()->addOption("allow3DofAttach",true,"Allow triads to be attached to 3-DOF nodes");
-  FFaCmdLineArg::instance()->addOption("allowDepAttach",false,"Allow triads to be attached to dependent RGD nodes");
-  FFaCmdLineArg::instance()->addOption("convertToLinear",1,"Convert parabolic shell and beam elements to linears");
-  FFaCmdLineArg::instance()->addOption("ID_increment",0,"User ID increment");
-  FFaCmdLineArg::instance()->addOption("reUseUserID",false,"Fill holes in user ID range");
   // Initialize the model database data structure
   FmDB::init();
 
@@ -317,7 +307,6 @@ DLLexport(void) FmClose (bool removeSingletons = false)
   if (removeSingletons)
   {
     FmDB::removeInstances();
-    FFaCmdLineArg::removeInstance();
     FFaUserFuncPlugin::removeInstance();
     FiUserElmPlugin::removeInstance();
   }
