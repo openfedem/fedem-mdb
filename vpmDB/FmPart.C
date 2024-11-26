@@ -13,7 +13,9 @@
 #include "FFaLib/FFaGeometry/FFaCylinderGeometry.H"
 #include "FFaLib/FFaGeometry/FFaPointSetGeometry.H"
 #endif
+#ifdef FT_USE_CMDLINEARG
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
+#endif
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaString/FFaParse.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
@@ -867,8 +869,12 @@ std::pair<FmTriad*,bool> FmPart::getExistingTriad(const FmTriad* triad)
     FFlNode* tmpNode = this->getNodeAtPoint(point,positionTol);
     if (!tmpNode)
     {
+#ifdef FT_USE_CMDLINEARG
       bool allow3DOF = false;
       FFaCmdLineArg::instance()->getValue("allow3DofAttach",allow3DOF);
+#else
+      bool allow3DOF = true;
+#endif
       ListUI <<"Error: "<< triad->getIdString() <<" is not coincident";
       if (allow3DOF)
         ListUI <<" with any 3- or 6-DOF FE node in "<< this->getIdString(true);
@@ -943,9 +949,13 @@ FFlNode* FmPart::getNodeAtPoint(const FaVec3& point, double tolerance,
 {
   if (!myFEData) return NULL;
 
+#ifdef FT_USE_CMDLINEARG
   bool allow3DOF = false; // Look for nodes having (at least) three nodal DOFs
   FFaCmdLineArg::instance()->getValue("allow3DofAttach",allow3DOF);
   int dofFilter = allow3DOF ? FFlNode::FFL_THREE_DOFS : FFlNode::FFL_SIX_DOFS;
+#else
+  int dofFilter = FFlNode::FFL_THREE_DOFS;
+#endif
 
   // If more than one node matches the point, prefer the non-dependent nodes.
   // If 3-DOF nodes are allowed, prefer 6-DOF nodes if more than one
@@ -1401,6 +1411,7 @@ bool FmPart::importPart(const std::string& fileName,
   if (!this->renewFEmodel())
     return false;
 
+#ifdef FT_USE_CMDLINEARG
   // Check if we shall allow triad attachments to dependent RGD nodes
   FFaCmdLineArg::instance()->getValue("allowDepAttach",
                                       FFlRGDTopSpec::allowSlvAttach);
@@ -1408,6 +1419,7 @@ bool FmPart::importPart(const std::string& fileName,
   // Check if we shall convert all parabolic elements to linear elements
   FFaCmdLineArg::instance()->getValue("convertToLinear",fileVersion);
   FFlReaders::convertToLinear = fileVersion;
+#endif
 
   // Read and interpret the part data file
   if (FFlReaders::instance()->read(fileName,myFEData) > 0)
@@ -1471,6 +1483,7 @@ bool FmPart::importPart(const std::string& fileName,
   this->updateMassProperties();
   this->updateLoadCases();
 
+#ifdef FT_USE_CMDLINEARG
   bool doMemPoll = false;
   FFaCmdLineArg::instance()->getValue("memPoll",doMemPoll);
   if (doMemPoll)
@@ -1478,6 +1491,7 @@ bool FmPart::importPart(const std::string& fileName,
     std::cout << this->getLinkIDString() << std::endl;
     myFEData->dump();
   }
+#endif
 
   // Check if the number of component modes was specified on the FE data file
   if (myFEData->getNumberOfGenDofs())
@@ -1586,8 +1600,10 @@ bool FmPart::openFEData()
   if (!this->renewFEmodel())
     return false;
 
+#ifdef FT_USE_CMDLINEARG
   // Check if we shall allow triad attachments to dependent RGD nodes
   FFaCmdLineArg::instance()->getValue("allowDepAttach",FFlRGDTopSpec::allowSlvAttach);
+#endif
 
   // Read and interpret the part data file
   fileVersion = FFlReaders::instance()->read(readerFileName,myFEData);
@@ -1602,6 +1618,7 @@ bool FmPart::openFEData()
 
     savedCS.setValue(myFEData->calculateChecksum());
 
+#ifdef FT_USE_CMDLINEARG
     bool doMemPoll = false;
     FFaCmdLineArg::instance()->getValue("memPoll",doMemPoll);
     if (doMemPoll)
@@ -1609,6 +1626,7 @@ bool FmPart::openFEData()
       std::cout << this->getLinkIDString() << std::endl;
       myFEData->dump();
     }
+#endif
   }
   else if (myFEData->isTooLarge())
   {

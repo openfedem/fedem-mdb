@@ -123,11 +123,15 @@ endforeach ( FILE ${HPP_FILE_LIST} )
 
 
 set ( FT_COMMON_LIBRARIES Admin FFlIOAdaptors FFlFEParts FFlLib
-                          FFaAlgebra FFaCmdLineArg FFaContainers FFaDefinitions
+                          FFaAlgebra FFaContainers FFaDefinitions
                           FFaDynCalls FFaOS FFaTypeCheck )
 if ( USE_CONNECTORS )
   list ( INSERT FT_COMMON_LIBRARIES 9 FFaGeometry )
 endif ( USE_CONNECTORS )
+if ( USE_CMDLINEARG )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_CMDLINEARG" )
+  list ( INSERT FT_COMMON_LIBRARIES 5 FFaCmdLineArg )
+endif ( USE_CMDLINEARG )
 
 set ( FT_KERNEL_LIBRARIES FiDeviceFunctions FiUserElmPlugin
                           FFaFunctionLib FFaMathExpr )

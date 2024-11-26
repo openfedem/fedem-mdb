@@ -89,7 +89,9 @@
 #ifdef USE_INVENTOR
 #include "vpmDisplay/FdDB.H"
 #endif
+#ifdef FT_USE_CMDLINEARG
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
+#endif
 #include "FFaLib/FFaDefinitions/FFaAppInfo.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
@@ -2334,6 +2336,7 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
 
   FFaMsg::setSubTask("");
 
+#ifdef FT_USE_CMDLINEARG
   int incID = 0;
   FFaCmdLineArg::instance()->getValue("ID_increment",incID);
   if (incID > 0) {
@@ -2344,6 +2347,7 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
         for (FmBase* p = head.second->getNext(); p != head.second; p = p->getNext())
           p->setID(p->getID() + incID);
   }
+#endif
 
   // Conversion of old-style generic DB objects to cross sections and materials.
   // Before R7.0, we used a generic DB object that contained material, geometry

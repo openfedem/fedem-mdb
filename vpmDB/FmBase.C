@@ -9,7 +9,9 @@
 #include "vpmDB/FmRingStart.H"
 #include "vpmDB/FmSubAssembly.H"
 #include "vpmDB/FmDB.H"
+#ifdef FT_USE_CMDLINEARG
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
+#endif
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaString/FFaParse.H"
@@ -243,6 +245,7 @@ bool FmBase::mainConnect(bool allowNonUniqueIDs)
   }
   else
   {
+#ifdef FT_USE_CMDLINEARG
     bool reuseUserID = false;
     FFaCmdLineArg::instance()->getValue("reUseUserID",reuseUserID);
     if (reuseUserID)
@@ -255,6 +258,7 @@ bool FmBase::mainConnect(bool allowNonUniqueIDs)
              afterPt->itsNextRingPt->getID() - afterPt->getID() == 1)
         afterPt = afterPt->itsNextRingPt;
     }
+#endif
     this->setID(afterPt->getID() + 1);
   }
 
