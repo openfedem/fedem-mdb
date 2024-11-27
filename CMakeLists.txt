@@ -101,7 +101,8 @@ endif ( GTest_FOUND )
 
 # Build and install the shared library
 message ( STATUS "Building shared library ${LIB_ID}" )
-add_library ( ${LIB_ID} SHARED FedemDB.C )
+add_library ( ${LIB_ID} SHARED FedemDB.C
+              fedem-foundation/src/FFaLib/FFaCmdLineArg/FFaOptionFileCreator.C )
 target_link_libraries ( ${LIB_ID} vpmDB )
 
 install ( TARGETS ${LIB_ID}

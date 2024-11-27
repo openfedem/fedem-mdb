@@ -18,7 +18,6 @@
 #include "vpmDB/Icons/FmIconPixmapsMain.H"
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
-#include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
 
 static std::string srcdir; //!< Full path of the source directory of this test
 
@@ -35,20 +34,16 @@ int main (int argc, char** argv)
 
   // Extract the source directory of the tests
   // to use as prefix for loading external files
-  int numarg = 0;
   for (int i = 1; i < argc; i++)
     if (!strncmp(argv[i],"--srcdir=",9))
     {
       srcdir = argv[i]+9;
       std::cout <<"Note: Source directory = "<< srcdir << std::endl;
       if (srcdir.back() != '/') srcdir += '/';
+      break;
     }
-    else if (++numarg < i)
-      argv[numarg] = argv[i];
 
   // Initialize the Fedem mechanism database
-  FFaCmdLineArg::init(numarg,argv);
-  FFaCmdLineArg::instance()->addOption("reUseUserID",false,"Fill holes in user ID range");
   FmDB::init();
 
   // Invoke the google test driver
@@ -56,7 +51,6 @@ int main (int argc, char** argv)
 
   // Clean up heap memory
   FmDB::removeInstances();
-  FFaCmdLineArg::removeInstance();
   return status;
 }
 

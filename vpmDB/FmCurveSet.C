@@ -212,7 +212,14 @@ size_t FmCurveSet::getCurveComps(std::vector<FmCurveSet*>& curves,
 				 std::vector<bool>& active) const
 {
   myCurves.getPtrs(curves,true);
-  active = myActiveCurves;
+  active.clear();
+
+  if (!myActiveCurves.empty())
+  {
+    active.resize(1 + *myActiveCurves.rbegin(), false);
+    for (size_t comp : myActiveCurves)
+      active[comp] = comp < curves.size();
+  }
 
   return active.size() < curves.size() ? active.size() : curves.size();
 }
@@ -221,10 +228,9 @@ size_t FmCurveSet::getCurveComps(std::vector<FmCurveSet*>& curves,
 size_t FmCurveSet::getActiveCurveComps(std::vector<FmCurveSet*>& curves) const
 {
   size_t nCurvs = curves.size();
-  for (size_t i = 0; i < myCurves.size(); i++)
-    if (i < myActiveCurves.size())
-      if (myActiveCurves[i] && !myCurves[i].isNull())
-	curves.push_back(myCurves.getPtr(i));
+  for (size_t i : myActiveCurves)
+    if (i < myCurves.size() && !myCurves[i].isNull())
+      curves.push_back(myCurves.getPtr(i));
 
   return curves.size() - nCurvs;
 }
@@ -243,7 +249,11 @@ bool FmCurveSet::setCurveComp(FmCurveSet* curve, int icomp)
 
 bool FmCurveSet::setExpression(const std::string& expression)
 {
-  FFaMathExprFactory::countArgs(expression,curveCompNames,&myActiveCurves);
+  myActiveCurves.clear();
+  std::vector<bool> active;
+  FFaMathExprFactory::countArgs(expression,curveCompNames,&active);
+  for (size_t icomp = 0; icomp < active.size(); icomp++)
+    if (active[icomp]) myActiveCurves.insert(icomp);
 
   if (!myExpression.setValue(expression))
     return false;
@@ -333,10 +343,11 @@ bool FmCurveSet::isTimeAxis(int axis)
         return false;
       return (myFunction->getFunctionUse() <= FmMathFuncBase::DRIVE_FILE);
     case COMB_CURVES:
-      for (size_t i = 0; i < myCurves.size() && i < myActiveCurves.size(); i++)
-	if (myActiveCurves[i] && !myCurves[i].isNull())
-	  if (!myCurves[i]->isTimeAxis(axis))
-	    return false;
+      for (size_t i : myActiveCurves)
+        if (i >= myCurves.size() || myCurves[i].isNull())
+          return false;
+        else if (!myCurves[i]->isTimeAxis(axis))
+          return false;
       return true;
     default:
       break;
@@ -354,12 +365,11 @@ bool FmCurveSet::isResultDependent() const
     case SPATIAL_RESULT:
       return true;
     case COMB_CURVES:
-      for (size_t i = 0; i < myCurves.size(); i++)
-	if (i >= myActiveCurves.size())
-	  return false;
-	else if (myActiveCurves[i] && !myCurves[i].isNull())
-	  if (myCurves[i]->isResultDependent())
-	    return true;
+      for (size_t i : myActiveCurves)
+        if (i >= myCurves.size())
+          break;
+        else if (!myCurves[i].isNull() && myCurves[i]->isResultDependent())
+          return true;
     default:
       break;
     }
@@ -384,12 +394,11 @@ bool FmCurveSet::needsManualRefresh() const
       else
 	return myFunction->isOfType(FmfDeviceFunction::getClassTypeID());
     case COMB_CURVES:
-      for (size_t i = 0; i < myCurves.size(); i++)
-	if (i >= myActiveCurves.size())
-	  return false;
-	else if (myActiveCurves[i] && !myCurves[i].isNull())
-	  if (myCurves[i]->needsManualRefresh())
-	    return true;
+      for (size_t i : myActiveCurves)
+        if (i >= myCurves.size())
+          break;
+        else if (!myCurves[i].isNull() && myCurves[i]->needsManualRefresh())
+          return true;
     default:
       break;
     }
@@ -555,7 +564,7 @@ bool FmCurveSet::useInputMode(enum InputMode mode, bool isChanged)
 const FFaResultDescription& FmCurveSet::getResult(int axis) const
 {
   if (!myResultObject[axis].isNull()) {
-    FFaResultDescription& descr = ((FmCurveSet*)this)->myRDBResults[axis].getValue();
+    FFaResultDescription& descr = const_cast<FmCurveSet*>(this)->myRDBResults[axis].getValue();
     descr.OGType = myResultObject[axis]->getItemName();
     descr.baseId = myResultObject[axis]->getItemBaseID();
     descr.userId = myResultObject[axis]->getItemID();
@@ -910,7 +919,8 @@ bool FmCurveSet::cloneLocal(FmBase* obj, int depth)
   FmCurveSet* copyObj = static_cast<FmCurveSet*>(obj);
   myActiveCurves = copyObj->myActiveCurves; // TT #3018
 
-  if (depth >= FmBase::DEEP_APPEND)
+  if ((depth == FmBase::DEEP_REPLACE) ||
+      (depth == FmBase::DEEP_APPEND && !this->getOwnerGraph()))
   {
     this->disconnect();
     this->connect(copyObj->getOwnerGraph());
@@ -958,14 +968,11 @@ bool FmCurveSet::areAxesComplete() const
     if (myExpression.getValue().empty())
       return false;
 
-    for (size_t i = 0; i < myActiveCurves.size(); i++)
-      if (myActiveCurves[i])
-      {
-	if (i >= myCurves.size() || myCurves[i].isNull())
-	  return false;
-	else if (!myCurves[i]->areAxesComplete())
-	  return false;
-      }
+    for (size_t i : myActiveCurves)
+      if (i >= myCurves.size())
+        return false;
+      else if (myCurves[i].isNull() || !myCurves[i]->areAxesComplete())
+        return false;
     return true;
 
   case SPATIAL_RESULT:
