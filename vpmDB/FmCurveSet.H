@@ -320,7 +320,7 @@ protected:
   FFaField<std::string>           myExpression;
   FFaReferenceList<FmCurveSet>    myCurves;
   FFaField<FFaReferenceListBase*> myCurvesField;
-  std::vector<bool>               myActiveCurves;
+  std::set<size_t>                myActiveCurves;
 
   FFaReferenceList<FmIsPlottedBase> mySpatialObjects;
   FFaField<FFaReferenceListBase*>   mySpatialObjectsField;
