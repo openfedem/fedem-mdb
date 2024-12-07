@@ -395,6 +395,43 @@ static FmEngine* FmFindFunction (int fid)
 }
 
 
+DLLexport(bool) FmGetFEModel (int baseId, char* feDataFile, int& recovery)
+{
+#ifdef FM_DEBUG
+  std::cout <<"FmGetFEModel("<< baseId <<")"<< std::endl;
+#endif
+  recovery = 0;
+  FmPart* part;
+  if (!FmFind(baseId,part))
+  {
+    ListUI <<"\n\n===> No Part with baseId "<< baseId <<".\n";
+    return false;
+  }
+
+  std::string ftlFile = part->getBaseFTLFile();
+  if (ftlFile.empty() && part->isGenericPart())
+  {
+    ftlFile = part->getGeometryFile();
+    recovery = -1;
+  }
+
+  if (ftlFile.empty())
+  {
+    ListUI <<"\n\n===> No FE model associated with Part "<< baseId <<".\n";
+    return false;
+  }
+
+#ifdef FM_DEBUG
+  std::cout <<"\tftl-file: "<< ftlFile << std::endl;
+#endif
+  strcpy(feDataFile,ftlFile.c_str());
+  if (part->isFEPart() && part->recoveryDuringSolve.getValue()%2 == 1)
+    recovery = 1;
+
+  return true;
+}
+
+
 DLLexport(bool) FmReduce (char* rdbDir, int baseId)
 {
 #ifdef FM_DEBUG
