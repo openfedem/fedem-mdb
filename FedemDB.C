@@ -816,6 +816,29 @@ DLLexport(int) FmCreateBeam (const char* description,
 }
 
 
+DLLexport(int) FmCreatePart (const char* description, int nT, int* tIds)
+{
+  int nTriads = 0;
+  std::vector<FmTriad*> triads(nT);
+  for (int i = 0; i < nT; i++)
+    if (FmFind(tIds[i],triads[nTriads]))
+      nTriads++;
+    else
+      ListUI <<" *** Error: No triad with base ID "<< tIds[i] <<".\n";
+
+  if (nTriads < nT)
+    return nTriads-nT;
+
+  FmModelMemberBase* part = Fedem::createPart(triads);
+  if (!part) return 0;
+
+  if (description)
+    part->setUserDescription(description);
+
+  return part->getBaseID();
+}
+
+
 DLLexport(int) FmCreateBeamProperty (const char* description, int imat,
                                      int nprop, const double* prop)
 {
