@@ -164,6 +164,18 @@ namespace Fedem //! Fedem model database utilities
   //! \param[in] subAssembly Parent assembly of the beam element
   FmBeam* createBeam(FmTriad* tr1, FmTriad* tr2, FmBase* subAssembly = NULL);
 
+  //! \brief Creates a beam string.
+  //! \param[in] triads List of triads connected to the created beam elements
+  //! \param[in] subAssembly Parent assembly of the created beam elements
+  FmModelMemberBase* createBeams(const std::vector<FmTriad*>& triads,
+                                 FmBase* subAssembly = NULL);
+
+  //! \brief Creates a generic part.
+  //! \param[in] triads List of triads connected to the created part
+  //! \param[in] subAssembly Parent assembly of the created part
+  FmModelMemberBase* createPart(const std::vector<FmTriad*>& triads,
+                                FmBase* subAssembly = NULL);
+
   //! \brief Creates a mooring line (macro object) between two triads.
   //! \param[in] tr1 Start triad of mooring line
   //! \param[in] tr2 Stop triad of mooring line

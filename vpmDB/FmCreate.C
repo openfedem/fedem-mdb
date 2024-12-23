@@ -835,6 +835,21 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
 }
 
 
+static FmBase* getCommonParent(const std::vector<FmTriad*>& triads)
+{
+  if (triads.empty())
+    return NULL;
+
+  // Check if the triads belong to the same sub-assmebly
+  FmBase* parent = triads.front()->getParentAssembly();
+  for (FmTriad* triad : triads)
+    if (triad->getParentAssembly() != parent)
+      return NULL;
+
+  return parent;
+}
+
+
 FmBeam* Fedem::createBeam(FmTriad* tr1, FmTriad* tr2, FmBase* subAssembly)
 {
   if (!tr1 || !tr2)
@@ -853,6 +868,68 @@ FmBeam* Fedem::createBeam(FmTriad* tr1, FmTriad* tr2, FmBase* subAssembly)
   tr2->draw();
 
   return b;
+}
+
+
+FmModelMemberBase* Fedem::createBeams(const std::vector<FmTriad*>& triads,
+                                      FmBase* subAssembly)
+{
+  if (triads.size() < 2)
+    return NULL;
+  else if (triads.size() == 2)
+    return Fedem::createBeam(triads.front(),triads.back(),subAssembly);
+
+  if (!subAssembly)
+    subAssembly = getCommonParent(triads);
+
+  ListUI <<"Creating Beamstring.\n";
+
+  FmBeam* beam = NULL;
+  for (size_t i = 1; i < triads.size(); i++)
+  {
+    beam = new FmBeam();
+    beam->setParentAssembly(subAssembly);
+    beam->connect(triads[i-1],triads[i]);
+    beam->draw();
+    triads[i-1]->draw();
+  }
+  triads.back()->draw();
+
+  return beam;
+}
+
+
+FmModelMemberBase* Fedem::createPart(const std::vector<FmTriad*>& triads,
+                                     FmBase* subAssembly)
+{
+  if (triads.empty())
+    return NULL;
+
+  if (!subAssembly)
+    subAssembly = getCommonParent(triads);
+
+  ListUI <<"Creating Generic part.\n";
+
+  FmPart* part = new FmPart();
+  part->setParentAssembly(subAssembly);
+  part->connect();
+  part->useGenericProperties.setValue(true);
+
+  // Connect the triads
+  FaVec3 cg;
+  for (FmTriad* triad : triads)
+  {
+    triad->connect(part);
+    cg += triad->getGlobalTranslation();
+  }
+  cg /= triads.size();
+
+  // Must refer the CoG position to origin of parent assembly
+  FmAssemblyBase* pAss = dynamic_cast<FmAssemblyBase*>(subAssembly);
+  part->setPositionCG(pAss ? pAss->toLocal(cg) : cg);
+  part->draw();
+
+  return part;
 }
 
 
