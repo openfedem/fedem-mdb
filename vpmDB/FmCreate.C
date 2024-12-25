@@ -811,6 +811,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
 
   FaVec3 fstPos = triad1->getGlobalTranslation();
   FaVec3 linVec = triad2->getGlobalTranslation() - fstPos;
+  double parTol = FmDB::getParallelTolerance();
 
   std::vector<FmTriad*>::iterator it;
   std::vector<FmTriad*> triads;
@@ -818,7 +819,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   for (it = triads.begin(); it != triads.end();)
     if (*it == triad1 || *it == triad2)
       triads.erase(it);
-    else if (linVec.isParallell((*it)->getGlobalTranslation() - fstPos, 1.0e-4))
+    else if (linVec.isParallell((*it)->getGlobalTranslation() - fstPos, parTol))
       ++it;
     else
       triads.erase(it);

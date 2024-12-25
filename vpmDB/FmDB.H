@@ -215,6 +215,8 @@ public:
   static FmVesselMotion* getActiveRAO();
 
   static double getPositionTolerance();
+  static double getParallelTolerance() { return parallelTol; }
+  static void setParallelTolerance(double eps) { parallelTol = eps; }
   static const FaVec3& getGrav();
   static void drawGVector();
 
@@ -259,6 +261,8 @@ public:
 private:
   static FmHeadMap                        ourHeadMap;
   static std::map<int,FmModelMemberBase*> ourBaseIDMap;
+
+  static double parallelTol;
 
   static FmFuncTree* itsFuncTree;
   static FmLink*     itsEarthLink;

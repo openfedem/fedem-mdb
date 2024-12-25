@@ -109,6 +109,8 @@ FmDB::FmHeadMap                  FmDB::ourHeadMap;
 std::map<int,FmModelMemberBase*> FmDB::ourBaseIDMap;
 std::map<std::string,int>        FmDB::unknownKeywords;
 
+double FmDB::parallelTol = 1.0e-6;
+
 FmFuncTree* FmDB::itsFuncTree  = NULL;
 FmLink*     FmDB::itsEarthLink = NULL;
 
