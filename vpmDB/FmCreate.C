@@ -669,7 +669,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
 
 FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
                                 const FaVec3& yAxisDir, FmBase* slider,
-                                FmBase* subAssembly)
+                                FmBase* subAssembly, char addBetweens)
 {
   FmMMJointBase* joint = NULL;
   FmTriad* triad1 = dynamic_cast<FmTriad*>(first);
@@ -824,15 +824,24 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
     else
       triads.erase(it);
 
-  if (triads.empty()) return joint;
+  if (triads.empty() || !addBetweens)
+    return joint;
 
   FFaNumStr msg("There are %d triads on the line between the ",triads.size());
-  msg += "two end triads.\nDo you want to add these as joint triads also?";
-  if (FFaMsg::dialog(msg,FFaMsg::YES_NO))
-    for (FmTriad* triad : triads)
-      line->addTriadOnPoint(triad->getGlobalTranslation());
+  msg += "two end triads.\nSee Output List view for details."
+    " Do you want to add these as joint triads also?";
+  ListUI <<"\n"<< msg.substr(0,msg.find_first_of('.')) <<":";
+  for (FmTriad* triad : triads)
+    ListUI <<"\n\t"<< triad->getIdString(true)
+           <<": "<< triad->getGlobalTranslation();
+  ListUI <<"\n";
 
-  return joint;
+  bool ok = true;
+  if (addBetweens == 1 || FFaMsg::dialog(msg,FFaMsg::YES_NO))
+    for (FmTriad* triad : triads)
+      ok &= line->addTriadOnPoint(triad->getGlobalTranslation());
+
+  return ok ? joint : NULL;
 }
 
 

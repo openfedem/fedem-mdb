@@ -1066,7 +1066,8 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
   else if (jType <= 12 && t2 && nr_t2 >= 2) // prismatic or cylindric joint
   {
     FmBase* triad2 = t2[1] > 0 ? FmDB::findObject(t2[1]) : NULL;
-    jnt = Fedem::createJoint(classType(jType),triad1,triad2,FaVec3(),follower);
+    jnt = Fedem::createJoint(classType(jType), triad1,triad2,
+                             FaVec3(), follower, NULL, nr_t2==2);
   }
   if (!jnt) return -jType;
 
@@ -1082,6 +1083,7 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
       sjoint->setSlaveMovedAlong(false);
   }
 
+  bool ok = true;
   FmMMJointBase* mjoint = dynamic_cast<FmMMJointBase*>(jnt);
   if (mjoint && nr_t2 > 2)
   {
@@ -1089,10 +1091,10 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
     FmTriad* triad = NULL;
     for (int i = 2; i < nr_t2; i++)
       if (FmFind(t2[i],triad))
-        mjoint->addAsMasterTriad(triad);
+        ok &= mjoint->addAsMasterTriad(triad);
   }
 
-  return jnt->getBaseID();
+  return ok ? jnt->getBaseID() : 0;
 }
 
 

@@ -82,9 +82,13 @@ namespace Fedem //! Fedem model database utilities
   //! \param[in] yAxisDir Y-axis direction for the independent triads
   //! \param[in] slider Dependent triad of the joint
   //! \param[in] subAssembly Parent assembly of the joint
+  //! \param[in] addBetweens Flag for adding other triads found along the line
+  //! - 0 : Never do it
+  //! - 1 : Always do it
+  //! - 2 : Ask user if we should do it or not
   FmJointBase* createJoint(int jType, FmBase* first, FmBase* last,
                            const FaVec3& yAxisDir, FmBase* slider = NULL,
-                           FmBase* subAssembly = NULL);
+                           FmBase* subAssembly = NULL, char addBetweens = 2);
 
   //! \brief Creates a cam joint.
   //! \param[in] follower Follower triad
