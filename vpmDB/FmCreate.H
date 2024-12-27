@@ -180,6 +180,22 @@ namespace Fedem //! Fedem model database utilities
   FmModelMemberBase* createPart(const std::vector<FmTriad*>& triads,
                                 FmBase* subAssembly = NULL);
 
+  //! \brief Creates a user-defined element.
+  //! \param[in] triads List of triads connected to the created element
+  //! \param[in] subAssembly Parent assembly of the created element
+  FmModelMemberBase* createUserElm(const std::vector<FmTriad*>& triads,
+                                   FmBase* subAssembly = NULL);
+
+  //! \brief Creates user-defined elements.
+  //! \param[in] elmType Element type ID
+  //! \param[in] typeName Element type name
+  //! \param[in] triads List of triads connected to the created element(s)
+  //! \param[in] nelnod Number of element nodes for the created element(s)
+  //! \param[in] subAssembly Parent assembly of the created element(s)
+  FmModelMemberBase* createUserElm(int elmType, const char* typeName,
+                                   const std::vector<FmTriad*>& triads,
+                                   size_t nelnod, FmBase* subAssembly = NULL);
+
   //! \brief Creates a mooring line (macro object) between two triads.
   //! \param[in] tr1 Start triad of mooring line
   //! \param[in] tr2 Stop triad of mooring line

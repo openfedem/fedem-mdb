@@ -1450,36 +1450,25 @@ DLLexport(int) FmCreateStrainRosette (const char* description,
 
 DLLexport(int) FmCreateUDE2 (const char* description, int t1, int t2)
 {
-  FmTriad* triad1;
-  if (!FmFind(t1,triad1))
+  std::vector<FmTriad*> triads(2);
+  if (!FmFind(t1,triads.front()))
   {
     ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
     return -t1;
   }
-
-  FmTriad* triad2;
-  if (!FmFind(t2,triad2))
+  if (!FmFind(t2,triads.back()))
   {
     ListUI <<" *** Error: No triad with base ID "<< t2 <<".\n";
     return -t2;
   }
 
-  char typeName[64];
-  int eTypes[10];
-  int nTypes = FiUserElmPlugin::instance()->getElementTypes(10,eTypes);
-  for (int i = 0; i < nTypes; i++)
-    if (FiUserElmPlugin::instance()->getTypeName(eTypes[i],64,typeName) == 2)
-    {
-      FmUserDefinedElement* uelm = new FmUserDefinedElement();
-      uelm->connect();
-      uelm->init(eTypes[i],typeName,{triad1,triad2});
-      if (description)
-        uelm->setUserDescription(description);
-      return uelm->getBaseID();
-    }
+  FmModelMemberBase* uelm = Fedem::createUserElm(triads);
+  if (!uelm) return 0;
 
-  ListUI <<" *** Error: No 2-noded user-defined element available.\n";
-  return 0;
+  if (description)
+    uelm->setUserDescription(description);
+
+  return uelm->getBaseID();
 }
 
 

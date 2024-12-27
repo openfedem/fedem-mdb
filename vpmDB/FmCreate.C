@@ -943,6 +943,61 @@ FmModelMemberBase* Fedem::createPart(const std::vector<FmTriad*>& triads,
 }
 
 
+FmModelMemberBase* Fedem::createUserElm(const std::vector<FmTriad*>& triads,
+                                        FmBase* subAssembly)
+{
+  char eName[64];
+  int eTypes[10];
+  int nTypes = FiUserElmPlugin::instance()->getElementTypes(10,eTypes);
+  int nTriad = triads.size();
+  for (int i = 0; i < nTypes; i++)
+    if (FiUserElmPlugin::instance()->getTypeName(eTypes[i],64,eName) == nTriad)
+      return Fedem::createUserElm(eTypes[i],eName,triads,nTriad,subAssembly);
+
+  ListUI <<" *** Error: No "<< nTriad <<"-noded user-defined element type.\n";
+  return NULL;
+}
+
+
+/*!
+  If \a nelnod equals 1, a user-defined element is created for each of the
+  given \a triads. If \a nelnod equals 2, a chain of \a nelnod-1 elements
+  is created connecting the given triads. If \a nelnod is larger than 2
+  (and less than or equal to the size of \a triads), then one user-defined
+  elements is created connected to the first \a nelnod triads.
+*/
+
+FmModelMemberBase* Fedem::createUserElm(int elmType, const char* typeName,
+                                        const std::vector<FmTriad*>& triads,
+                                        size_t nelnod, FmBase* subAssembly)
+{
+  FmUserDefinedElement* uelm = NULL;
+
+  ListUI <<"Creating user-defined element(s) \""<< typeName <<"\".\n";
+
+  for (size_t i = 0; i+nelnod-1 < triads.size(); i++)
+  {
+    uelm = new FmUserDefinedElement();
+    uelm->setParentAssembly(subAssembly);
+    uelm->connect();
+    uelm->init(elmType,typeName,
+               std::vector<FmTriad*>(triads.begin()+i,
+                                     triads.begin()+i+nelnod));
+    uelm->draw();
+    triads[i]->draw();
+    if (nelnod > 2) break;
+  }
+
+  if (nelnod == 2)
+    triads.back()->draw();
+  else if (nelnod > 2)
+    for (size_t i = 1; i < nelnod; i++)
+      triads[i]->draw();
+
+  return uelm;
+}
+
+
 /*!
   This function creates a catenary curve of the specified length between the
   two triads consisting of \a nSegment 2-noded elements of the specified type.
