@@ -70,3 +70,6 @@ endif ( Qt6_FOUND )
 
 add_executable ( test_creators test_creators.C )
 add_cpp_test ( test_creators assemblyCreators )
+
+add_executable ( test_fedemdb test_FedemDB.C )
+add_cpp_test ( test_fedemdb FedemDB )
