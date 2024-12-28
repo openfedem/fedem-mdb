@@ -93,7 +93,8 @@ public:
 
   virtual bool interactiveErase();
 
-  bool isEarthLink() const;
+  bool isEarthLink() const { return this->getID() == -1; }
+
   virtual bool isAttachable() const { return false; }
   virtual bool isDisabled() const { return false; }
   virtual bool isSuppressed() const { return false; }
@@ -150,7 +151,11 @@ public:
   static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
 
 protected:
+  //! \brief Default constructor.
   FmLink(const FaVec3& globalPos = FaVec3());
+  //! \brief Constructor for earth link.
+  FmLink(bool);
+  //! \brief The destructor disconnects the link.
   virtual ~FmLink();
 
   virtual bool cloneLocal(FmBase* obj, int depth);

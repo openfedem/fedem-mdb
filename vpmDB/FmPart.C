@@ -201,7 +201,7 @@ FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
   Constructor for the earth link (no field initialization or visualization)
 */
 
-FmPart::FmPart(const char* EarthName)
+FmPart::FmPart(const char* EarthName) : FmLink(true)
 {
   Fmd_CONSTRUCTOR_INIT(FmPart);
 
@@ -211,7 +211,6 @@ FmPart::FmPart(const char* EarthName)
 
   myFEData = NULL;
 
-  this->setID(-1);
   this->setUserDescription(EarthName);
   this->setCGPosRef(this);
   this->setCGRotRef(this);
