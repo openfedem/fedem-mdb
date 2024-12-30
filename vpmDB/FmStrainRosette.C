@@ -31,6 +31,10 @@
 #include "vpmDisplay/FdPart.H"
 #endif
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 
 /*!
   Position             \

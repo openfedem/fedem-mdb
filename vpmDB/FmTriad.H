@@ -36,7 +36,12 @@ class FmAxialSpring;
 class FmAxialDamper;
 class FmLoad;
 class FmTire;
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE { class FFlNode; }
+using FFlNode = FF_NAMESPACE::FFlNode;
+#else
 class FFlNode;
+#endif
 
 
 class FmTriad : public FmHasDOFsBase

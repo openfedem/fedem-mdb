@@ -12,7 +12,12 @@
 #include "vpmDB/FmPart.H"
 #include "FFaLib/FFaContainers/FFaReference.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE { class FFlNamedPartBase; }
+using FFlNamedPartBase = FF_NAMESPACE::FFlNamedPartBase;
+#else
 class FFlNamedPartBase;
+#endif
 
 
 class FmElementGroupProxy : public FmSimulationModelBase

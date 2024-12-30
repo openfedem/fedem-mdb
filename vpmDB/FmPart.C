@@ -66,6 +66,10 @@
 #define pclose _pclose
 #endif
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 
 /**********************************************************************
  *

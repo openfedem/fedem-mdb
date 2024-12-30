@@ -80,6 +80,9 @@ endif ( BUILD_TESTS )
 
 # Library setup
 
+# Compile the FFlLib classes in the FTD namespace
+string ( APPEND CMAKE_CXX_FLAGS " -DFF_NAMESPACE=FTD" )
+
 # Include dependent libraries from fedem-foundation
 include_directories ( "${PROJECT_SOURCE_DIR}/fedem-foundation/src" )
 foreach ( FOLDER ${LIB_ID_LIST} )
