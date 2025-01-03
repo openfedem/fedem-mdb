@@ -120,7 +120,7 @@ public:
   //! \brief The constructor opens the log-file \a logf in append mode.
   FileMsg(const std::string& logf)
   {
-    os.open(logf.c_str(),std::ios_base::app);
+    os.open(logf,std::ios_base::app);
     if (!os)
       std::cerr <<" *** Failed to open log-file "<< logf <<"\n"
                 <<"     Output will be written to console instead."<< std::endl;
@@ -283,7 +283,7 @@ DLLexport(bool) FmOpen (const char* fmmFile)
     cleanUpMemory();
 
   openAssociatedLogFile(fmmFile);
-  if (Fedem::loadModel(fmmFile,fmmFile,'W') <= 0)
+  if (Fedem::loadModel(fmmFile,"",'W') <= 0)
     return false;
 
   if (initFuncMap())
@@ -652,7 +652,7 @@ DLLexport(bool) FmSave (const char* fmmFile = NULL)
   {
     // Update the mechanism to reflect the pathname changes
     std::string oldModelP = mech->getAbsModelFilePath();
-    mech->syncPath(fmmFile);
+    mech->syncPath(fmmFile,true);
     // Translate all relative pathnames according to the new model file location
     const std::string& newModelP = mech->getAbsModelFilePath();
     FmDB::translateRelativePaths(oldModelP,newModelP);
