@@ -14,7 +14,8 @@
 
 extern "C" {
   void FmInit(const char* = NULL, const char* = NULL);
-  void FmNew(const char* = NULL);
+  void FmNew (const char* = NULL);
+  bool FmOpen(const char* = NULL);
   bool FmSave(const char* = NULL);
   void FmClose(bool = true);
   int  FmCreateTriad(const char*, double, double, double,
@@ -22,6 +23,8 @@ extern "C" {
   bool FmAddMass(int, int, const double*, int = 0);
   int  FmCreatePart(const char*, int, int*);
   int  FmCreateJoint(const char*, int, int, int*, int);
+  bool FmSolve(const char*, bool = true,
+               const char* = NULL, const char* = NULL);
 }
 
 static std::string srcdir; //!< Full path of the source directory of this test
@@ -103,3 +106,37 @@ TEST(TestFedemDB,Prismatic)
   ASSERT_GT(FmCreateJoint("J2", PRISMATIC, s2, m2, 2), 0);
   ASSERT_TRUE(FmSave());
 }
+
+
+//! \brief Class describing a parameterized unit test instance.
+class TestCase : public testing::Test, public testing::WithParamInterface<const char*> {};
+
+
+/*!
+  \brief Unit test creating a dynamics solver RDB directory for a model.
+*/
+
+TEST_P(TestCase,SolverRDB)
+{
+  ASSERT_FALSE(srcdir.empty());
+
+  // GetParam() will be substituted with the actual file name.
+  std::string fmmFile = srcdir + GetParam();
+
+  // Open the model and save to current working directory
+  std::string newFmm = fmmFile.substr(fmmFile.find_last_of("/\\")+1);
+  ASSERT_TRUE(FmOpen(fmmFile.c_str()));
+  ASSERT_TRUE(FmSave(newFmm.c_str()));
+  // Write solver input and save updated model
+  std::string newRDB = newFmm.substr(0,newFmm.find_last_of(".")) + "_RDB";
+  ASSERT_TRUE(FmSolve(newRDB.c_str()));
+  ASSERT_TRUE(FmSave());
+}
+
+
+/*!
+  \brief Instantiate the test over a list of file names.
+*/
+
+INSTANTIATE_TEST_CASE_P(TestParsing, TestCase,
+    testing::Values("models/Gravemaskin.fmm"));
