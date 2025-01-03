@@ -120,7 +120,7 @@ public:
   //! \brief The constructor opens the log-file \a logf in append mode.
   FileMsg(const std::string& logf)
   {
-    os.open(logf.c_str(),std::ios_base::app);
+    os.open(logf,std::ios_base::app);
     if (!os)
       std::cerr <<" *** Failed to open log-file "<< logf <<"\n"
                 <<"     Output will be written to console instead."<< std::endl;
@@ -283,7 +283,7 @@ DLLexport(bool) FmOpen (const char* fmmFile)
     cleanUpMemory();
 
   openAssociatedLogFile(fmmFile);
-  if (Fedem::loadModel(fmmFile,fmmFile,'W') <= 0)
+  if (Fedem::loadModel(fmmFile,"",'W') <= 0)
     return false;
 
   if (initFuncMap())
@@ -392,6 +392,43 @@ static FmEngine* FmFindFunction (int fid)
   }
 
   return engine;
+}
+
+
+DLLexport(bool) FmGetFEModel (int baseId, char* feDataFile, int& recovery)
+{
+#ifdef FM_DEBUG
+  std::cout <<"FmGetFEModel("<< baseId <<")"<< std::endl;
+#endif
+  recovery = 0;
+  FmPart* part;
+  if (!FmFind(baseId,part))
+  {
+    ListUI <<"\n\n===> No Part with baseId "<< baseId <<".\n";
+    return false;
+  }
+
+  std::string ftlFile = part->getBaseFTLFile();
+  if (ftlFile.empty() && part->isGenericPart())
+  {
+    ftlFile = part->getGeometryFile();
+    recovery = -1;
+  }
+
+  if (ftlFile.empty())
+  {
+    ListUI <<"\n\n===> No FE model associated with Part "<< baseId <<".\n";
+    return false;
+  }
+
+#ifdef FM_DEBUG
+  std::cout <<"\tftl-file: "<< ftlFile << std::endl;
+#endif
+  strcpy(feDataFile,ftlFile.c_str());
+  if (part->isFEPart() && part->recoveryDuringSolve.getValue()%2 == 1)
+    recovery = 1;
+
+  return true;
 }
 
 
@@ -615,7 +652,7 @@ DLLexport(bool) FmSave (const char* fmmFile = NULL)
   {
     // Update the mechanism to reflect the pathname changes
     std::string oldModelP = mech->getAbsModelFilePath();
-    mech->syncPath(fmmFile);
+    mech->syncPath(fmmFile,true);
     // Translate all relative pathnames according to the new model file location
     const std::string& newModelP = mech->getAbsModelFilePath();
     FmDB::translateRelativePaths(oldModelP,newModelP);
@@ -776,6 +813,29 @@ DLLexport(int) FmCreateBeam (const char* description,
     beam->setProperty(bProp);
 
   return beam->getBaseID();
+}
+
+
+DLLexport(int) FmCreatePart (const char* description, int nT, int* tIds)
+{
+  int nTriads = 0;
+  std::vector<FmTriad*> triads(nT);
+  for (int i = 0; i < nT; i++)
+    if (FmFind(tIds[i],triads[nTriads]))
+      nTriads++;
+    else
+      ListUI <<" *** Error: No triad with base ID "<< tIds[i] <<".\n";
+
+  if (nTriads < nT)
+    return nTriads-nT;
+
+  FmModelMemberBase* part = Fedem::createPart(triads);
+  if (!part) return 0;
+
+  if (description)
+    part->setUserDescription(description);
+
+  return part->getBaseID();
 }
 
 
@@ -1006,7 +1066,8 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
   else if (jType <= 12 && t2 && nr_t2 >= 2) // prismatic or cylindric joint
   {
     FmBase* triad2 = t2[1] > 0 ? FmDB::findObject(t2[1]) : NULL;
-    jnt = Fedem::createJoint(classType(jType),triad1,triad2,FaVec3(),follower);
+    jnt = Fedem::createJoint(classType(jType), triad1,triad2,
+                             FaVec3(), follower, NULL, nr_t2==2);
   }
   if (!jnt) return -jType;
 
@@ -1022,6 +1083,7 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
       sjoint->setSlaveMovedAlong(false);
   }
 
+  bool ok = true;
   FmMMJointBase* mjoint = dynamic_cast<FmMMJointBase*>(jnt);
   if (mjoint && nr_t2 > 2)
   {
@@ -1029,10 +1091,10 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
     FmTriad* triad = NULL;
     for (int i = 2; i < nr_t2; i++)
       if (FmFind(t2[i],triad))
-        mjoint->addAsMasterTriad(triad);
+        ok &= mjoint->addAsMasterTriad(triad);
   }
 
-  return jnt->getBaseID();
+  return ok ? jnt->getBaseID() : 0;
 }
 
 
@@ -1388,36 +1450,25 @@ DLLexport(int) FmCreateStrainRosette (const char* description,
 
 DLLexport(int) FmCreateUDE2 (const char* description, int t1, int t2)
 {
-  FmTriad* triad1;
-  if (!FmFind(t1,triad1))
+  std::vector<FmTriad*> triads(2);
+  if (!FmFind(t1,triads.front()))
   {
     ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
     return -t1;
   }
-
-  FmTriad* triad2;
-  if (!FmFind(t2,triad2))
+  if (!FmFind(t2,triads.back()))
   {
     ListUI <<" *** Error: No triad with base ID "<< t2 <<".\n";
     return -t2;
   }
 
-  char typeName[64];
-  int eTypes[10];
-  int nTypes = FiUserElmPlugin::instance()->getElementTypes(10,eTypes);
-  for (int i = 0; i < nTypes; i++)
-    if (FiUserElmPlugin::instance()->getTypeName(eTypes[i],64,typeName) == 2)
-    {
-      FmUserDefinedElement* uelm = new FmUserDefinedElement();
-      uelm->connect();
-      uelm->init(eTypes[i],typeName,{triad1,triad2});
-      if (description)
-        uelm->setUserDescription(description);
-      return uelm->getBaseID();
-    }
+  FmModelMemberBase* uelm = Fedem::createUserElm(triads);
+  if (!uelm) return 0;
 
-  ListUI <<" *** Error: No 2-noded user-defined element available.\n";
-  return 0;
+  if (description)
+    uelm->setUserDescription(description);
+
+  return uelm->getBaseID();
 }
 
 

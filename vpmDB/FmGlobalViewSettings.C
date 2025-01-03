@@ -628,10 +628,8 @@ const FmColor& FmGlobalViewSettings::getLinkDefaultColor(int index)
   }
 
   static int n = 0;
-  if (index < 0)
-    return defaultColors[(n++)%defaultColors.size()];
-  else
-    return defaultColors[(index)%defaultColors.size()];
+  if (index < 0) index = n++;
+  return defaultColors[index % defaultColors.size()];
 }
 
 

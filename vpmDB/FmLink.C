@@ -80,6 +80,18 @@ FmLink::FmLink(const FaVec3& globalPos)
 }
 
 
+/*!
+  Constructor for the earth link (no field initialization)
+*/
+
+FmLink::FmLink(bool)
+{
+  Fmd_CONSTRUCTOR_INIT(FmLink);
+
+  this->setID(-1);
+}
+
+
 FmLink::~FmLink()
 {
   this->disconnect();
@@ -348,12 +360,6 @@ void FmLink::getJoints(std::vector<FmJointBase*>& joints) const
       if (std::find(joints.begin(),joints.end(),joint) == joints.end())
         joints.push_back(joint);
   }
-}
-
-
-bool FmLink::isEarthLink() const
-{
-  return this->getID() < 0 ? true : false;
 }
 
 

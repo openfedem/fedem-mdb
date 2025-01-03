@@ -82,9 +82,13 @@ namespace Fedem //! Fedem model database utilities
   //! \param[in] yAxisDir Y-axis direction for the independent triads
   //! \param[in] slider Dependent triad of the joint
   //! \param[in] subAssembly Parent assembly of the joint
+  //! \param[in] addBetweens Flag for adding other triads found along the line
+  //! - 0 : Never do it
+  //! - 1 : Always do it
+  //! - 2 : Ask user if we should do it or not
   FmJointBase* createJoint(int jType, FmBase* first, FmBase* last,
                            const FaVec3& yAxisDir, FmBase* slider = NULL,
-                           FmBase* subAssembly = NULL);
+                           FmBase* subAssembly = NULL, char addBetweens = 2);
 
   //! \brief Creates a cam joint.
   //! \param[in] follower Follower triad
@@ -163,6 +167,34 @@ namespace Fedem //! Fedem model database utilities
   //! \param[in] tr2 Second end triad
   //! \param[in] subAssembly Parent assembly of the beam element
   FmBeam* createBeam(FmTriad* tr1, FmTriad* tr2, FmBase* subAssembly = NULL);
+
+  //! \brief Creates a beam string.
+  //! \param[in] triads List of triads connected to the created beam elements
+  //! \param[in] subAssembly Parent assembly of the created beam elements
+  FmModelMemberBase* createBeams(const std::vector<FmTriad*>& triads,
+                                 FmBase* subAssembly = NULL);
+
+  //! \brief Creates a generic part.
+  //! \param[in] triads List of triads connected to the created part
+  //! \param[in] subAssembly Parent assembly of the created part
+  FmModelMemberBase* createPart(const std::vector<FmTriad*>& triads,
+                                FmBase* subAssembly = NULL);
+
+  //! \brief Creates a user-defined element.
+  //! \param[in] triads List of triads connected to the created element
+  //! \param[in] subAssembly Parent assembly of the created element
+  FmModelMemberBase* createUserElm(const std::vector<FmTriad*>& triads,
+                                   FmBase* subAssembly = NULL);
+
+  //! \brief Creates user-defined elements.
+  //! \param[in] elmType Element type ID
+  //! \param[in] typeName Element type name
+  //! \param[in] triads List of triads connected to the created element(s)
+  //! \param[in] nelnod Number of element nodes for the created element(s)
+  //! \param[in] subAssembly Parent assembly of the created element(s)
+  FmModelMemberBase* createUserElm(int elmType, const char* typeName,
+                                   const std::vector<FmTriad*>& triads,
+                                   size_t nelnod, FmBase* subAssembly = NULL);
 
   //! \brief Creates a mooring line (macro object) between two triads.
   //! \param[in] tr1 Start triad of mooring line

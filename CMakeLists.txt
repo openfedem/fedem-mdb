@@ -36,6 +36,9 @@ else ( USE_FORTRAN)
 endif ( USE_FORTRAN)
 message ( STATUS "Generating build project for ${PROJECT_SOURCE_DIR}" )
 get_filename_component ( PROJECT_PARENT_DIR "${PROJECT_SOURCE_DIR}" PATH )
+if ( NOT IS_DIRECTORY "${PROJECT_PARENT_DIR}/fedem-solvers" )
+  get_filename_component ( PROJECT_PARENT_DIR "${PROJECT_PARENT_DIR}" PATH )
+endif ( NOT IS_DIRECTORY "${PROJECT_PARENT_DIR}/fedem-solvers" )
 find_path ( _MODULES FedemConfig.cmake
             PATHS $ENV{CMAKE_MODULES}
            "${PROJECT_SOURCE_DIR}/fedem-foundation/cmake/Modules/"

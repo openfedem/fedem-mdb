@@ -669,7 +669,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
 
 FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
                                 const FaVec3& yAxisDir, FmBase* slider,
-                                FmBase* subAssembly)
+                                FmBase* subAssembly, char addBetweens)
 {
   FmMMJointBase* joint = NULL;
   FmTriad* triad1 = dynamic_cast<FmTriad*>(first);
@@ -811,6 +811,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
 
   FaVec3 fstPos = triad1->getGlobalTranslation();
   FaVec3 linVec = triad2->getGlobalTranslation() - fstPos;
+  double parTol = FmDB::getParallelTolerance();
 
   std::vector<FmTriad*>::iterator it;
   std::vector<FmTriad*> triads;
@@ -818,20 +819,44 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   for (it = triads.begin(); it != triads.end();)
     if (*it == triad1 || *it == triad2)
       triads.erase(it);
-    else if (linVec.isParallell((*it)->getGlobalTranslation() - fstPos, 1.0e-4))
+    else if (linVec.isParallell((*it)->getGlobalTranslation() - fstPos, parTol))
       ++it;
     else
       triads.erase(it);
 
-  if (triads.empty()) return joint;
+  if (triads.empty() || !addBetweens)
+    return joint;
 
   FFaNumStr msg("There are %d triads on the line between the ",triads.size());
-  msg += "two end triads.\nDo you want to add these as joint triads also?";
-  if (FFaMsg::dialog(msg,FFaMsg::YES_NO))
-    for (FmTriad* triad : triads)
-      line->addTriadOnPoint(triad->getGlobalTranslation());
+  msg += "two end triads.\nSee Output List view for details."
+    " Do you want to add these as joint triads also?";
+  ListUI <<"\n"<< msg.substr(0,msg.find_first_of('.')) <<":";
+  for (FmTriad* triad : triads)
+    ListUI <<"\n\t"<< triad->getIdString(true)
+           <<": "<< triad->getGlobalTranslation();
+  ListUI <<"\n";
 
-  return joint;
+  bool ok = true;
+  if (addBetweens == 1 || FFaMsg::dialog(msg,FFaMsg::YES_NO))
+    for (FmTriad* triad : triads)
+      ok &= line->addTriadOnPoint(triad->getGlobalTranslation());
+
+  return ok ? joint : NULL;
+}
+
+
+static FmBase* getCommonParent(const std::vector<FmTriad*>& triads)
+{
+  if (triads.empty())
+    return NULL;
+
+  // Check if the triads belong to the same sub-assmebly
+  FmBase* parent = triads.front()->getParentAssembly();
+  for (FmTriad* triad : triads)
+    if (triad->getParentAssembly() != parent)
+      return NULL;
+
+  return parent;
 }
 
 
@@ -853,6 +878,123 @@ FmBeam* Fedem::createBeam(FmTriad* tr1, FmTriad* tr2, FmBase* subAssembly)
   tr2->draw();
 
   return b;
+}
+
+
+FmModelMemberBase* Fedem::createBeams(const std::vector<FmTriad*>& triads,
+                                      FmBase* subAssembly)
+{
+  if (triads.size() < 2)
+    return NULL;
+  else if (triads.size() == 2)
+    return Fedem::createBeam(triads.front(),triads.back(),subAssembly);
+
+  if (!subAssembly)
+    subAssembly = getCommonParent(triads);
+
+  ListUI <<"Creating Beamstring.\n";
+
+  FmBeam* beam = NULL;
+  for (size_t i = 1; i < triads.size(); i++)
+  {
+    beam = new FmBeam();
+    beam->setParentAssembly(subAssembly);
+    beam->connect(triads[i-1],triads[i]);
+    beam->draw();
+    triads[i-1]->draw();
+  }
+  triads.back()->draw();
+
+  return beam;
+}
+
+
+FmModelMemberBase* Fedem::createPart(const std::vector<FmTriad*>& triads,
+                                     FmBase* subAssembly)
+{
+  if (triads.empty())
+    return NULL;
+
+  if (!subAssembly)
+    subAssembly = getCommonParent(triads);
+
+  ListUI <<"Creating Generic part.\n";
+
+  FmPart* part = new FmPart();
+  part->setParentAssembly(subAssembly);
+  part->connect();
+  part->useGenericProperties.setValue(true);
+
+  // Connect the triads
+  FaVec3 cg;
+  for (FmTriad* triad : triads)
+  {
+    triad->connect(part);
+    cg += triad->getGlobalTranslation();
+  }
+  cg /= triads.size();
+
+  // Must refer the CoG position to origin of parent assembly
+  FmAssemblyBase* pAss = dynamic_cast<FmAssemblyBase*>(subAssembly);
+  part->setPositionCG(pAss ? pAss->toLocal(cg) : cg);
+  part->draw();
+
+  return part;
+}
+
+
+FmModelMemberBase* Fedem::createUserElm(const std::vector<FmTriad*>& triads,
+                                        FmBase* subAssembly)
+{
+  char eName[64];
+  int eTypes[10];
+  int nTypes = FiUserElmPlugin::instance()->getElementTypes(10,eTypes);
+  int nTriad = triads.size();
+  for (int i = 0; i < nTypes; i++)
+    if (FiUserElmPlugin::instance()->getTypeName(eTypes[i],64,eName) == nTriad)
+      return Fedem::createUserElm(eTypes[i],eName,triads,nTriad,subAssembly);
+
+  ListUI <<" *** Error: No "<< nTriad <<"-noded user-defined element type.\n";
+  return NULL;
+}
+
+
+/*!
+  If \a nelnod equals 1, a user-defined element is created for each of the
+  given \a triads. If \a nelnod equals 2, a chain of \a nelnod-1 elements
+  is created connecting the given triads. If \a nelnod is larger than 2
+  (and less than or equal to the size of \a triads), then one user-defined
+  elements is created connected to the first \a nelnod triads.
+*/
+
+FmModelMemberBase* Fedem::createUserElm(int elmType, const char* typeName,
+                                        const std::vector<FmTriad*>& triads,
+                                        size_t nelnod, FmBase* subAssembly)
+{
+  FmUserDefinedElement* uelm = NULL;
+
+  ListUI <<"Creating user-defined element(s) \""<< typeName <<"\".\n";
+
+  for (size_t i = 0; i+nelnod-1 < triads.size(); i++)
+  {
+    uelm = new FmUserDefinedElement();
+    uelm->setParentAssembly(subAssembly);
+    uelm->connect();
+    uelm->init(elmType,typeName,
+               std::vector<FmTriad*>(triads.begin()+i,
+                                     triads.begin()+i+nelnod));
+    uelm->draw();
+    triads[i]->draw();
+    if (nelnod > 2) break;
+  }
+
+  if (nelnod == 2)
+    triads.back()->draw();
+  else if (nelnod > 2)
+    for (size_t i = 1; i < nelnod; i++)
+      triads[i]->draw();
+
+  return uelm;
 }
 
 

@@ -82,7 +82,7 @@ bool FmJointMotion::readAndConnect(std::istream& is, std::ostream&)
     std::stringstream activeStatement;
     char keyWord[BUFSIZ];
     if (FaParse::parseFMFASCII(keyWord,is,activeStatement,'=',';'))
-      FmDofMotion::parentParse(keyWord,activeStatement,obj);
+      FmJointMotion::parentParse(keyWord,activeStatement,obj);
   }
 
   obj->connect();

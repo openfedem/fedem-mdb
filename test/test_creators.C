@@ -53,7 +53,7 @@ int main (int argc, char** argv)
 
 TEST(TestCreator,turbine)
 {
-  const std::string bladeFile = srcdir + "Blades/Sample_5MW.fmm";
+  const std::string bladeFile = srcdir + "models/Sample_5MW.fmm";
 
   // Create the default turbine model
   ASSERT_TRUE(FmDB::newMechanism() != NULL);
