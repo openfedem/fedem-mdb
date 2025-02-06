@@ -17,9 +17,15 @@
 #include "vpmDB/FmFileSys.H"
 #include "vpmDB/Icons/FmIconPixmapsMain.H"
 #include "FFlLib/FFlLinkHandler.H"
+#include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
+#include "FFlLib/FFlFEParts/FFlCMASS.H"
 
 static std::string srcdir; //!< Full path of the source directory of this test
+
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
 
 
 /*!
@@ -45,18 +51,32 @@ int main (int argc, char** argv)
 
   // Initialize the Fedem mechanism database
   FmDB::init();
+  FFlNode::init();
+  FFlCMASS::init();
 
   // Invoke the google test driver
   int status = RUN_ALL_TESTS();
 
   // Clean up heap memory
   FmDB::removeInstances();
+  ElementFactory::removeInstance();
+  FFaSingelton<FFlFEElementTopSpec,FFlCMASS>::removeInstance();
+  FFaSingelton<FFlFEAttributeSpec,FFlCMASS>::removeInstance();
+  FFaSingelton<FFlTypeInfoSpec,FFlCMASS>::removeInstance();
+  FFaSingelton<FFlTypeInfoSpec,FFlNode>::removeInstance();
   return status;
 }
 
 
 TEST(TestFmPart,setValidBaseFTLFile)
 {
+  auto&& createMassElement = [](int eId, int nId)
+  {
+    FFlElementBase* newElm = ElementFactory::instance()->create("CMASS",eId);
+    newElm->setNodes(std::vector<int>(1,nId));
+    return newElm;
+  };
+
   FmMechanism* mech = new FmMechanism();
   ASSERT_TRUE(mech->connect());
   mech->modelLinkRepository.setValue(srcdir+"LinkDB");
@@ -64,14 +84,17 @@ TEST(TestFmPart,setValidBaseFTLFile)
 
   FFlLinkHandler* linkA = new FFlLinkHandler();
   linkA->addNode(new FFlNode(1,1.0,0.0,0.0));
+  linkA->addElement(createMassElement(1,1));
   linkA->resolve();
 
   FFlLinkHandler* linkB = new FFlLinkHandler();
   linkB->addNode(new FFlNode(1,2.0,0.0,0.0));
+  linkB->addElement(createMassElement(1,1));
   linkB->resolve();
 
   FFlLinkHandler* linkC = new FFlLinkHandler();
   linkC->addNode(new FFlNode(1,3.0,0.0,0.0));
+  linkC->addElement(createMassElement(1,1));
   linkC->resolve();
 
   auto&& getFTLName = [](const FmPart* part) { return part->baseFTLFile.getValue().c_str(); };
