@@ -31,6 +31,23 @@ static std::string srcdir; //!< Full path of the source directory of this test
 
 
 /*!
+  \brief Opens a specified model file and saves with solver input generated.
+*/
+
+int loadTest (const char* fmmFile)
+{
+  // Open the model and save to current working directory
+  std::string oldFmm(fmmFile);
+  std::string newFmm = oldFmm.substr(oldFmm.find_last_of("/\\") + 1);
+  if (!FmOpen(oldFmm.c_str())) return 1;
+  if (!FmSave(newFmm.c_str())) return 2;
+  // Write solver input and save updated model
+  std::string newRDB = newFmm.substr(0,newFmm.find_last_of(".")) + "_RDB";
+  if (!FmSolve(newRDB.c_str())) return 3;
+  return FmSave() ? 0 : 4;
+}
+
+/*!
   \brief Main program for the unit test executable.
 */
 
@@ -42,20 +59,22 @@ int main (int argc, char** argv)
 
   // Extract the source directory of the tests
   // to use as prefix for loading external files
+  const char* fmmFile = NULL;
   for (int i = 1; i < argc; i++)
-    if (!strncmp(argv[i],"--srcdir=",9))
+    if (!strncmp(argv[i],"--srcdir=",9) && srcdir.empty())
     {
       srcdir = argv[i]+9;
       std::cout <<"Note: Source directory = "<< srcdir << std::endl;
       if (srcdir.back() != '/') srcdir += '/';
-      break;
     }
+    else if (!strcmp(argv[i],"-f") && i+1 < argc)
+      fmmFile = argv[++i];
 
   // Initialize the Fedem mechanism database
   FmInit();
 
-  // Invoke the google test driver
-  int status = RUN_ALL_TESTS();
+  // Invoke the google test driver, or the load-and-save test
+  int status = fmmFile ? loadTest(fmmFile) : RUN_ALL_TESTS();
 
   // Clean up heap memory
   FmClose();

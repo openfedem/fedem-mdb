@@ -41,6 +41,10 @@ elseif ( LINUX )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_HAS_DIRENT" )
 endif ( Qt6_FOUND )
 
+if ( USE_REFCOUNT )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFFL_REFCOUNT" )
+endif ( USE_REFCOUNT )
+
 if ( USE_MEMPOOL )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
 endif ( USE_MEMPOOL )

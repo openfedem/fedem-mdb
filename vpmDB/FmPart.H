@@ -25,12 +25,19 @@ inline bool FFaField<FmResultStatusData>::isPrintable() const
 
 
 class FmElementGroupProxy;
-class FFlLinkHandler;
 class FFlConnectorItems;
-class FFlNode;
 class FFaCompoundGeometry;
-
-typedef std::vector<FaVec3> FaVec3Vec;
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+class FFlLinkHandler;
+class FFlNode;
+#ifdef FF_NAMESPACE
+}
+using FFlLinkHandler = FF_NAMESPACE::FFlLinkHandler;
+using FFlNode        = FF_NAMESPACE::FFlNode;
+#endif
+using FaVec3Vec = std::vector<FaVec3>;
 
 
 class FmPart : public FmLink

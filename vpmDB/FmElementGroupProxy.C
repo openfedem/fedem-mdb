@@ -8,12 +8,11 @@
 #include "vpmDB/FmElementGroupProxy.H"
 #include "vpmDB/FmRingStart.H"
 #include "vpmDB/FmDB.H"
+#include "vpmDB/Icons/FmIconPixmaps.H"
 #include "FFlLib/FFlNamedPartBase.H"
 #include "FFlLib/FFlAttributeBase.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
-
-#include "vpmDB/Icons/FmIconPixmaps.H"
 #include "FFaLib/FFaString/FFaParse.H"
 
 
@@ -217,6 +216,10 @@ std::string FmElementGroupProxy::getIdPath(bool withBrackets) const
 
 std::string FmElementGroupProxy::getGroupId() const
 {
+#ifdef FF_NAMESPACE
+  using FFlAttributeBase = FF_NAMESPACE::FFlAttributeBase;
+#endif
+
   std::string groupId;
   if (myElementGroup)
   {

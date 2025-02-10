@@ -11,7 +11,7 @@
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
 #include "FFlLib/FFlLinkHandler.H"
-#include "FFlLib/FFlFEParts/FFlBEAM2.H"
+#include "FFlLib/FFlFEParts/FFlBeams.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlIOAdaptors/FFlVTFWriter.H"
 
@@ -36,6 +36,10 @@
 #include "vpmDB/FmAnalysis.H"
 
 #include <algorithm>
+
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
 
 
 /**********************************************************************

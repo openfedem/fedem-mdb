@@ -26,6 +26,10 @@
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 
 void FWP::createJacket (const FFlLinkHandler* jl, const std::string& name,
                         const double* Morison, int IDoffset)
