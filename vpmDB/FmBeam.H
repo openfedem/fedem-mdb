@@ -86,6 +86,7 @@ public:
   virtual bool clone(FmBase* obj, int depth);
   virtual void initAfterResolve();
 
+  using FmLink::printSolverEntry;
   int printSolverEntry(FILE* fp, int propId, FmBeamProperty* bProp, const std::string* rdbPath);
   virtual int printSolverEntry(FILE* fp, int propId) { return this->printSolverEntry(fp,propId,NULL,NULL); }
   virtual bool writeToVTF(VTFAFile& file, IntVec*, IntVec*);
