@@ -381,9 +381,11 @@ c
 c           update the step bound.
 c
             if (ratio .gt. p25) go to 240
-               if (actred .ge. zero) temp = p5
-               if (actred .lt. zero)
-     *            temp = p5*dirder/(dirder + p5*actred)
+               if (actred .lt. zero) then
+                  temp = p5*dirder/(dirder + p5*actred)
+               else
+                  temp = p5
+               end if
                if (p1*fnorm1 .ge. fnorm .or. temp .lt. p1) temp = p1
                delta = temp*dmin1(delta,pnorm/p1)
                par = par/temp
