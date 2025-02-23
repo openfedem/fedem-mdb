@@ -51,8 +51,8 @@ public:
   void setLocalFromPoint(const FaVec3& pt) { this->setLocalPoint(pt,0); }
   void setLocalToPoint(const FaVec3& pt)   { this->setLocalPoint(pt,1); }
 
-  FaVec3 getGlobalFromPoint() const { return std::move(this->getGlbPoint(0)); }
-  FaVec3 getGlobalToPoint()   const { return std::move(this->getGlbPoint(1)); }
+  FaVec3 getGlobalFromPoint() const { return this->getGlbPoint(0); }
+  FaVec3 getGlobalToPoint()   const { return this->getGlbPoint(1); }
   void setGlobalFromPoint(const FaVec3& pt) { this->setGlbPoint(pt,0); }
   void setGlobalToPoint(const FaVec3& pt)   { this->setGlbPoint(pt,1); }
 
