@@ -531,10 +531,10 @@ bool FmLink::attachTriad(FmTriad* attachTr, bool isSilent, bool doUpdate)
 #endif
 
   // Lambda function for checking if two triads are on a common joint
-  std::function<bool(FmTriad*,FmTriad*)> onJoint = [](FmTriad* tr1, FmTriad* tr2)
+  std::function<bool(FmTriad*,FmTriad*)> onJoint = [](FmTriad* t1, FmTriad* t2)
   {
-    FmJointBase* jnt = tr1->getJointWhereSlave();
-    return jnt ? jnt->isMasterTriad(tr2) : false;
+    FmJointBase* jnt = t1->getJointWhereSlave();
+    return jnt ? jnt->isMasterTriad(t2) : false;
   };
 
   FmTriad* oldTr = NULL;
@@ -563,11 +563,10 @@ bool FmLink::attachTriad(FmTriad* attachTr, bool isSilent, bool doUpdate)
     return false;
   else if (!this->isOfType(FmPart::getClassTypeID()))
     attachTr = oldTr; // The old existing triad is used instead
-  else
-    attachTr = NULL; // Don't need to update visualization for Triads on Parts
+  // else this is an FmPart, the attachTr is used and oldTr was erased
 
   this->onChanged();
-  if (!doUpdate || !attachTr)
+  if (!doUpdate)
     return true;
 
   // Update the triad visualization
@@ -723,9 +722,9 @@ bool FmLink::isTriadAttachable(FmTriad*& existingTriad,
 
 std::pair<FmTriad*,bool> FmLink::getExistingTriad(const FmTriad* triad)
 {
-  FmTriad* existingTr = this->getTriadAtPoint(triad->getGlobalTranslation(),
-					      FmDB::getPositionTolerance(),true);
-  return std::make_pair(existingTr,true);
+  FmTriad* oldTr = this->getTriadAtPoint(triad->getGlobalTranslation(),
+                                         FmDB::getPositionTolerance(),true);
+  return { oldTr, true };
 }
 
 
