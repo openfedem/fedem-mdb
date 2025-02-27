@@ -209,16 +209,16 @@ const char** FmCurveSet::getCompNames()
 
 
 size_t FmCurveSet::getCurveComps(std::vector<FmCurveSet*>& curves,
-				 std::vector<bool>& active) const
+                                 std::vector<bool>& active) const
 {
   myCurves.getPtrs(curves,true);
   active.clear();
 
   if (!myActiveCurves.empty())
   {
+    // Convert the set of active curve indices into a bool array
     active.resize(1 + *myActiveCurves.rbegin(), false);
-    for (size_t comp : myActiveCurves)
-      active[comp] = comp < curves.size();
+    for (size_t comp : myActiveCurves) active[comp] = true;
   }
 
   return active.size() < curves.size() ? active.size() : curves.size();
@@ -343,10 +343,12 @@ bool FmCurveSet::isTimeAxis(int axis)
         return false;
       return (myFunction->getFunctionUse() <= FmMathFuncBase::DRIVE_FILE);
     case COMB_CURVES:
+      // A combined curve is assumed to represent a time history, only if
+      // all of its active curve components represent a time history
       for (size_t i : myActiveCurves)
-        if (i >= myCurves.size() || myCurves[i].isNull())
+        if (i >= myCurves.size())
           return false;
-        else if (!myCurves[i]->isTimeAxis(axis))
+        else if (myCurves[i].isNull() || !myCurves[i]->isTimeAxis(axis))
           return false;
       return true;
     default:
@@ -365,9 +367,11 @@ bool FmCurveSet::isResultDependent() const
     case SPATIAL_RESULT:
       return true;
     case COMB_CURVES:
+      // A combined curve is considered result-dependent, if
+      // at least one of its active curve components is result-dependent
       for (size_t i : myActiveCurves)
         if (i >= myCurves.size())
-          break;
+          return false;
         else if (!myCurves[i].isNull() && myCurves[i]->isResultDependent())
           return true;
     default:
@@ -390,13 +394,13 @@ bool FmCurveSet::needsManualRefresh() const
     case INT_FUNCTION:
     case PREVIEW_FUNC:
       if (myFunction.isNull())
-	return false;
+        return false;
       else
-	return myFunction->isOfType(FmfDeviceFunction::getClassTypeID());
+        return myFunction->isOfType(FmfDeviceFunction::getClassTypeID());
     case COMB_CURVES:
       for (size_t i : myActiveCurves)
         if (i >= myCurves.size())
-          break;
+          return false;
         else if (!myCurves[i].isNull() && myCurves[i]->needsManualRefresh())
           return true;
     default:
@@ -788,38 +792,43 @@ bool FmCurveSet::setAutoLegend(bool yesOrNo)
     return text;
   };
 
-  bool isDefaultDescription = hasDefaultDescription(this);
   bool changed = myAutoLegend.setValue(yesOrNo);
 
+  std::string newLegend;
   if (myAutoLegend.getValue() && this->areAxesComplete())
     switch (myInputMode.getValue())
       {
       case TEMPORAL_RESULT:
       case SPATIAL_RESULT:
-        myLegend = axisText(YAXIS) + " vs " + axisText(XAXIS);
+        newLegend = axisText(YAXIS) + " vs " + axisText(XAXIS);
         break;
 
       case INT_FUNCTION:
       case PREVIEW_FUNC:
-        myLegend = "Function: " + myFunction->getInfoString();
+        newLegend = "Function: " + myFunction->getInfoString();
         break;
 
       case EXT_CURVE:
-        myLegend = "File: " + myFilePath.getValue();
+        newLegend = "File: " + myFilePath.getValue();
         if (!myChannelName.getValue().empty())
-          myLegend.getValue() += " - " + myChannelName.getValue();
+          newLegend += " - " + myChannelName.getValue();
         break;
 
       case COMB_CURVES:
-        myLegend = "Curve combination: " + myExpression.getValue();
+        newLegend = "Curve combination: " + myExpression.getValue();
         break;
 
       default:
         break;
       }
 
-  if (isDefaultDescription)
-    changed |= this->setUserDescription(myLegend.getValue());
+  if (!newLegend.empty())
+    changed |= this->setLegend(newLegend);
+
+  // Don't touch the description either if no legend yet
+  else if (myAutoLegend.getValue() && !myLegend.getValue().empty())
+    if (hasDefaultDescription(this))
+      changed |= this->setUserDescription(myLegend.getValue());
 
   return changed;
 }
@@ -830,8 +839,8 @@ bool FmCurveSet::setLegend(const std::string& legend)
   bool isDefaultDescription = hasDefaultDescription(this);
   bool changed = myLegend.setValue(legend);
 
-  if (isDefaultDescription)
-    this->setUserDescription(myLegend.getValue());
+  if (isDefaultDescription && !legend.empty())
+    this->setUserDescription(legend);
 
   return changed || isDefaultDescription;
 }
