@@ -166,20 +166,6 @@ static void openAssociatedLogFile (const char* fmmFile)
 }
 
 
-/*!
-  \brief Erases all dynamic objects from memory.
-*/
-
-static void cleanUpMemory ()
-{
-  FmDB::eraseAll(true);
-  FFl::releaseAllReaders();
-  FFl::releaseAllElements();
-  FFlMemPool::deleteAllLinkMemPools();
-  FFaMsg::setMessager();
-  funcMap.clear();
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 DLLexport(void) FmInit (const char* plugin1, const char* plugin2)
@@ -239,15 +225,37 @@ DLLexport(void) FmInit (const char* plugin1, const char* plugin2)
 }
 
 
+DLLexport(void) FmClose (bool removeSingletons = false)
+{
+#ifdef FM_DEBUG
+  std::cout <<"\nFmClose()"<< std::endl;
+#endif
+
+  FmDB::eraseAll(true);
+  if (removeSingletons)
+  {
+    FmDB::removeInstances();
+    FFl::releaseAllReaders();
+    FFl::releaseAllElements();
+    FFaUserFuncPlugin::removeInstance();
+    FiUserElmPlugin::removeInstance();
+  }
+  FFlMemPool::deleteAllLinkMemPools();
+  FFaMsg::setMessager();
+  funcMap.clear();
+}
+
+
 DLLexport(void) FmNew (const char* newFile)
 {
+  if (FmDB::getFreeBaseID() > 1)
+    FmClose();
+
 #ifdef FM_DEBUG
   std::cout <<"\nFmNew(";
   if (newFile) std::cout << newFile;
   std::cout <<")"<< std::endl;
 #endif
-  if (FmDB::getFreeBaseID() > 1)
-    cleanUpMemory();
 
   FmMechanism* mech = NULL;
   std::string newName = newFile ? newFile : "untitled.fmm";
@@ -276,40 +284,29 @@ DLLexport(void) FmNew (const char* newFile)
 
 DLLexport(bool) FmOpen (const char* fmmFile)
 {
+  if (FmDB::getFreeBaseID() > 1)
+    FmClose();
+
 #ifdef FM_DEBUG
   std::cout <<"\nFmOpen("<< fmmFile <<")"<< std::endl;
 #endif
-  if (FmDB::getFreeBaseID() > 1)
-    cleanUpMemory();
 
   openAssociatedLogFile(fmmFile);
-  if (Fedem::loadModel(fmmFile,"",'W') <= 0)
-    return false;
-
-  if (initFuncMap())
+  if (Fedem::loadModel(fmmFile,"",'W') > 0)
   {
-    ListUI <<"\n --> External function mapping:\n";
-    for (size_t channelIdx = 0; channelIdx < funcMap.size(); channelIdx++)
-      if (!funcMap[channelIdx].empty())
-        ListUI <<"     "<< 1+channelIdx <<" "<< funcMap[channelIdx] <<"\n";
+    if (initFuncMap())
+    {
+      ListUI <<"\n --> External function mapping:\n";
+      for (size_t channelIdx = 0; channelIdx < funcMap.size(); channelIdx++)
+        if (!funcMap[channelIdx].empty())
+          ListUI <<"     "<< 1+channelIdx <<" "<< funcMap[channelIdx] <<"\n";
+    }
+    if (Fedem::loadParts())
+      return true;
   }
 
-  return Fedem::loadParts();
-}
-
-
-DLLexport(void) FmClose (bool removeSingletons = false)
-{
-#ifdef FM_DEBUG
-  std::cout <<"\nFmClose()"<< std::endl;
-#endif
-  cleanUpMemory();
-  if (removeSingletons)
-  {
-    FmDB::removeInstances();
-    FFaUserFuncPlugin::removeInstance();
-    FiUserElmPlugin::removeInstance();
-  }
+  FmClose();
+  return false;
 }
 
 
