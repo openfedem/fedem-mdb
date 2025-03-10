@@ -1437,8 +1437,11 @@ bool FmDB::purgeJointComponents()
   int nErasedL = 0;
   FmDB::getAllOfType(objs,FmDofLoad::getClassTypeID());
   for (FmModelMemberBase* obj : objs)
-    if (!static_cast<FmDofLoad*>(obj)->getActiveOwner())
+  {
+    FmDofLoad* dl = static_cast<FmDofLoad*>(obj);
+    if (!dl->getActiveOwner() || !(dl->getInitLoad() || dl->getEngine()))
       if (obj->erase()) nErasedL++;
+  }
 
   if (nErasedL > 0)
     ListUI <<" --> Purging "<< nErasedL <<" inactive DOF loads\n";
