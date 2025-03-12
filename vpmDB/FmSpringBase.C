@@ -174,6 +174,13 @@ int FmSpringBase::printSolverEntry(FILE* fp)
     if (cyclicSpring < 1) cyclicSpring = 1;
   }
 
+  // Beta feature: Stress-free length change velocity/acceleration
+  int motionType = 0;
+  if (lenEngineId > 0 && sDesc.hasSubString("#Velocity"))
+    motionType = 1;
+  else if (lenEngineId > 0 && sDesc.hasSubString("#Acceleration"))
+    motionType = 2;
+
   // Stiffness function part
   double s0 = 0.0;
   int springFuncId = 0;
@@ -226,6 +233,8 @@ int FmSpringBase::printSolverEntry(FILE* fp)
 
   if (cyclicSpring > 0)
     fprintf(fp,"  unLoadType = %d\n", cyclicSpring);
+  if (motionType > 0)
+    fprintf(fp,"  motionType = %d\n", motionType);
 
   // Variables to be saved:
   // 1 - Spring stiffness

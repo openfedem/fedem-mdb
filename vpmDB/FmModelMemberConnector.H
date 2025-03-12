@@ -13,12 +13,7 @@
 #include "FFaLib/FFaPatterns/FFaSingelton.H"
 
 
-class FmSignalConnector : public FFaSingelton<FFaSwitchBoardConnector>
-{
-protected:
-  FmSignalConnector() {}
-  virtual ~FmSignalConnector() {}
-};
+using FmSignalConnector = FFaSingelton<FFaSwitchBoardConnector>;
 
 
 template <class T>
@@ -29,6 +24,7 @@ class FmModelMemberChangedReceiver : public FFaSwitchBoardConnector
 public:
   FmModelMemberChangedReceiver(T* owner) : myOwner(owner)
   {
+    FmSignalConnector::instance()->setLabel("FmModelMemberChangedReceiver");
     FFaSwitchBoard::connect(FmSignalConnector::instance(),
                             FmModelMemberBase::MODEL_MEMBER_CHANGED,
                             new FFaSlot1<FmModelMemberChangedReceiver<T>,FmModelMemberBase*>
