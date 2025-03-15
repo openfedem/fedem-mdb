@@ -25,13 +25,14 @@ if "FEDEM_SOLVER" not in environ:
 
 ################################################################################
 # Start the fedem solver on the model file:
-# $TEST_DIR/Cantilever-extFunc/Cantilever-internal.fmm
+# $TEST_DIR/Cantilever-extFunc/Cantilever-external.fmm
 # But first, copy it to current working directory,
 # such that the results database will be created here.
 wrkdir = getcwd() + "/"
 srcdir = environ["TEST_DIR"] + "/Cantilever-extFunc/"
-fmfile = "Cantilever-internal.fmm"
-copyfile(srcdir + fmfile, wrkdir + fmfile)
+fmfile = "Cantilever-external.fmm"
+exfile = "LoadFunctions.asc"
+copyfile(srcdir + exfile, wrkdir + exfile)
 solver = FmmSolver(fmfile)
 
 print("\n#### Running dynamics solver on", fmfile)
@@ -83,10 +84,50 @@ else:
 solver.close_model(True)
 
 ################################################################################
-# Start over on the same model, to verify that the model file
-# is updated correctly when we already have some results.
-# No result comparison in this run (should be identical).
+# Start over on the same model, but now assigning the external function values
+# through the solver API instead letting the solver read from file.
 
-ierr = solver.solve_all(fmfile);
+# Read the external function valuesfile
+xvals = []
+with open(srcdir + exfile, "r") as xfile:
+    count = 0
+    for line in xfile:
+        if count < 1:
+            print(line.strip())
+        else if count > 0:
+            xvals.append([float(x) for x in next(xfile).split()])
+        if line[0:5] == "#DESC":
+            next(xfile)  # skip the first data line (t=0.0)
+            count = 1
+
+ierr = solver.start(fmfile)
 if ierr < 0:
     exit(-ierr)
+
+print("\n#### Running dynamics solver on", fmfile)
+print("Comparing with response variables in TipPosition.asc")
+
+# Time step loop
+ierr = 0
+istep = 0
+do_continue = True
+while do_continue and solver.ierr.value == 0:
+    # Solve for next time step
+    time = solver.get_next_time()
+    do_continue = solver.solve_next(xvals[istep][1:])
+    # Extract the results
+    outputs = [float(solver.get_function(fId[i])) for i in range(n_out)]
+    outputs.insert(0, float(time))
+    # Compare response values
+    ierr += compare_lists(time, outputs, references[istep], 1.0e-8)
+    istep += 1
+
+# Simulation finished, terminate by closing down the result database, etc.
+ierr += abs(solver.solver_done())
+if ierr == 0 and solver.ierr.value == 0:
+    print("Time step loop OK, solver closed")
+else:
+    exit(ierr + abs(solver.ierr.value))
+
+# Write updated model file
+solver.close_model(True)
