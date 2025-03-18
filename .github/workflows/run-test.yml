@@ -14,24 +14,72 @@ on:
   workflow_dispatch:
 
 jobs:
+  get-tests:
+    name: Get solver regression tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out solver tests
+        uses: actions/checkout@v4
+        with:
+          repository: openfedem/fedem-solver-tests
+          sparse-checkout: |
+            TimeDomain
+            InversePy
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: solver-tests
+          path: |
+            TimeDomain/CarSuspension
+            TimeDomain/Cantilever-extFunc
+            InversePy/beam_transversal
+
   build-and-test:
     name: Build and execute unit tests
 
-    runs-on: ubuntu-latest
+    needs: get-tests
+
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Install googletest
         uses: Bacondish2023/setup-googletest@v1
 
-      - name: Silence some advice and hint
+      - name: Silence some advice and hint and set environment variables
         run: |
           git config --global advice.detachedHead false
           git config --global init.defaultBranch main
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/bin:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "FEDEM_REDUCER=${{ github.workspace }}/bin/libfedem_reducer_core.so" >> $GITHUB_ENV
+          echo "FEDEM_SOLVER=${{ github.workspace }}/bin/libfedem_solver_core.so" >> $GITHUB_ENV
+          echo "TEST_DIR=${{ github.workspace }}/solver-tests/TimeDomain" >> $GITHUB_ENV
 
       - name: Check out source repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Download solver test artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Download the latest FEDEM release
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: openfedem/fedem-solvers
+          fileName: 'fedem-*_linux64.tar.gz'
+          latest: true
+          extract: true
+
+      - name: Download the latest fedempy release
+        id: fedempy
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: openfedem/fedem-solvers
+          fileName: 'fedempy-*.tar.gz'
+          latest: true
 
       - name: Configure pFUnit-3
         run: >
@@ -42,10 +90,13 @@ jobs:
       - name: Build and install pFUnit-3
         run: cmake --build ./pFUnit3-build --target install
 
+      - name: Install the fedempy package
+        run: pip install ${{ fromJson(steps.fedempy.outputs.downloaded_files)[0] }} pyyaml progress
+
       - name: Configure main build
         run: >
           GTEST_ROOT=/usr/local PFUNIT=./pFUnit3 cmake -B ./build
-          -DCMAKE_BUILD_TYPE=Release -DUSE_FORTRAN=ON -DUSE_CHSHAPE=ON
+          -DCMAKE_BUILD_TYPE=Release -DUSE_FORTRAN=OFF -DUSE_CHSHAPE=ON
 
       - name: Build binaries and execute tests
         run: cmake --build ./build --target check
