@@ -35,10 +35,6 @@ else ( USE_FORTRAN)
   project ( ${APPLICATION_ID} CXX C )
 endif ( USE_FORTRAN)
 message ( STATUS "Generating build project for ${PROJECT_SOURCE_DIR}" )
-get_filename_component ( PROJECT_PARENT_DIR "${PROJECT_SOURCE_DIR}" PATH )
-if ( NOT IS_DIRECTORY "${PROJECT_PARENT_DIR}/fedem-solvers" )
-  get_filename_component ( PROJECT_PARENT_DIR "${PROJECT_PARENT_DIR}" PATH )
-endif ( NOT IS_DIRECTORY "${PROJECT_PARENT_DIR}/fedem-solvers" )
 find_path ( _MODULES FedemConfig.cmake
             PATHS $ENV{CMAKE_MODULES}
            "${PROJECT_SOURCE_DIR}/fedem-foundation/cmake/Modules/"
@@ -118,16 +114,33 @@ install ( TARGETS ${LIB_ID}
           LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" )
 
 
-# Perform the unit- and regression tests
+if ( BUILD_TESTS )
 
-if ( GTest_FOUND )
-  add_subdirectory ( test )
-endif ( GTest_FOUND )
-if ( TARGET ChainShape AND BUILD_TESTS )
-  add_subdirectory ( test/chainShape )
-endif ( TARGET ChainShape AND BUILD_TESTS )
-set ( PYTHON_DIR "${PROJECT_PARENT_DIR}/fedem-solvers/PythonAPI/src" )
-if ( IS_DIRECTORY "${PYTHON_DIR}" AND BUILD_TESTS )
+  # Perform the unit- and regression tests
+
+  if ( GTest_FOUND )
+    add_subdirectory ( test )
+  endif ( GTest_FOUND )
+
+  if ( TARGET ChainShape )
+    add_subdirectory ( test/chainShape )
+  endif ( TARGET ChainShape )
+
+  # If the fedem-solvers repository has been cloned in a folder parallel to
+  # either this one, or the parent folder of this, then set PYTHON_DIR pointing
+  # to the root of the fedempy sources in that clone.
+  # Otherwise, the installed version of fedempy will be used.
+  get_filename_component ( _PARENT_DIR "${PROJECT_SOURCE_DIR}" PATH )
+  if ( NOT IS_DIRECTORY "${_PARENT_DIR}/fedem-solvers" )
+    get_filename_component ( _PARENT_DIR "${_PARENT_DIR}" PATH )
+  endif ( NOT IS_DIRECTORY "${_PARENT_DIR}/fedem-solvers" )
+  if ( IS_DIRECTORY "${_PARENT_DIR}/fedem-solvers" )
+    set ( PYTHON_DIR "${_PARENT_DIR}/fedem-solvers/PythonAPI/src" )
+    set ( TEST_DIR "${_PARENT_DIR}/fedem-solvers/solverTests/TimeDomain" )
+  elseif ( DEFINED ENV{TEST_DIR} )
+    set ( TEST_DIR "$ENV{TEST_DIR}" )
+  endif ( IS_DIRECTORY "${_PARENT_DIR}/fedem-solvers" )
+
   if ( CMAKE_VERSION VERSION_LESS 3.12 )
     find_package ( PythonInterp 3 ) # enforce using python3
   else ( CMAKE_VERSION VERSION_LESS 3.12 )
@@ -138,4 +151,5 @@ if ( IS_DIRECTORY "${PYTHON_DIR}" AND BUILD_TESTS )
   if ( PythonInterp_FOUND )
     add_subdirectory ( test/fedempy )
   endif ( PythonInterp_FOUND )
-endif ( IS_DIRECTORY "${PYTHON_DIR}" AND BUILD_TESTS )
+
+endif ( BUILD_TESTS )

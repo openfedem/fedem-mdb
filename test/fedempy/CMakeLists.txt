@@ -90,11 +90,11 @@ import test_${TEST_ID}
                          "PYTHONPATH=${PYTHONPATH};${ARGN}" )
 endmacro ( add_fedempy_test )
 
-# The following tests will be active only if the fedem-solvers repository
-# has been cloned into a parallel folder named fedem-solvers.
-# They will not do anything if the environment variable FEDEM_SOLVER is undefined.
-set ( TEST_DIR "${PROJECT_PARENT_DIR}/fedem-solvers/solverTests/TimeDomain" )
-if ( IS_DIRECTORY ${TEST_DIR} )
+# The following tests will be active only if the variable TEST_DIR
+# points to the root folder of the Time-domain regression tests,
+# cloned from the fedem-solver-tests repository.
+# They will not do anything if the environment variable FEDEM_SOLVER is not set.
+if ( TEST_DIR )
   add_fedempy_test ( reducer TEST_DIR=${TEST_DIR} )
   add_fedempy_test ( solver TEST_DIR=${TEST_DIR} )
   set_tests_properties ( fedempy_solver PROPERTIES DEPENDS fedempy_reducer )
@@ -103,7 +103,9 @@ if ( IS_DIRECTORY ${TEST_DIR} )
   add_fedempy_test ( inverse TEST_DIR=${TEST_DIR} )
   add_fedempy_test ( Microbatch SRC_DIR=${CMAKE_CURRENT_SOURCE_DIR};TEST_DIR=${TEST_DIR} )
   add_fedempy_test ( SLA SRC_DIR=${CMAKE_CURRENT_SOURCE_DIR};TEST_DIR=${TEST_DIR} )
-endif ( IS_DIRECTORY ${TEST_DIR} )
+endif ( TEST_DIR )
+
+# The remaining tests only depend of files within this repository.
 add_fedempy_test ( Loader SRC_DIR=${CMAKE_CURRENT_SOURCE_DIR} )
 set ( PYTHONPATH "${PYTHONPATH}${CMAKE_PATH_SEP}${CMAKE_CURRENT_SOURCE_DIR}/divergence" )
 configure_file ( divergence/loader_01.fmm loader_01.fmm )
