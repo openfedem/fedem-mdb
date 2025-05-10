@@ -770,11 +770,12 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   }
   ListUI <<"Creating "<< joint->getUITypeName() <<".\n";
 
-  joint->setLocalCS(triad3->getLocalCS());
   if (subAssembly)
     joint->setParentAssembly(subAssembly);
-  else if (line)
+  else if (line && triad3)
     joint->setParentAssembly(line->getCommonAncestor(triad3));
+  else if (line)
+    joint->setParentAssembly(line->getParentAssembly());
   else
     joint->setParentAssembly(triad1->getCommonAncestor(triad2));
 
@@ -784,6 +785,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
     triad3->setParentAssembly(joint->getParentAssembly());
   }
   triad3->setOrientation(orientation);
+  joint->setLocalCS(triad3->getLocalCS());
   joint->setAsSlaveTriad(triad3);
 
   if (!line)
