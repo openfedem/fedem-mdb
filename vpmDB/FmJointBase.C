@@ -102,11 +102,11 @@ FmJointBase::FmJointBase()
   for (int i = 0; i < MAX_DOF; i++)
     myLegalDOFs[i] = false;
 
-  FFA_FIELD_INIT(tranSpringCpl,  NONE,             "TRAN_SPRING_CPL");
-  FFA_FIELD_INIT(rotSpringCpl,   NONE,             "ROT_SPRING_CPL");
-  FFA_FIELD_INIT(rotFormulation, FOLLOWER_AXIS,    "ROT_FORMULATION");
-  FFA_FIELD_INIT(rotSequence,    rZYX,             "ROT_SEQUENCE");
-  FFA_FIELD_INIT(myDOFQuadrant,  std::vector<int>(3,0), "VAR_QUADRANTS");
+  FFA_FIELD_INIT(tranSpringCpl,  NONE,          "TRAN_SPRING_CPL");
+  FFA_FIELD_INIT(rotSpringCpl,   NONE,          "ROT_SPRING_CPL");
+  FFA_FIELD_INIT(rotFormulation, FOLLOWER_AXIS, "ROT_FORMULATION");
+  FFA_FIELD_INIT(rotSequence,    rZYX,          "ROT_SEQUENCE");
+  FFA_FIELD_INIT(myDOFQuadrant,  IntVec(3,0),   "VAR_QUADRANTS");
 
   FFA_REFERENCE_FIELD_INIT(itsSlaveTriadField, itsSlaveTriad, "SLAVE_TRIAD");
 
@@ -115,23 +115,22 @@ FmJointBase::FmJointBase()
 }
 
 
-static const char* dof[] = { "X_TRANS","Y_TRANS","Z_TRANS","X_ROT","Y_ROT","Z_ROT" };
+static std::array<std::string,6> dof{ "X_TRANS","Y_TRANS","Z_TRANS","X_ROT","Y_ROT","Z_ROT" };
 
 void FmJointBase::completeInitJVars()
 {
   for (int i = 0; i < MAX_DOF; i++)
     if (myLegalDOFs[i])
     {
-      FFA_FIELD_INIT(myDofStatus[i], FREE, std::string(dof[i]) + "_STATUS");
+      FFA_FIELD_INIT(myDofStatus[i], FREE, dof[i] + "_STATUS");
 
-      FFA_REFERENCE_FIELD_INIT(mySpringFields[i], mySprings[i], std::string(dof[i]) + "_SPRING");
-      FFA_REFERENCE_FIELD_INIT(myDamperFields[i], myDampers[i], std::string(dof[i]) + "_DAMPER");
+      this->completeInitDOF(i,dof[i]);
+      FFA_REFERENCE_FIELD_INIT(mySpringFields[i], mySprings[i], dof[i] + "_SPRING");
+      FFA_REFERENCE_FIELD_INIT(myDamperFields[i], myDampers[i], dof[i] + "_DAMPER");
 
       mySprings[i].setPrintIfZero(false);
       myDampers[i].setPrintIfZero(false);
     }
-
-  this->completeInitDOFs();
 }
 
 
@@ -148,6 +147,19 @@ FmJointBase::~FmJointBase()
   std::vector<FmHPBase*> hps;
   this->getReferringObjs(hps);
   for (FmHPBase* hp : hps) hp->erase();
+}
+
+
+void FmJointBase::eraseKeepDOFs()
+{
+  for (int i = 0; i < MAX_DOF; i++)
+  {
+    this->releaseLoadAtDOF(i);
+    this->releaseMotionAtDOF(i);
+    this->releaseSpringAtDOF(i);
+    this->releaseDamperAtDOF(i);
+  }
+  this->erase();
 }
 
 
@@ -806,23 +818,23 @@ bool FmJointBase::localParse(const char* keyWord, std::istream& activeStatement,
   // Conversion of some pre R5.1 keywords
   int motionDof = -1;
   for (int i = 0; i < 6; i++)
-    if (std::string(dof[i])+"_MOTION_TYPE" == keyWord)
-      return parentParse((std::string(dof[i])+"_STATUS").c_str(),activeStatement,obj);
-    else if (std::string(dof[i])+"_JVAR_INIT_VEL" == keyWord)
+    if (dof[i]+"_MOTION_TYPE" == keyWord)
+      return parentParse((dof[i]+"_STATUS").c_str(),activeStatement,obj);
+    else if (dof[i]+"_JVAR_INIT_VEL" == keyWord)
     {
       double initVel;
       activeStatement >> initVel;
       obj->setInitVel(i,initVel);
       return true;
     }
-    else if (std::string(dof[i])+"_JVAR_INIT_ACC" == keyWord)
+    else if (dof[i]+"_JVAR_INIT_ACC" == keyWord)
     {
       double initAcc;
       activeStatement >> initAcc;
       obj->setInitAcc(i,initAcc);
       return true;
     }
-    else if (std::string(dof[i])+"_MOTION" == keyWord)
+    else if (dof[i]+"_MOTION" == keyWord)
     {
       motionDof = i;
       break;

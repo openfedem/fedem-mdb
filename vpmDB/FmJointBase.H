@@ -89,6 +89,7 @@ public:
 
   // Topology management
 
+  void eraseKeepDOFs();
   void eraseInternal();
 
   bool setAsSlaveTriad(FmTriad* slTriad);
