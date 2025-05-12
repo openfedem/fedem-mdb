@@ -72,8 +72,9 @@ public:
   friend std::ostream& operator<<(std::ostream& s, const std::vector<DOFStatusEnum>& obj);
   friend std::istream& operator>>(std::istream& s, std::vector<DOFStatusEnum>& obj);
 
-  void getDOFs(std::vector<int>& dofs) const;
+  void getDOFs(IntVec& dofs) const;
 
+  bool setStatusForAllDOFs(bool fixed);
   bool setStatusForDOF(int dof, int status);
   int getStatusCode(int dof) const; // 0=fixed, 1=free, 2=additional BC
 
@@ -94,6 +95,7 @@ protected:
   virtual ~FmHasDOFsBase();
 
   void completeInitDOFs();
+  void completeInitDOF(int i, const std::string& dofName);
 
   static bool localParse(const char* keyWord, std::istream& activeStatement,
 			 FmHasDOFsBase* obj);
@@ -106,8 +108,8 @@ protected:
   FFaField<FFaReferenceBase*> myLoadFields[MAX_DOF];
   FFaField<FFaReferenceBase*> myMotionFields[MAX_DOF];
 
-  FFaField< std::vector<double> > initVel;
-  FFaField< std::vector<double> > initAcc;
+  FFaField<DoubleVec> initVel;
+  FFaField<DoubleVec> initAcc;
 };
 
 #endif

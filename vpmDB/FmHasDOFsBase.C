@@ -24,17 +24,21 @@ FmHasDOFsBase::FmHasDOFsBase()
 
 void FmHasDOFsBase::completeInitDOFs()
 {
-  const char* dof[] = { "X_TRANS","Y_TRANS","Z_TRANS","X_ROT","Y_ROT","Z_ROT" };
+  static std::array<std::string,MAX_DOF> dof{ "X_TRANS","Y_TRANS","Z_TRANS","X_ROT","Y_ROT","Z_ROT" };
 
   for (int i = 0; i < MAX_DOF; i++)
     if (this->isLegalDOF(i))
-    {
-      FFA_REFERENCE_FIELD_INIT(myLoadFields[i],   myLoads[i],   std::string(dof[i]) + "_LOAD"  );
-      FFA_REFERENCE_FIELD_INIT(myMotionFields[i], myMotions[i], std::string(dof[i]) + "_MOTION");
+      this->completeInitDOF(i,dof[i]);
+}
 
-      myLoads[i].setPrintIfZero(false);
-      myMotions[i].setPrintIfZero(false);
-    }
+
+void FmHasDOFsBase::completeInitDOF(int i, const std::string& dofName)
+{
+  FFA_REFERENCE_FIELD_INIT(myLoadFields[i],   myLoads[i],   dofName + "_LOAD"  );
+  FFA_REFERENCE_FIELD_INIT(myMotionFields[i], myMotions[i], dofName + "_MOTION");
+
+  myLoads[i].setPrintIfZero(false);
+  myMotions[i].setPrintIfZero(false);
 }
 
 
@@ -160,17 +164,17 @@ int FmHasDOFsBase::getMotionBaseID(int dof) const
 
 void FmHasDOFsBase::releaseLoadAtDOF(int dof)
 {
-  if (dof >= 0) myLoads[dof] = NULL;
+  if (dof >= 0 && dof < MAX_DOF) myLoads[dof] = NULL;
 }
 
 
 void FmHasDOFsBase::releaseMotionAtDOF(int dof)
 {
-  if (dof >= 0) myMotions[dof] = NULL;
+  if (dof >= 0 && dof < MAX_DOF) myMotions[dof] = NULL;
 }
 
 
-void FmHasDOFsBase::getDOFs(std::vector<int>& dofs) const
+void FmHasDOFsBase::getDOFs(IntVec& dofs) const
 {
   dofs.clear();
   dofs.reserve(MAX_DOF);
@@ -182,8 +186,18 @@ void FmHasDOFsBase::getDOFs(std::vector<int>& dofs) const
 
 bool FmHasDOFsBase::setStatusForDOF(int dof, int status)
 {
-  DOFStatus dstat = DOFStatusMapping::map()[status].first;
-  return this->setStatusForDOF(dof,dstat);
+  DOFStatus ds = DOFStatusMapping::map()[status].first;
+  return this->setStatusForDOF(dof,ds);
+}
+
+
+bool FmHasDOFsBase::setStatusForAllDOFs(bool fixed)
+{
+  DOFStatus ds = fixed ? FmHasDOFsBase::FIXED : FmHasDOFsBase::FREE;
+  bool changed = false;
+  for (int dof = 0; dof < MAX_DOF; dof++)
+    changed |= this->setStatusForDOF(dof,ds);
+  return changed;
 }
 
 
@@ -225,7 +239,7 @@ int FmHasDOFsBase::atWhatDOF(const FmDofMotion* pm) const
 
 double FmHasDOFsBase::getInitVel(int dof, bool includeFixed) const
 {
-  if ((size_t)dof < initVel.getValue().size() && this->isLegalDOF(dof))
+  if (dof < static_cast<int>(initVel.getValue().size()) && this->isLegalDOF(dof))
     if (includeFixed || this->getStatusOfDOF(dof) != FIXED)
       return initVel.getValue()[dof];
 
@@ -235,7 +249,7 @@ double FmHasDOFsBase::getInitVel(int dof, bool includeFixed) const
 
 double FmHasDOFsBase::getInitAcc(int dof, bool includeFixed) const
 {
-  if ((size_t)dof < initAcc.getValue().size() && this->isLegalDOF(dof))
+  if (dof < static_cast<int>(initAcc.getValue().size()) && this->isLegalDOF(dof))
     if (includeFixed || this->getStatusOfDOF(dof) != FIXED)
       return initAcc.getValue()[dof];
 
