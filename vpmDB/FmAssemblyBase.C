@@ -19,7 +19,6 @@ FmAssemblyBase::FmAssemblyBase(bool isDummy) : FmSubAssembly(isDummy)
 
   FFA_FIELD_DEFAULT_INIT(myCS,"COORDINATE_SYSTEM");
   FFA_FIELD_DEFAULT_INIT(myLocation,"LOCATION3D_DATA");
-  myLocation.getValue().setSaveNumericalData(false);
 }
 
 

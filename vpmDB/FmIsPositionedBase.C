@@ -20,7 +20,6 @@ FmIsPositionedBase::FmIsPositionedBase()
 
   FFA_FIELD_DEFAULT_INIT(myCS, "COORDINATE_SYSTEM");
   FFA_FIELD_DEFAULT_INIT(myLocation, "LOCATION3D_DATA");
-  myLocation.getValue().setSaveNumericalData(false);
 
   FFA_REFERENCE_FIELD_INIT(myPosRefField, myPosRef, "LOCATION3D_POS_VIEW_REF");
   FFA_REFERENCE_FIELD_INIT(myRotRefField, myRotRef, "LOCATION3D_ROT_VIEW_REF");
