@@ -42,8 +42,8 @@ public:
 
   bool isMasterMovedAlong() const { return IAmMovingMasterTriadAlong.getValue(); }
   bool isSlaveMovedAlong()  const { return IAmMovingSlaveTriadAlong.getValue(); }
-  void setMasterMovedAlong(bool isMovedAlong) { IAmMovingMasterTriadAlong = isMovedAlong; }
-  void setSlaveMovedAlong( bool isMovedAlong) { IAmMovingSlaveTriadAlong  = isMovedAlong; }
+  bool setMasterMovedAlong(bool onOff) { return IAmMovingMasterTriadAlong.setValue(onOff); }
+  bool setSlaveMovedAlong(bool onOff)  { return IAmMovingSlaveTriadAlong.setValue(onOff); }
 
   virtual FaVec3 getTransJointVariables() const;
   virtual FaVec3 getRotJointVariables() const;
