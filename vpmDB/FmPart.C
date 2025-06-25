@@ -1011,6 +1011,17 @@ int FmPart::getNodePos(int nodeNo, double* x, double* y, double* z) const
 }
 
 
+bool FmPart::getNodeConnectivity(int nodeNo, Strings& elements) const
+{
+  if (myFEData)
+    myFEData->getNodeConnectivity(nodeNo,elements);
+  else
+    elements.clear();
+
+  return !elements.empty();
+}
+
+
 FFlNode* FmPart::getClosestNode(const FaVec3& point) const
 {
   return myFEData ? myFEData->findClosestNode(point) : NULL;
@@ -2811,9 +2822,10 @@ bool FmPart::isTranslatable() const
 }
 
 
-void FmPart::setCGPosRef(FmIsPositionedBase* refObj)
+bool FmPart::setCGPosRef(FmIsPositionedBase* refObj)
 {
-  if (myCGPosRef == refObj) return;
+  if (myCGPosRef == refObj)
+    return false; // not changed
 
   FaMat34 newRefCS;
   FaMat34 oldRefCS;
@@ -2824,12 +2836,14 @@ void FmPart::setCGPosRef(FmIsPositionedBase* refObj)
   myCG.getValue().changePosRefCS(newRefCS,oldRefCS);
 
   myCGPosRef = refObj;
+  return true;
 }
 
 
-void FmPart::setCGRotRef(FmIsPositionedBase* refObj)
+bool FmPart::setCGRotRef(FmIsPositionedBase* refObj)
 {
-  if (myCGRotRef == refObj) return;
+  if (myCGRotRef == refObj)
+    return false; // not changed
 
   FaMat34 newRefCS;
   FaMat34 oldRefCS;
@@ -2840,6 +2854,7 @@ void FmPart::setCGRotRef(FmIsPositionedBase* refObj)
   myCG.getValue().changeRotRefCS(newRefCS,oldRefCS);
 
   myCGRotRef = refObj;
+  return true;
 }
 
 

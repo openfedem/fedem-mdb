@@ -77,6 +77,7 @@ public:
   FFlNode* getNode(int nodeNo) const;
   int getNodePos(int nodeNo,
                  double* x = NULL, double* y = NULL, double* z = NULL) const;
+  bool getNodeConnectivity(int nodeNo, Strings& elements) const;
   FFlNode* getClosestNode(const FaVec3& point) const;
 
   int  getCompModesFlags(IntVec& BCcodes) const;
@@ -111,8 +112,8 @@ public:
 
   virtual void getStickers(std::vector<FmSticker*>& toFill) const;
 
-  void setCGPosRef(FmIsPositionedBase* ref);
-  void setCGRotRef(FmIsPositionedBase* ref);
+  bool setCGPosRef(FmIsPositionedBase* ref);
+  bool setCGRotRef(FmIsPositionedBase* ref);
 
   FmIsPositionedBase* getCGPosRef() const { return myCGPosRef; }
   FmIsPositionedBase* getCGRotRef() const { return myCGRotRef; }
