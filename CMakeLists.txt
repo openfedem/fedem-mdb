@@ -111,7 +111,7 @@ target_link_libraries ( ${LIB_ID} vpmDB )
 
 install ( TARGETS ${LIB_ID}
           RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
-          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" )
+          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" )
 
 
 if ( BUILD_TESTS )

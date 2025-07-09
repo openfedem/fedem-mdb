@@ -24,4 +24,4 @@ target_link_libraries ( ${LIB_ID} LINK_PRIVATE Minpack )
 
 install ( TARGETS ${LIB_ID}
           RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
-          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" )
+          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" )
