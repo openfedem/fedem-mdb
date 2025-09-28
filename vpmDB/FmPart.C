@@ -175,6 +175,7 @@ FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
   FFA_REFERENCELIST_FIELD_INIT(myLoadEnginesField, myLoadEngines, "LOAD_ENGINES");
 
   FFA_FIELD_INIT(recoveryDuringSolve, 0,      "RECOVERY_DURING_SOLVE");
+  FFA_FIELD_INIT(ignoreInRecovery, false,     "IGNORE_IN_RECOVERY");
   FFA_FIELD_INIT(useExternalResFile, false,   "USE_EXTERNAL_RESULT_FILE");
   FFA_FIELD_DEFAULT_INIT(externalResFileName, "EXTERNAL_RESULT_FILE");
 
@@ -486,6 +487,16 @@ bool FmPart::isAttachable() const
 {
   return (lockLevel.getValue() == FM_ALLOW_MODIFICATIONS ||
           lockLevel.getValue() == FM_ALLOW_LINK_EXT_NODE_MOD);
+}
+
+
+FaMat34 FmPart::getTransform() const
+{
+#ifdef USE_INVENTOR
+  if (itsDisplayPt)
+    return static_cast<FdPart*>(itsDisplayPt)->getActiveTransform();
+#endif
+  return FaMat34();
 }
 
 
