@@ -37,12 +37,12 @@ const Strings& FmJointBase::getRotFormulationUINames()
 {
   static Strings rotFormulationTypes;
   if (rotFormulationTypes.empty())
-  {
-    rotFormulationTypes.reserve(3);
-    rotFormulationTypes.push_back("Sequential rotation, Follower axis");
-    rotFormulationTypes.push_back("Sequential rotation, Orthogonal axis");
-    rotFormulationTypes.push_back("Rotational vector");
-  }
+    rotFormulationTypes = {
+      "Sequential rotation, Follower axis",
+      "Sequential rotation, Orthogonal axis",
+      "Rotational vector"
+    };
+
   return rotFormulationTypes;
 }
 
@@ -51,15 +51,8 @@ const Strings& FmJointBase::getRotSequenceUINames()
 {
   static Strings rotSequenceTypes;
   if (rotSequenceTypes.empty())
-  {
-    rotSequenceTypes.reserve(6);
-    rotSequenceTypes.push_back("ZYX");
-    rotSequenceTypes.push_back("YXZ");
-    rotSequenceTypes.push_back("XZY");
-    rotSequenceTypes.push_back("XYZ");
-    rotSequenceTypes.push_back("YZX");
-    rotSequenceTypes.push_back("ZXY");
-  }
+    rotSequenceTypes = { "ZYX", "YXZ", "XZY", "XYZ", "YZX", "ZXY" };
+
   return rotSequenceTypes;
 }
 
@@ -83,14 +76,14 @@ const Strings& FmJointBase::getSpringCplUINames()
 {
   static Strings springCplTypes;
   if (springCplTypes.empty())
-  {
-    springCplTypes.reserve(5);
-    springCplTypes.push_back("None");
-    springCplTypes.push_back("Cylindrical Z");
-    springCplTypes.push_back("Cylindrical X");
-    springCplTypes.push_back("Cylindrical Y");
-    springCplTypes.push_back("Spherical");
-  }
+    springCplTypes = {
+      "None",
+      "Cylindrical Z",
+      "Cylindrical X",
+      "Cylindrical Y",
+      "Spherical"
+    };
+
   return springCplTypes;
 }
 
@@ -421,26 +414,26 @@ double FmJointBase::getJointVariable(int var) const
 }
 
 
-void FmJointBase::getEntities(std::vector<FmSensorChoice>& choicesToFill, int dof)
+void FmJointBase::getEntities(std::vector<FmSensorChoice>& choices, int dof)
 {
-  choicesToFill.clear();
+  choices.reserve(9);
 
   DOFStatus status = this->getStatusOfDOF(dof);
-  if (status != FIXED) {
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::REL_POS]);
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::VEL]);
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::ACCEL]);
-  }
+  if (status == FIXED)
+    choices.clear();
+  else
+    choices = {
+      itsEntityTable[FmIsMeasuredBase::REL_POS],
+      itsEntityTable[FmIsMeasuredBase::VEL],
+      itsEntityTable[FmIsMeasuredBase::ACCEL]
+    };
+
   if (status == FIXED || status == PRESCRIBED)
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::FORCE]);
-  else if (status >= SPRING_CONSTRAINED) {
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::JSPR_ANG]);
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::JSPR_DEFL]);
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::JSPR_FORCE]);
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::JDAMP_ANG]);
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::JDAMP_VEL]);
-    choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::JDAMP_FORCE]);
-  }
+    choices.push_back(itsEntityTable[FmIsMeasuredBase::FORCE]);
+  else if (status >= SPRING_CONSTRAINED)
+    for (int i = FmIsMeasuredBase::JSPR_ANG;
+         i <= FmIsMeasuredBase::JDAMP_FORCE; i++)
+      choices.push_back(itsEntityTable[i]);
 }
 
 
@@ -453,28 +446,28 @@ void FmJointBase::getDofs(std::vector<FmSensorChoice>& choicesToFill)
 }
 
 
-bool FmJointBase::setSpringAtDOF(int DOFno, FmJointSpring* spr, bool forceReplace)
+bool FmJointBase::setSpringAtDOF(int DOFno, FmJointSpring* spr,
+                                 bool forceReplace)
 {
   if (!this->isLegalDOF(DOFno))
     return false;
 
-  else if (!mySprings[DOFno])
+  if (!mySprings[DOFno])
+  {
+    if (spr)
     {
-      if (spr) {
-	spr->disconnect();
-	mySprings[DOFno] = spr;
-	spr->connect();
-      }
-    }
-
-  else if (forceReplace)
-    {
-      if (spr != mySprings[DOFno])
-        removeSpringAtDOF(DOFno);
-
+      spr->disconnect();
       mySprings[DOFno] = spr;
+      spr->connect();
     }
+  }
+  else if (forceReplace)
+  {
+    if (spr != mySprings[DOFno])
+      removeSpringAtDOF(DOFno);
 
+    mySprings[DOFno] = spr;
+  }
   else
     return false;
 
@@ -482,28 +475,29 @@ bool FmJointBase::setSpringAtDOF(int DOFno, FmJointSpring* spr, bool forceReplac
 }
 
 
-bool FmJointBase::setDamperAtDOF(int DOFno, FmJointDamper* dmp, bool forceReplace)
+bool FmJointBase::setDamperAtDOF(int DOFno, FmJointDamper* dmp,
+                                 bool forceReplace)
 {
   if (!this->isLegalDOF(DOFno))
     return false;
 
-  else if (!myDampers[DOFno])
+  if (!myDampers[DOFno])
+  {
+    if (dmp)
     {
-      if (dmp) {
-	dmp->disconnect();
-	myDampers[DOFno] = dmp;
-	dmp->connect();
-      }
-    }
-
-  else if (forceReplace)
-    {
-      if (dmp != myDampers[DOFno])
-        removeDamperAtDOF(DOFno);
-
+      dmp->disconnect();
       myDampers[DOFno] = dmp;
+      dmp->connect();
     }
+  }
+  else if (forceReplace)
+  {
+    if (dmp != myDampers[DOFno])
+      removeDamperAtDOF(DOFno);
 
+    myDampers[DOFno] = dmp;
+    return true;
+  }
   else
     return false;
 
@@ -513,7 +507,8 @@ bool FmJointBase::setDamperAtDOF(int DOFno, FmJointDamper* dmp, bool forceReplac
 
 FmJointSpring* FmJointBase::getSpringAtDOF(int DOFno, bool createIfNone)
 {
-  if (!this->isLegalDOF(DOFno)) return NULL;
+  if (!this->isLegalDOF(DOFno))
+    return NULL;
 
   if (!mySprings[DOFno] && createIfNone)
   {
@@ -538,7 +533,8 @@ int FmJointBase::getSpringBaseID(int DOFno) const
 
 FmJointDamper* FmJointBase::getDamperAtDOF(int DOFno, bool createIfNone)
 {
-  if (!this->isLegalDOF(DOFno)) return NULL;
+  if (!this->isLegalDOF(DOFno))
+    return NULL;
 
   if (!myDampers[DOFno] && createIfNone)
   {
@@ -563,7 +559,8 @@ int FmJointBase::getDamperBaseID(int DOFno) const
 
 FmDofMotion* FmJointBase::getMotionAtDOF(int DOFno, bool createIfNone)
 {
-  if (!this->isLegalDOF(DOFno)) return NULL;
+  if (!this->isLegalDOF(DOFno))
+    return NULL;
 
   if (!myMotions[DOFno] && createIfNone)
   {
@@ -614,15 +611,14 @@ void FmJointBase::releaseDamperAtDOF(int DOFno)
 
 bool FmJointBase::setStatusForDOF(int dof, DOFStatus dstat)
 {
-  if (!this->isLegalDOF(dof)) return false;
-
-  return myDofStatus[dof].setValue(dstat);
+  return this->isLegalDOF(dof) ? myDofStatus[dof].setValue(dstat) : false;
 }
 
 
 FmJointBase::DOFStatus FmJointBase::getStatusOfDOF(int dof) const
 {
-  if (!this->isLegalDOF(dof)) return FIXED;
+  if (!this->isLegalDOF(dof))
+    return FIXED;
 
   return myDofStatus[dof].getValue();
 }
@@ -651,7 +647,8 @@ bool FmJointBase::hasConstraints(bool fixedOnly) const
 
 void FmJointBase::setInitVel(int dof, double vel)
 {
-  if (!this->isLegalDOF(dof)) return;
+  if (!this->isLegalDOF(dof))
+    return;
 
   if ((size_t)dof < initVel.getValue().size())
     initVel.getValue()[dof] = vel;
@@ -757,7 +754,7 @@ int FmJointBase::atWhatDOF(const FmJointMotion* pm) const
 FaVec3 FmJointBase::getJointRotations(const FaMat34& from,
 				      const FaMat34& to) const
 {
-  FaVec3 rotVars = FaMat34::getEulerZYX(from,to);
+  FaVec3 rotVars = to.getEulerZYX(from);
 
   for (int i = 0; i < 3; i++)
     if (myDOFQuadrant.getValue()[i])
@@ -778,15 +775,15 @@ void FmJointBase::setJointRotations(const FaVec3& rotations,
   // quasi-setting of the DOF quadrant.
   // i=0 means first or second quadrant, 1 means larger angles.
   for (int i = 0; i < 3; i++)
-    {
-      double val = rotations[i]/M_PI;
-      if (val > 1.0 && val < 2.0)
-	myDOFQuadrant.getValue()[i] = 1;
-      else if (val < -1.0 && val > -2.0)
-	myDOFQuadrant.getValue()[i] = -1;
-      else
-	myDOFQuadrant.getValue()[i] = 0;
-    }
+  {
+    double val = rotations[i]/M_PI;
+    if (val > 1.0 && val < 2.0)
+      myDOFQuadrant.getValue()[i] = 1;
+    else if (val < -1.0 && val > -2.0)
+      myDOFQuadrant.getValue()[i] = -1;
+    else
+      myDOFQuadrant.getValue()[i] = 0;
+  }
 
   slaveCS.eulerRotateZYX(rotations,masterCS);
   slaveTr->setGlobalCS(slaveCS);
@@ -875,22 +872,24 @@ bool FmJointBase::cloneLocal(FmBase* obj, int depth)
 
   FmJointBase* copyObj = static_cast<FmJointBase*>(obj);
 
-  FmTriad* slTr = copyObj->getSlaveTriad();
-  if (slTr) {
+  if (FmTriad* slTr = copyObj->getSlaveTriad(); slTr)
+  {
     if (depth == FmBase::DEEP_REPLACE)
       copyObj->removeItsSlaveTriad();
     this->setAsSlaveTriad(slTr);
   }
 
   for (int i = 0; i < MAX_DOF; i++)
-    if (myLegalDOFs[i]) {
+    if (myLegalDOFs[i])
+    {
       this->setDamperAtDOF(i, copyObj->getDamperAtDOF(i), true);
       this->setSpringAtDOF(i, copyObj->getSpringAtDOF(i), true);
       this->setLoadAtDOF  (i, copyObj->getLoadAtDOF(i)  , true);
       this->setMotionAtDOF(i, copyObj->getMotionAtDOF(i), true);
     }
 
-  if (depth == FmBase::DEEP_REPLACE) {
+  if (depth == FmBase::DEEP_REPLACE)
+  {
     copyObj->releaseReferencesToMe("itsInputJoint", this);
     copyObj->releaseReferencesToMe("itsOutputJoint", this);
   }
