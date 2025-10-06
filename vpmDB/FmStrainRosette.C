@@ -28,7 +28,6 @@
 
 #ifdef USE_INVENTOR
 #include "vpmDisplay/FdStrainRosette.H"
-#include "vpmDisplay/FdPart.H"
 #endif
 
 #ifdef FF_NAMESPACE
@@ -69,35 +68,30 @@ FmStrainRosette::FmStrainRosette()
 {
   Fmd_CONSTRUCTOR_INIT(FmStrainRosette);
 
-  FFA_REFERENCE_FIELD_INIT(rosetteLinkField, rosetteLink, "ROSETTE_LINK"  );
+  FFA_REFERENCE_FIELD_INIT(rosetteLinkField, rosetteLink, "ROSETTE_LINK");
 
-  FFA_FIELD_INIT( rosetteType      , TRIPLE_GAGE_45, "ROSETTE_TYPE"       );
+  FFA_FIELD_INIT(rosetteType      ,   SINGLE_GAGE, "ROSETTE_TYPE"       );
 
-  FFA_FIELD_INIT( numNodes         ,              4, "NUM_NODES"          );
+  FFA_FIELD_INIT(useFEThickness   ,          true, "USE_FE_THICKNESS"   );
+  FFA_FIELD_INIT(zPos             ,           0.0, "HEIGHT"             );
+  FFA_FIELD_INIT(FEThickness      ,           0.0, "FE_THICKNESS"       );
 
-  FFA_FIELD_DEFAULT_INIT( nodePos1 ,                 "NODE_1_POSITION"    );
-  FFA_FIELD_DEFAULT_INIT( nodePos2 ,                 "NODE_2_POSITION"    );
-  FFA_FIELD_DEFAULT_INIT( nodePos3 ,                 "NODE_3_POSITION"    );
-  FFA_FIELD_DEFAULT_INIT( nodePos4 ,                 "NODE_4_POSITION"    );
+  FFA_FIELD_INIT(angle            ,           0.0, "ANGLE"              );
+  FFA_FIELD_INIT(angleOrigin      ,   LINK_VECTOR, "ANGLE_ORIGIN"       );
+  FFA_FIELD_INIT(angleOriginVector, FaVec3(1,0,0), "ANGLE_ORIGIN_VECTOR");
 
-  FFA_FIELD_INIT( node1            ,             -1, "NODE_1"             );
-  FFA_FIELD_INIT( node2            ,             -1, "NODE_2"             );
-  FFA_FIELD_INIT( node3            ,             -1, "NODE_3"             );
-  FFA_FIELD_INIT( node4            ,             -1, "NODE_4"             );
+  FFA_FIELD_INIT(useFEMaterial    ,          true, "USE_FE_MATERIAL"    );
+  FFA_FIELD_INIT(EMod             ,          -1.0, "E_MODULE"           );
+  FFA_FIELD_INIT(EModFE           ,          -1.0, "FE_E_MODULE"        );
+  FFA_FIELD_INIT(nu               ,          -1.0, "POISSONS_RATIO"     );
+  FFA_FIELD_INIT(nuFE             ,          -1.0, "FE_POISSONS_RATIO"  );
 
-  FFA_FIELD_INIT( useFEThickness   ,           true, "USE_FE_THICKNESS"   );
-  FFA_FIELD_INIT( zPos             ,              0, "HEIGHT"             );
-  FFA_FIELD_INIT( FEThickness      ,              0, "FE_THICKNESS"       );
-
-  FFA_FIELD_INIT( angle            ,              0, "ANGLE"              );
-  FFA_FIELD_INIT( angleOrigin      ,         LINK_X, "ANGLE_ORIGIN"       );
-  FFA_FIELD_INIT( angleOriginVector,  FaVec3(1,0,0), "ANGLE_ORIGIN_VECTOR");
-
-  FFA_FIELD_INIT( useFEMaterial    ,           true, "USE_FE_MATERIAL"    );
-  FFA_FIELD_INIT( EMod             ,             -1, "E_MODULE"           );
-  FFA_FIELD_INIT( EModFE           ,             -1, "FE_E_MODULE"        );
-  FFA_FIELD_INIT( nu               ,             -1, "POISSONS_RATIO"     );
-  FFA_FIELD_INIT( nuFE             ,             -1, "FE_POISSONS_RATIO"  );
+  std::string identifier("NODE_1");
+  for (int i = 0; i < 4; i++, ++identifier.back())
+  {
+    FFA_FIELD_INIT(node[i], -1, identifier);
+    FFA_FIELD_DEFAULT_INIT(nodePos[i], identifier + "_POSITION");
+  }
 
   FFA_FIELD_INIT(removeStartStrains, true, "SET_START_STRAINS_TO_ZERO");
 
@@ -110,98 +104,93 @@ FmStrainRosette::FmStrainRosette()
 
 FmStrainRosette::~FmStrainRosette()
 {
-  if (tmpZDirection)
-    delete tmpZDirection;
+  delete tmpZDirection;
   this->disconnect();
 }
 
 
-void FmStrainRosette::getEntities(std::vector<FmSensorChoice>& choicesToFill, int)
+void FmStrainRosette::getEntities(std::vector<FmSensorChoice>& choices, int)
 {
-  choicesToFill.clear();
-  choicesToFill.reserve(2);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::STRAIN]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::STRESS]);
+  choices = {
+    itsEntityTable[FmIsMeasuredBase::STRAIN],
+    itsEntityTable[FmIsMeasuredBase::STRESS]
+  };
 }
 
 
-void FmStrainRosette::getDofs(std::vector<FmSensorChoice>& choicesToFill)
+void FmStrainRosette::getDofs(std::vector<FmSensorChoice>& choices)
 {
-  choicesToFill.clear();
-  choicesToFill.reserve(7);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::MAX_PR]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::MIN_PR]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::SA_MAX]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::VMISES]);
-  if (this->rosetteType.getValue() >= SINGLE_GAGE)
-    choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::GAGE_1]);
-  if (this->rosetteType.getValue() >= DOUBLE_GAGE_90)
-    choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::GAGE_2]);
-  if (this->rosetteType.getValue() >= TRIPLE_GAGE_60)
-    choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::GAGE_3]);
+  choices.reserve(7);
+  choices = {
+    itsDofTable[FmIsMeasuredBase::MAX_PR],
+    itsDofTable[FmIsMeasuredBase::MIN_PR],
+    itsDofTable[FmIsMeasuredBase::SA_MAX],
+    itsDofTable[FmIsMeasuredBase::VMISES]
+  };
+  if (rosetteType.getValue() >= SINGLE_GAGE)
+    choices.push_back(itsDofTable[FmIsMeasuredBase::GAGE_1]);
+  if (rosetteType.getValue() >= DOUBLE_GAGE_90)
+    choices.push_back(itsDofTable[FmIsMeasuredBase::GAGE_2]);
+  if (rosetteType.getValue() >= TRIPLE_GAGE_60)
+    choices.push_back(itsDofTable[FmIsMeasuredBase::GAGE_3]);
 }
 
 
 /*!
-  Returns the exact position of the strain gage based
-  on node position, thickness of underlying element
+  Returns the exact position of the strain gage
+  based on node position and thickness of underlying element.
   Will convert some data from old representation if neccesary.
+  Optionally transform to global coordinate axes.
 */
 
-FaMat34 FmStrainRosette::getSymbolPosMx(bool& matrixIsOk)
+FaMat34 FmStrainRosette::getSymbolPosMx(bool global) const
 {
-  bool EzOK = true;
-  matrixIsOk = true;
-
   // Orientation
 
-  FaVec3 v1, v2, Exg, Ex1, Ey1;
-  double a = this->angle.getValue();
+  double a = angle.getValue();
+  int n3 = node[3].getValue() > 0 ? 3 : 2;
 
   // First find the normal
 
-  if (this->numNodes.getValue() == 3) {
-    v1 = this->nodePos2.getValue() - this->nodePos1.getValue();
-    v2 = this->nodePos3.getValue() - this->nodePos1.getValue();
-  }
-  else if (this->numNodes.getValue() == 4) {
-    v1 = this->nodePos3.getValue() - this->nodePos1.getValue();
-    v2 = this->nodePos4.getValue() - this->nodePos2.getValue();
-  }
-  else
-    matrixIsOk = false;
+  FaVec3 v1 = nodePos[n3-1].getValue() - nodePos[0].getValue();
+  FaVec3 v2 = nodePos[n3].getValue() - nodePos[n3-2].getValue();
 
   FaMat34 result;
   FaVec3& Ex = result[0];
   FaVec3& Ey = result[1];
   FaVec3& Ez = result[2];
+  bool EzOK = true;
 
-  if (matrixIsOk)
+  Ez = v1 ^ v2;
+  if (Ez.length() > 1.0e-10)
+    Ez.normalize();
+  else
   {
-    Ez = v1 ^ v2;
-    if (Ez.length() > 1.0e-10)
-      Ez.normalize();
-    else
-    {
-      EzOK = false;
-      Ez = FaVec3(0.0,0.0,1.0);
-      ListUI <<"  -> Error : Could not find a plane normal for "
-             << this->getIdString() <<".\n";
-    }
+    EzOK = false;
+    Ez = FaVec3(0.0,0.0,1.0);
+    ListUI <<"  -> Error : Could not find a plane normal for "
+           << this->getIdString() <<".\n";
   }
 
-  if (this->tmpZDirection && Ez*(*this->tmpZDirection) < 0.0) {
-    this->flipFaceNormal();
-    Ez = -Ez;
+  if (tmpZDirection)
+  {
+    if (Ez*(*tmpZDirection) < 0.0)
+    {
+      const_cast<FmStrainRosette*>(this)->flipFaceNormal();
+      Ez = -Ez;
+    }
+    delete tmpZDirection;
+    tmpZDirection = NULL;
   }
 
   // Find Ex1 and Ey1, the unit x and y vectors of the strain gage
   // origin system without applying the user angle.
 
-  // First find the vector that the user wated as origin for
+  // First find the vector that the user wanted as origin for
   // the angular rotation Exg :
 
-  switch (this->angleOrigin.getValue())
+  FaVec3 Exg, Ex1, Ey1;
+  switch (angleOrigin.getValue())
     {
     case LINK_X:
       Exg.x(1.0);
@@ -210,7 +199,7 @@ FaMat34 FmStrainRosette::getSymbolPosMx(bool& matrixIsOk)
       Exg.y(1.0);
       break;
     case LINK_VECTOR:
-      Exg = this->angleOriginVector.getValue();
+      Exg = angleOriginVector.getValue();
       Exg.normalize();
       break;
     default:
@@ -225,8 +214,8 @@ FaMat34 FmStrainRosette::getSymbolPosMx(bool& matrixIsOk)
     Ex1.normalize();
   else
   {
-    // Ez and the angle origin vector is paralell, use something else
-    switch (this->angleOrigin.getValue())
+    // Ez and the angle origin vector is parallel, use something else
+    switch (angleOrigin.getValue())
       {
       case LINK_X:
         Exg = FaVec3(0,1,0);
@@ -236,7 +225,7 @@ FaMat34 FmStrainRosette::getSymbolPosMx(bool& matrixIsOk)
         break;
       case LINK_VECTOR:
         Exg = FaVec3(1,0,0);
-        if (Exg.isParallell(this->angleOriginVector.getValue()))
+        if (Exg.isParallell(angleOriginVector.getValue()))
           Exg = FaVec3(0,1,0);
         break;
       default:
@@ -266,12 +255,11 @@ FaMat34 FmStrainRosette::getSymbolPosMx(bool& matrixIsOk)
     Ey = Ez ^ Ex;
   }
 
-  // Position : "Midpoint" of element:
-  result[3] = this->getCalculationPoint();
+  // Position : Midpoint of element + height to show actual thickness position
+  result[3] = this->getCalculationPoint() + this->getZPos()*Ez;
 
-  // Adding the height to show the actual thickness position
-  double height = this->useFEThickness.getValue() ? (this->FEThickness.getValue()*0.5) : this->zPos.getValue();
-  result[3] += height*Ez;
+  if (global && !rosetteLink.isNull() && global)
+    return rosetteLink->getTransform() * result;
 
   return result;
 }
@@ -283,62 +271,45 @@ FaMat34 FmStrainRosette::getSymbolPosMx(bool& matrixIsOk)
 
 FaVec3 FmStrainRosette::getCalculationPoint() const
 {
-  if (this->numNodes.getValue() == 3)
-    {
-      // The midpoint of a triangle is given by the point 1/3*h from
-      // each edge. This formula is from Irgens - Formelsamling i Mekanikk
-      // Tabell 2. Arealsenter :
+  if (node[3].getValue() < 0)
+  {
+    // The midpoint of a triangle is given by the point 1/3*h from each edge.
+    // This formula is from Irgens - Formelsamling i Mekanikk
+    // Tabell 2. Arealsenter :
 
-      // Xc = (2b - c)/3;  Yc = h/3;
-      // Where
-      // b  - Length of bottom edge
-      // c  - Length of right edge projected onto bottom edge.
-      // h  - Triangle height from bottom edge
-      // Xc - Length to area center along bottom edge
-      // Yc - Length to area center perpend. to bottom edge.
-      // In the following : S - Side, U - Unit direction vector.
+    // Xc = (2b - c)/3;  Yc = h/3;
+    // Where
+    // b  - Length of bottom edge
+    // c  - Length of right edge projected onto bottom edge.
+    // h  - Triangle height from bottom edge
+    // Xc - Length to area center along bottom edge
+    // Yc - Length to area center perpend. to bottom edge.
+    // In the following : S - Side, U - Unit direction vector.
 
-      FaVec3 P1  = nodePos1.getValue();
-      FaVec3 S12 = nodePos2.getValue() - P1;
-      FaVec3 S23 = nodePos3.getValue() - nodePos2.getValue();
-      FaVec3 U12 = S12; U12.normalize();
+    FaVec3 P1  = nodePos[0].getValue();
+    FaVec3 S12 = nodePos[1].getValue() - P1;
+    FaVec3 S23 = nodePos[2].getValue() - nodePos[1].getValue();
+    FaVec3 U12 = S12; U12.normalize();
 
-      double c = -U12*S23;
+    double c = -U12*S23;
 
-      FaVec3 H  = S23 + c * U12;
-      double Xc = (2.0*S12.length() - c)/3.0;
+    FaVec3 H  = S23 + c * U12;
+    double Xc = (2.0*S12.length() - c)/3.0;
 
-      return P1 + Xc * U12 + H/3.0;
-    }
-  else if (this->numNodes.getValue() == 4)
-    {
-      // the mid point of a four sides is the point where the lines from the
-      // midpoints of two adjencant sides intersect
-      FaVec3 P1 = nodePos1.getValue();
-      FaVec3 P3 = nodePos3.getValue();
+    return P1 + Xc * U12 + H/3.0;
+  }
+  else
+  {
+    // The midpoint of a quadrilateral is the point where the lines from the
+    // midpoints of two adjacent sides intersect
+    FaVec3 P1 = nodePos[0].getValue();
+    FaVec3 P3 = nodePos[2].getValue();
 
-      FaVec3 P12 = P1 + 0.5*(nodePos2.getValue() - P1);
-      FaVec3 P34 = P3 + 0.5*(nodePos4.getValue() - P3);
+    FaVec3 P12 = P1 + 0.5*(nodePos[1].getValue() - P1);
+    FaVec3 P34 = P3 + 0.5*(nodePos[3].getValue() - P3);
 
-      return P12 + 0.5*(P34-P12);
-    }
-
-  return nodePos1.getValue();
-}
-
-
-/*!
-  Returns the global position matrix where the strains are calculated.
-*/
-
-FaMat34 FmStrainRosette::getGlobSymbolPosMx(bool& matrixIsOk)
-{
-  FaMat34 point = this->getSymbolPosMx(matrixIsOk);
-#ifdef USE_INVENTOR
-  if (matrixIsOk && !rosetteLink.isNull() && rosetteLink->getFdPointer())
-    return ((FdPart*)rosetteLink->getFdPointer())->getActiveTransform()*point;
-#endif
-  return point;
+    return P12 + 0.5*(P34-P12);
+  }
 }
 
 
@@ -348,29 +319,24 @@ FaMat34 FmStrainRosette::getGlobSymbolPosMx(bool& matrixIsOk)
 
 double FmStrainRosette::getElmWidth() const
 {
-  double candidate;
-  double width = (nodePos2.getValue() - nodePos1.getValue()).length();
+  double width     = (nodePos[1].getValue() - nodePos[0].getValue()).length();
+  double candidate = (nodePos[2].getValue() - nodePos[1].getValue()).length();
+  if (candidate < width)
+    width = candidate;
 
-  if (this->numNodes.getValue() > 2)
+  if (node[3].getValue() < 0)
   {
-    candidate = (nodePos3.getValue() - nodePos2.getValue()).length();
+    candidate = (nodePos[0].getValue() - nodePos[2].getValue()).length();
     if (candidate < width)
       width = candidate;
   }
-
-  if (this->numNodes.getValue() == 3)
+  else
   {
-    candidate = (nodePos1.getValue() - nodePos3.getValue()).length();
-    if (candidate < width)
-      width = candidate;
-  }
-  else if (this->numNodes.getValue() == 4)
-  {
-    candidate = (nodePos4.getValue() - nodePos3.getValue()).length();
+    candidate = (nodePos[3].getValue() - nodePos[2].getValue()).length();
     if (candidate < width)
       width = candidate;
 
-    candidate = (nodePos1.getValue() - nodePos4.getValue()).length();
+    candidate = (nodePos[0].getValue() - nodePos[3].getValue()).length();
     if (candidate < width)
       width = candidate;
   }
@@ -379,70 +345,68 @@ double FmStrainRosette::getElmWidth() const
 }
 
 
-bool FmStrainRosette::setTopology(FmPart* part, int n1, int n2, int n3, int n4)
+bool FmStrainRosette::setTopology(FmPart* part, const IntVec& nodes)
 {
-  if (!part) return false;
+  if (part)
+    rosetteLink.setRef(part);
 
-  FFlNode* nod1 = part->getNode(n1);
-  if (!nod1) return false;
-  FFlNode* nod2 = part->getNode(n2);
-  if (!nod2) return false;
-  FFlNode* nod3 = part->getNode(n3);
-  if (!nod3) return false;
-  FFlNode* nod4 = part->getNode(n4);
+  for (size_t i = 0; i < 4; i++)
+    if (i < nodes.size())
+    {
+      node[i].setValue(nodes[i]);
+      if (part)
+      {
+        FFlNode* nod = part->getNode(nodes[i]);
+        if (!nod) return false;
 
-  node1.setValue(n1);
-  nodePos1.setValue(nod1->getPos());
+        nodePos[i].setValue(nod->getPos());
+      }
+    }
+    else
+      node[i].setValue(-1);
 
-  node2.setValue(n2);
-  nodePos2.setValue(nod2->getPos());
-
-  node3.setValue(n3);
-  nodePos3.setValue(nod3->getPos());
-
-  if (nod4) {
-    node4.setValue(n4);
-    nodePos4.setValue(nod4->getPos());
-    numNodes.setValue(4);
-  }
-  else
-    numNodes.setValue(3);
-
-  rosetteLink.setRef(part);
   return true;
 }
 
 
-bool FmStrainRosette::setNode(int ID, int indx)
+FmPart* FmStrainRosette::getTopology(IntVec& nodes) const
 {
+  nodes.resize(this->getNoNodes());
+  for (size_t i = 0; i < nodes.size(); i++)
+    nodes[i] = node[i].getValue();
+
+  return rosetteLink.getPointer();
+}
+
+
+bool FmStrainRosette::setNode(int ID, int idx)
+{
+  if (idx < 0 || idx > 3)
+    return false;
+
+  node[idx].setValue(ID);
+
   if (rosetteLink.isNull())
     return false;
 
-  FFlNode* node = rosetteLink->getNode(ID);
-  if (!node) return false;
+  FFlNode* nod = rosetteLink->getNode(ID);
+  if (!nod) return false;
 
-  switch (indx) {
-  case 1:
-    node1.setValue(ID);
-    nodePos1.setValue(node->getPos());
-    break;
-  case 2:
-    node2.setValue(ID);
-    nodePos2.setValue(node->getPos());
-    break;
-  case 3:
-    node3.setValue(ID);
-    nodePos3.setValue(node->getPos());
-    break;
-  case 4:
-    node4.setValue(ID);
-    nodePos4.setValue(node->getPos());
-    break;
-  default:
-    return false;
-  }
+  nodePos[idx].setValue(nod->getPos());
 
   return true;
+}
+
+
+const FaVec3& FmStrainRosette::getNodePos(int idx) const
+{
+  if (idx < 0 || idx >= this->getNoNodes())
+  {
+    static FaVec3 Origin;
+    return Origin;
+  }
+
+  return nodePos[idx].getValue();
 }
 
 
@@ -453,14 +417,10 @@ bool FmStrainRosette::setNode(int ID, int indx)
 
 void FmStrainRosette::setGlobalAngleOriginVector(const FaVec3& dir)
 {
-#ifdef USE_INVENTOR
-  if (!rosetteLink.isNull() && rosetteLink->getFdPointer()) {
-    FaMat34 partMx = ((FdPart*)rosetteLink->getFdPointer())->getActiveTransform();
-    angleOriginVector = partMx.direction().inverse() * dir;
-  }
-#else
-  angleOriginVector = dir;
-#endif
+  if (rosetteLink.isNull())
+    angleOriginVector.setValue(dir);
+  else
+    angleOriginVector.setValue(dir * rosetteLink->getTransform().direction());
 }
 
 
@@ -483,48 +443,33 @@ enum FmSyncErrorTypes
   Try to use stored node positions to find matching nodes first.
   Will get the nodes closest to the stored positions.
   If the node positions are invalid (some are coincident) the ID's will be used.
+  If \a forceUseID is \e true, the stored node positions are ignored.
 */
 
-BoolVec FmStrainRosette::syncWithFEModel()
+BoolVec FmStrainRosette::syncWithFEModel(bool forceUseID)
 {
   BoolVec errorFlags(NUM_ERROR_CODES, false);
-  if (this->numNodes.getValue() < 3) {
-    errorFlags[NODE_ERROR] = errorFlags[FATAL_ERROR] = true;
-    return errorFlags;
+
+  // Putting our node data into vectors for easier handling
+
+  size_t num_nodes = this->getNoNodes();
+  IntVec nodeNums(num_nodes);
+  FaVec3Vec nodePoss(num_nodes);
+  for (size_t i = 0; i < num_nodes; i++)
+  {
+    nodeNums[i] = node[i].getValue();
+    nodePoss[i] = nodePos[i].getValue();
   }
-
-  // Putting all our data into vectors for easier handling
-
-  IntVec nodeNums;
-  FaVec3Vec nodePos;
-  nodeNums.reserve(4);
-  nodePos.reserve(4);
-
-  nodeNums.push_back(this->node1.getValue());
-  nodeNums.push_back(this->node2.getValue());
-  nodeNums.push_back(this->node3.getValue());
-  if (this->numNodes.getValue() > 3)
-    nodeNums.push_back(this->node4.getValue());
-  IntVec nodeNumsBackup(nodeNums);
-
-  nodePos.push_back(this->nodePos1.getValue());
-  nodePos.push_back(this->nodePos2.getValue());
-  nodePos.push_back(this->nodePos3.getValue());
-  if (this->numNodes.getValue() > 3)
-    nodePos.push_back(this->nodePos4.getValue());
-  FaVec3Vec nodePosBackup(nodePos);
 
   // Check whether we have defined all nodes
 
-  size_t n;
-  bool nodeNumsIsOK = true;
-  for (int node : nodeNums)
-    nodeNumsIsOK &= node > 0;
+  bool nodeNumsOK = std::all_of(nodeNums.begin(), nodeNums.end(),
+                                [](int n){ return n > 0; });
 
-  if (this->rosetteLink.isNull() || !this->rosetteLink->isFEPart(true))
+  if (rosetteLink.isNull() || !rosetteLink->isFEPart(true))
   {
     // Unable to sync because no FE data is loaded
-    if (nodeNumsIsOK)
+    if (nodeNumsOK)
       errorFlags[NOT_VERIFIED] = true;
     else
       errorFlags[NODE_ERROR] = errorFlags[FATAL_ERROR] = true;
@@ -535,37 +480,37 @@ BoolVec FmStrainRosette::syncWithFEModel()
   // by checking for coincident nodes within the element
 
   double tolerance = FmDB::getPositionTolerance();
-  bool nodePosIsOK = true;
-  for (n = 1; n < nodePos.size() && nodePosIsOK; n++)
-    for (size_t i = 0; i < n && nodePosIsOK; i++)
-      if (nodePos[i].equals(nodePos[n],tolerance))
-        nodePosIsOK = false;
+  bool nodePosIsOK = !forceUseID;
+  if (!forceUseID)
+    for (size_t n = 1; n < num_nodes && nodePosIsOK; n++)
+      for (size_t i = 0; i < n && nodePosIsOK; i++)
+        if (nodePoss[i].equals(nodePoss[n],tolerance))
+          nodePosIsOK = false;
 
-  FFlNode* node;
   if (nodePosIsOK)
   {
     // The positions are OK. Go find the nodes closest to them.
     // TODO : Use node ID as preference on what nodes to select.
     // Also check the resulting nodes whether they are OK to use.
-    for (n = 0; n < nodePos.size(); n++)
-      if ((node = rosetteLink->getClosestNode(nodePos[n])))
+    for (size_t n = 0; n < num_nodes; n++)
+      if (FFlNode* node = rosetteLink->getClosestNode(nodePoss[n]); node)
       {
-        nodePos[n]  = node->getPos();
         nodeNums[n] = node->getID();
+        nodePoss[n] = node->getPos();
       }
-    nodeNumsIsOK = true;
+    nodeNumsOK = true;
   }
-  else if (nodeNumsIsOK)
+  else if (nodeNumsOK)
   {
     // Positions were not OK. Go find them based on nodeIDs instead.
-    for (n = 0; n < nodeNums.size(); n++)
-      if ((node = rosetteLink->getNode(nodeNums[n])))
-        nodePos[n] = node->getPos();
+    for (size_t n = 0; n < num_nodes; n++)
+      if (FFlNode* node = rosetteLink->getNode(nodeNums[n]); node)
+        nodePoss[n] = node->getPos();
       else
-        nodeNumsIsOK = false;
+        nodeNumsOK = false;
   }
 
-  if (!nodeNumsIsOK)
+  if (!nodeNumsOK)
   {
     errorFlags[NODE_ERROR] = errorFlags[FATAL_ERROR] = true;
     return errorFlags;
@@ -575,59 +520,53 @@ BoolVec FmStrainRosette::syncWithFEModel()
 
   // Check what has changed :
 
-  bool posHasChanged = false;
-  for (n = 0; n < nodePos.size() && !posHasChanged; n++)
-    posHasChanged = !nodePos[n].equals(nodePosBackup[n],tolerance);
+  bool idsHasChanged = false;
+  for (size_t n = 0; n < num_nodes; n++)
+    if (node[n].setValue(nodeNums[n]))
+      idsHasChanged = true;
 
-  bool nodeIdsHasChanged = false;
-  for (n = 0; n < nodeNums.size() && !nodeIdsHasChanged; n++)
-    nodeIdsHasChanged = nodeNums[n] != nodeNumsBackup[n];
+  bool posHasChanged = forceUseID;
+  for (size_t n = 0; n < num_nodes && !posHasChanged; n++)
+    posHasChanged = !nodePoss[n].equals(nodePos[n].getValue(),tolerance);
 
-  errorFlags[NODE_IDS_CHANGED] = nodeNumsIsOK && nodeIdsHasChanged;
-  errorFlags[NODE_POS_CHANGED] = nodePosIsOK  && posHasChanged;
+  for (size_t n = 0; n < num_nodes; n++)
+    nodePos[n].setValue(nodePoss[n]);
 
-  this->node1 = nodeNums[0];
-  this->node2 = nodeNums[1];
-  this->node3 = nodeNums[2];
-  if (nodeNums.size() > 3)
-    this->node4 = nodeNums[3];
+  errorFlags[NODE_IDS_CHANGED] = nodeNumsOK  && idsHasChanged;
+  errorFlags[NODE_POS_CHANGED] = nodePosIsOK && posHasChanged;
 
-  this->nodePos1 = nodePos[0];
-  this->nodePos2 = nodePos[1];
-  this->nodePos3 = nodePos[2];
-  if (nodePos.size() > 3)
-    this->nodePos4 = nodePos[3];
-
-  if (this->useFEMaterial.getValue() || this->useFEThickness.getValue())
+  if (useFEMaterial.getValue() || useFEThickness.getValue())
   {
-    CathegoryVec elmBrands({ FFlTypeInfoSpec::SOLID_ELM, FFlTypeInfoSpec::SHELL_ELM });
-    FFlLinkHandler* lh = this->rosetteLink->getLinkHandler();
-    FFlElementBase* el = lh->findClosestElement(this->getCalculationPoint(), elmBrands);
+    FFlLinkHandler* lh = rosetteLink->getLinkHandler();
+    FFlElementBase* el = lh->findClosestElement(this->getCalculationPoint(),
+                                                { FFlTypeInfoSpec::SOLID_ELM,
+                                                  FFlTypeInfoSpec::SHELL_ELM });
     if (el)
     {
-      if (this->useFEThickness.getValue() && el->getCathegory() == FFlTypeInfoSpec::SHELL_ELM)
+      if (useFEThickness.getValue() &&
+          el->getCathegory() == FFlTypeInfoSpec::SHELL_ELM)
       {
         FFlAttributeBase* pThick = el->getAttribute("PTHICK");
         if (pThick)
         {
           double newFEThickness = ((FFlPTHICK*)pThick)->thickness.getValue();
-          if (fabs(this->FEThickness.getValue() - newFEThickness) > 1e-10)
+          if (fabs(FEThickness.getValue() - newFEThickness) > 1e-10)
             errorFlags[ELEMENT_THICKNESS_CHANGED] = true;
-          this->FEThickness = newFEThickness;
+          FEThickness.setValue(newFEThickness);
         }
       }
-      if (this->useFEMaterial.getValue())
+      if (useFEMaterial.getValue())
       {
         FFlAttributeBase* pMat = el->getAttribute("PMAT");
         if (pMat)
         {
           double newEmod = ((FFlPMAT*)pMat)->youngsModule.getValue();
           double newNu = ((FFlPMAT*)pMat)->poissonsRatio.getValue();
-          if (fabs(this->EModFE.getValue()-newEmod) > 1.0e-10 ||
-              fabs(this->nuFE.getValue()-newNu) > 1.0e-10)
+          if (fabs(EModFE.getValue()-newEmod) > 1.0e-10 ||
+              fabs(nuFE.getValue()-newNu) > 1.0e-10)
             errorFlags[ELEMENT_MATERIAL_CHANGED] = true;
-          this->EModFE = newEmod;
-          this->nuFE = newNu;
+          EModFE.setValue(newEmod);
+          nuFE.setValue(newNu);
         }
       }
     }
@@ -641,16 +580,9 @@ BoolVec FmStrainRosette::syncWithFEModel()
 
 void FmStrainRosette::flipFaceNormal()
 {
-  if (this->numNodes.getValue() == 3)
-  {
-    std::swap(node2.getValue(),node3.getValue());
-    std::swap(nodePos2.getValue(),nodePos3.getValue());
-  }
-  else if (this->numNodes.getValue() == 4)
-  {
-    std::swap(node2.getValue(),node4.getValue());
-    std::swap(nodePos2.getValue(),nodePos4.getValue());
-  }
+  int n3 = node[3].getValue() > 0 ? 3 : 2;
+  std::swap(node[1].getValue(),node[n3].getValue());
+  std::swap(nodePos[1].getValue(),nodePos[n3].getValue());
 }
 
 
@@ -792,39 +724,20 @@ bool FmStrainRosette::writeSolverFile(const std::string& fsiFile,
 
 int FmStrainRosette::printSolverEntry(FILE* fd)
 {
-  bool rosetteOk = true;
-  FaMat34 rPos(this->getSymbolPosMx(rosetteOk));
-  if (!rosetteOk)
-  {
-    ListUI <<"Warning : "<< this->getIdString() <<" is not properly defined (ignored).\n"
-	   <<"          Please check the nodes and the angle origin for possible singularities.\n";
-    return 0;
-  }
-
   fprintf(fd,"&STRAIN_ROSETTE\n");
   this->printID(fd);
   if (!this->rosetteLink.isNull())
-    fprintf(fd,"  linkId = %d\n", this->rosetteLink->getBaseID());
+    fprintf(fd,"  linkId = %d\n", rosetteLink->getBaseID());
 
-  fprintf(fd,"  type = '%s'\n", this->rosetteType.getValue().getText());
-  fprintf(fd,"  zeroInit = %d\n", (int)this->removeStartStrains.getValue());
-  fprintf(fd,"  numnod = %d\n", this->numNodes.getValue());
-  if (this->numNodes.getValue() > 0)
-  {
-    fprintf(fd,"  nodes = %d", this->node1.getValue());
-    if (this->numNodes.getValue() > 1)
-    {
-      fprintf(fd," %d", this->node2.getValue());
-      if (this->numNodes.getValue() > 2)
-      {
-	fprintf(fd," %d", this->node3.getValue());
-	if (this->numNodes.getValue() > 3)
-	  fprintf(fd," %d", this->node4.getValue());
-      }
-    }
-    fprintf(fd,"\n");
-  }
+  fprintf(fd,"  type = '%s'\n", rosetteType.getValue().getText());
+  fprintf(fd,"  zeroInit = %d\n", (int)removeStartStrains.getValue());
 
+  fprintf(fd,"  numnod = %d\n  nodes =", this->getNoNodes());
+  for (int i = 0; i < this->getNoNodes(); i++)
+    fprintf(fd," %d", node[i].getValue());
+  fprintf(fd,"\n");
+
+  FaMat34 rPos(this->getSymbolPosMx());
   fprintf(fd,"  rPos =%17.9e %17.9e %17.9e %17.9e\n",
 	  rPos[0][0],rPos[1][0],rPos[2][0],rPos[3][0]);
   fprintf(fd,"        %17.9e %17.9e %17.9e %17.9e\n",
@@ -865,74 +778,6 @@ int FmStrainRosette::printSolverEntry(FILE* fd)
 }
 
 
-bool FmStrainRosette::writeRosetteInputFile(const std::string& rosFile,
-					    const FmPart* part)
-{
-  std::vector<FmModelMemberBase*> rosettes;
-  FmDB::getAllOfType(rosettes,FmStrainRosette::getClassTypeID());
-  if (rosettes.empty()) return true;
-
-  std::ofstream rosStream(rosFile.c_str(),std::ios::out);
-  if (!rosStream)
-  {
-    ListUI <<"===> Could not open strain rosette definition file: "<< rosFile <<"\n";
-    return false;
-  }
-
-  for (FmModelMemberBase* ros : rosettes)
-  {
-    FmStrainRosette* rosette = static_cast<FmStrainRosette*>(ros);
-    if (!part || rosette->rosetteLink.getPointer() == part)
-      rosette->writeToRosetteInputFile(rosStream);
-  }
-
-  rosStream <<"end\n";
-  rosStream.close();
-  return true;
-}
-
-
-bool FmStrainRosette::writeToRosetteInputFile(std::ostream& os)
-{
-  bool rosetteOk = true;
-  FaMat34 rosettePosition = this->getSymbolPosMx(rosetteOk);
-
-  if (!rosetteOk)
-    ListUI <<"Warning : "<< this->getIdString() <<" is not properly defined.\n"
-	   <<"          Please check the nodes and the angle origin for possible singularities.\n";
-
-  os << this->getID();
-  switch (this->rosetteType.getValue()) {
-  case SINGLE_GAGE   : os <<" 1"; break;
-  case DOUBLE_GAGE_90: os <<" 2"; break;
-  case TRIPLE_GAGE_60: os <<" 3"; break;
-  case TRIPLE_GAGE_45: os <<" 4"; break;
-  default: os <<" 2"; break;
-  }
-
-  if (this->rosetteLink.isNull())
-    os <<" -1 ";
-  else
-    os <<" "<< this->rosetteLink->getID() <<" ";
-
-  os << this->numNodes.getValue() <<" ";
-  if (this->numNodes.getValue() > 0)
-    os << node1.getValue() <<" ";
-  if (this->numNodes.getValue() > 1)
-    os << node2.getValue() <<" ";
-  if (this->numNodes.getValue() > 2)
-    os << node3.getValue() <<" ";
-  if (this->numNodes.getValue() > 3)
-    os << node4.getValue() <<" ";
-
-  os << this->getZPos() <<" "
-     << rosettePosition[0] <<" "<< rosettePosition[2] <<" "
-     << this->getEMod() <<" "<< this->getNu() << std::endl;
-
-  return rosetteOk;
-}
-
-
 /*!
   This static method is supposed to be used when you need to read an old
   strain gage input file and convert it to strain rosette objects in the model.
@@ -943,7 +788,7 @@ bool FmStrainRosette::writeToRosetteInputFile(std::ostream& os)
 */
 
 bool FmStrainRosette::createRosettesFromOldFile(const std::string& fileName,
-						bool defaultResetStartStrainValue)
+                                                bool resetStartStrainValue)
 {
   if (fileName.empty()) return false;
 
@@ -1019,7 +864,7 @@ bool FmStrainRosette::createRosettesFromOldFile(const std::string& fileName,
                <<" : Could not read strain gage.\n";
       else if (!isEndReached)
       {
-        FmStrainRosette* newRosette = new FmStrainRosette;
+        FmStrainRosette* newRosette = new FmStrainRosette();
 #ifdef FM_DEBUG
         std::cerr << id <<" "<< type <<" "<< partid <<" "<< numNodes
                   <<'\n'<< n1 <<" "<< n2 <<" "<< n3 <<" "<< n4
@@ -1038,26 +883,18 @@ bool FmStrainRosette::createRosettesFromOldFile(const std::string& fileName,
         }
 
         newRosette->rosetteLink.setRef(partid, FmPart::getClassTypeID());
+        newRosette->setTopology(NULL, { n1, n2, n3, n4 });
 
-        newRosette->numNodes = numNodes;
-        newRosette->node1 = n1;
-        newRosette->node2 = n2;
-        newRosette->node3 = n3;
-        newRosette->node4 = n4;
-
+        newRosette->useFEThickness = false;
         newRosette->zPos = zHeight;
 
         newRosette->angleOriginVector = FaVec3(Xx, Xy, Xz);
-        newRosette->angle = 0;
-        newRosette->angleOrigin = LINK_VECTOR;
-
         newRosette->tmpZDirection = new FaVec3(Zx, Zy, Zz);
-        newRosette->useFEThickness = false;
 
         newRosette->useFEMaterial = false;
         newRosette->EMod = Emod;
         newRosette->nu = nu;
-        newRosette->removeStartStrains = defaultResetStartStrainValue;
+        newRosette->removeStartStrains = resetStartStrainValue;
 
         newRosette->connect();
         ++nReadStrainRosettes;

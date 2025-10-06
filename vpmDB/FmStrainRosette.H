@@ -26,30 +26,32 @@ public:
   virtual void getEntities(std::vector<FmSensorChoice>& choicesToFill, int);
   virtual void getDofs(std::vector<FmSensorChoice>& choicesToFill);
 
-  FaMat34 getSymbolPosMx(bool& matrixIsOk);
-  FaMat34 getGlobSymbolPosMx(bool& matrixIsOk);
+  FaMat34 getSymbolPosMx(bool global = false) const;
 
   double getElmWidth() const;
   FaVec3 getCalculationPoint() const;
   void   setGlobalAngleOriginVector(const FaVec3& dir);
 
-  bool setTopology(FmPart* part, int n1, int n2, int n3, int n4);
+  bool setTopology(FmPart* part, const IntVec& nodes);
+  FmPart* getTopology(IntVec& nodes) const;
   bool setNode(int ID, int idx);
+  const FaVec3& getNodePos(int idx) const;
 
-  BoolVec syncWithFEModel();
+  int getNoNodes() const { return node[3].getValue() > 0 ? 4 : 3; }
+
+  BoolVec syncWithFEModel(bool forceUseIds = false);
+
   static void syncStrainRosettes(FmPart* part = NULL);
 
   void flipFaceNormal();
 
   virtual int printSolverEntry(FILE* fd);
-  bool writeToRosetteInputFile(std::ostream& os);
 
   static bool writeSolverFile(const std::string& fName,
                               const FmPart* part = NULL);
-  static bool writeRosetteInputFile(const std::string& fName,
-                                    const FmPart* part = NULL);
+
   static bool createRosettesFromOldFile(const std::string& fName,
-                                        bool defaultResetStartStrainValue);
+                                        bool resetStartStrainValue);
 
   FFaField<FFaReferenceBase*> rosetteLinkField;
   FFaReference<FmPart>        rosetteLink;
@@ -73,17 +75,8 @@ public:
 
   static const Strings& getRosetteUINames();
 
-  FFaField<int> numNodes;
-
-  FFaField<FaVec3> nodePos1;
-  FFaField<FaVec3> nodePos2;
-  FFaField<FaVec3> nodePos3;
-  FFaField<FaVec3> nodePos4;
-
-  FFaField<int> node1;
-  FFaField<int> node2;
-  FFaField<int> node3;
-  FFaField<int> node4;
+  std::array<FFaField<int>,4>    node;
+  std::array<FFaField<FaVec3>,4> nodePos;
 
   double getZPos() const { return useFEThickness.getValue() ? 0.5*FEThickness.getValue() : zPos.getValue(); }
 
@@ -135,7 +128,7 @@ protected:
   virtual bool cloneLocal(FmBase* obj, int depth);
 
 private:
-  FaVec3* tmpZDirection; //!< For reading old gage input files
+  mutable FaVec3* tmpZDirection; //!< For reading old gage input files
 };
 
 #endif
