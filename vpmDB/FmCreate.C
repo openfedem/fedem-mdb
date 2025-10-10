@@ -194,12 +194,14 @@ void Fedem::createFreeJoint(const FaVec3& posJnt, const FaVec3& posDep,
   FmSticker* sticker1 = new FmSticker(posJnt);
   FmSticker* sticker2 = new FmSticker(posDep);
 
-  if (zAxisDir) {
+  if (zAxisDir)
+  {
     // Use same initial rotation for both triads to avoid singularities
     triad1->setLocalCS(FaMat34(getCreationMX(*zAxisDir),posJnt));
     triad2->setLocalCS(FaMat34(getCreationMX(*zAxisDir),posDep));
   }
-  else {
+  else
+  {
     triad1->setLocalCS(FaMat34(posJnt));
     triad2->setLocalCS(FaMat34(posDep));
   }
@@ -439,7 +441,8 @@ FmSensorBase* Fedem::createSensor(FmIsMeasuredBase* first,
 
 void Fedem::createTire(FmRevJoint* joint)
 {
-  if (!joint) return;
+  if (!joint)
+    return;
 
   ListUI <<"Creating Tire on "<< joint->getIdString() <<".\n";
 
@@ -640,8 +643,7 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
     joint = new FmRevJoint();
   else if (jType == FmRigidJoint::getClassTypeID())
     joint = new FmRigidJoint();
-  else
-  {
+  else {
     ListUI <<"ERROR: Unknown point joint type "<< jType <<".\n";
     return joint;
   }
@@ -779,7 +781,8 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   else
     joint->setParentAssembly(triad1->getCommonAncestor(triad2));
 
-  if (!triad3) {
+  if (!triad3)
+  {
     triad3 = new FmTriad(0.5*(triad1->getGlobalTranslation() +
                               triad2->getGlobalTranslation()));
     triad3->setParentAssembly(joint->getParentAssembly());
@@ -809,7 +812,8 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   // Check if the part connected to the line have other triads along the line
   // between the two end triads, and offer to add those as joint triads as well
   FmPart* part = triad1->getOwnerPart(0);
-  if (!part) return joint;
+  if (!part)
+    return joint;
 
   FaVec3 fstPos = triad1->getGlobalTranslation();
   FaVec3 linVec = triad2->getGlobalTranslation() - fstPos;
@@ -1034,7 +1038,7 @@ bool Fedem::createMooringLine(FmTriad* tr1, FmTriad* tr2,
   Tlg[0] = Tlg[1] ^ Tlg[2]; // Local X-axis = (Y-axis) x (Z-axis)
 
   // Calculate the intermediate triad positions
-  FaVec3 dX = Tlg.transpose()*(X2-X1);
+  FaVec3 dX = (X2-X1) * Tlg; // global-to-local transformation
   ListUI <<"Calculating chain shape dX="<< dX[0] <<" dZ="<< dX[2]
          <<" Length="<< Length <<" ("<< nSegments <<" segments)\n";
   std::vector<double> X(nSegments+1), Z(nSegments+1);
@@ -1087,7 +1091,8 @@ bool Fedem::createMooringLine(FmTriad* tr1, FmTriad* tr2,
   };
 
   // Generate triads and elements for the mooring line segments
-  for (int i = 1; i < nSegments; i++) {
+  for (int i = 1; i < nSegments; i++)
+  {
     ListUI <<"Creating Mooring line triad at X="<< X[i] <<" Z="<< Z[i];
     FmTriad* tr3 = new FmTriad(X1 + Tlg[0]*X[i] + Tlg[2]*Z[i]);
     tr3->setParentAssembly(parent);
@@ -1150,10 +1155,9 @@ FmSubAssembly* Fedem::createSubAssembly(const std::vector<FmModelMemberBase*>& o
                  <<" to "<< subAss->getIdString();
 
         // Also move the sensor(s) associated with the Engine
-        FmSensorBase* sensor = NULL;
         size_t nArg = engine->getNoArgs();
         for (size_t i = 0; i < nArg; i++)
-          if ((sensor = engine->getSensor(i)))
+          if (FmSensorBase* sensor = engine->getSensor(i); sensor)
             if (sensor->moveTo(subAss))
               ListUI <<"\n  -> Moving "<< sensor->getIdString(true)
                      <<" to "<< subAss->getIdString();

@@ -204,7 +204,8 @@ DLLexport(void) FmInit (const char* plugin1, const char* plugin2)
     FmUserDefinedElement::getClassTypeID()
   };
 
-  // Lambda function for loading plugin libraries (user-defined functions/elements)
+  // Lambda function for loading plugin libraries
+  // (user-defined functions and elements)
   auto&& loadPlugin = [](const std::string& plugin)
   {
     char signature[128];
@@ -336,11 +337,9 @@ DLLexport(int) FmTagObjects (const int* baseId, int n, const char* tag)
 {
   int nTagged = 0;
   for (int ix = 0; ix < n; ix++)
-  {
-    FmModelMemberBase* obj = FmDB::findObject(baseId[ix]);
-    if (obj && obj->setTag(tag))
-      nTagged++;
-  }
+    if (FmModelMemberBase* obj = FmDB::findObject(baseId[ix]); obj)
+      if (obj->setTag(tag))
+        nTagged++;
 
 #ifdef FM_DEBUG
   std::cout <<"FmTagObjects("<< n <<",\""<< tag <<"\""<<"): "
@@ -356,7 +355,8 @@ DLLexport(int) FmTagObjects (const int* baseId, int n, const char* tag)
   then \a -id is interpreted as the base ID of the object to search for.
 */
 
-template<class T> bool FmFind (int id, T*& obj, bool assumeUserId = false)
+template<class T> T* FmFind (int id, T*& obj,
+                             bool assumeUserId = false, bool silence = false)
 {
   if (!assumeUserId) // Assume base ID
     obj = dynamic_cast<T*>(FmDB::findObject(id));
@@ -365,30 +365,30 @@ template<class T> bool FmFind (int id, T*& obj, bool assumeUserId = false)
   else // Assume the absolute value is the base ID
     obj = dynamic_cast<T*>(FmDB::findObject(-id));
 
-  return obj != NULL;
+  if (!obj && !silence)
+    ListUI <<" *** ERROR: No "<< T::getClassTypeIDName()+2
+           <<" object with "<< (assumeUserId && id >= 0 ? "user": "base")
+           <<" ID "<< (!assumeUserId && id < 0 ? -id : id) <<".\n";
+
+  return obj;
 }
 
 
 /*!
-  \brief Helper searching for a function with given user ID.
-  \details If \a fid is negative, its absolute value is interpreted
-  as the base ID instead.
+  \brief Helper searching for an FE part with given base ID.
 */
 
-static FmEngine* FmFindFunction (int fid)
+static FmPart* FmFindFEpart (int pid, bool loadedOnly = true)
 {
-  FmEngine* engine = NULL;
-  if (fid != 0 && !FmFind(fid,engine,true))
-  {
-    ListUI <<" *** Error: No function with";
-    if (fid > 0)
-      ListUI <<" user ID "<< fid;
-    else
-      ListUI <<" base ID "<< -fid;
-    ListUI <<"\n";
-  }
+  FmPart* part = FmFind(pid,part);
+  if (!part) return NULL;
 
-  return engine;
+  if (part->isFEPart(loadedOnly))
+    return part;
+
+  ListUI <<" *** Error: "<< part->getIdString(true)
+         <<" is not an FE part.\n";
+  return NULL;
 }
 
 
@@ -398,12 +398,8 @@ DLLexport(bool) FmGetFEModel (int baseId, char* feDataFile, int& recovery)
   std::cout <<"FmGetFEModel("<< baseId <<")"<< std::endl;
 #endif
   recovery = 0;
-  FmPart* part;
-  if (!FmFind(baseId,part))
-  {
-    ListUI <<"\n\n===> No Part with baseId "<< baseId <<".\n";
-    return false;
-  }
+  FmPart* part = FmFind(baseId,part);
+  if (!part) return false;
 
   std::string ftlFile = part->getBaseFTLFile();
   if (ftlFile.empty() && part->isGenericPart())
@@ -414,7 +410,8 @@ DLLexport(bool) FmGetFEModel (int baseId, char* feDataFile, int& recovery)
 
   if (ftlFile.empty())
   {
-    ListUI <<"\n\n===> No FE model associated with Part "<< baseId <<".\n";
+    ListUI <<"\n\n===> No FE model associated with "
+           << part->getIdString(true) <<".\n";
     return false;
   }
 
@@ -442,18 +439,10 @@ DLLexport(bool) FmReduce (char* rdbDir, int baseId)
     return false;
   }
 
-  FmPart* part;
-  if (!FmFind(baseId,part))
-  {
-    ListUI <<"\n\n===> No FE part with baseId "<< baseId <<".\n";
-    return false;
-  }
-  else if (!part->isFEPart())
-  {
-    ListUI <<"\n\n===> "<< part->getIdString(true) <<" is not an FE part.\n";
-    return false;
-  }
-  else if (part->setValidBaseFTLFile().empty())
+  FmPart* part = FmFindFEpart(baseId,false);
+  if (!part) return false;
+
+  if (part->setValidBaseFTLFile().empty())
   {
     ListUI <<"\n\n===> No FE data file for "<< part->getIdString(true) <<"\n";
     return false;
@@ -487,13 +476,10 @@ DLLexport(bool) FmSync (int baseId)
 #ifdef FM_DEBUG
   std::cout <<"FmSync("<< baseId <<")"<< std::endl;
 #endif
-  FmPart* part;
-  if (!FmFind(baseId,part))
-  {
-    ListUI <<"\n\n===> No FE part with baseId "<< baseId <<".\n";
-    return false;
-  }
-  else if (part->isFEPart())
+  FmPart* part = FmFind(baseId,part);
+  if (!part) return false;
+
+  if (part->isFEPart())
     return part->syncRSD();
 
   return true; // silently ignore for generic (or suppressed) parts
@@ -536,7 +522,8 @@ DLLexport(void) FmSolveSetup (double tStart, double tInc, double tStop,
     std::string& my_opts = analy->solverAddOpts.getValue();
     if (my_opts.empty())
       analy->solverAddOpts.setValue(add_opts);
-    else if (my_opts.find(add_opts) == std::string::npos) // avoid adding same options multiple times
+    else if (my_opts.find(add_opts) == std::string::npos)
+      // avoid adding same options multiple times
       my_opts.append(std::string(" ") + std::string(add_opts));
   }
 }
@@ -579,7 +566,8 @@ DLLexport(bool) FmSolve (char* rdbDir, bool keepRes,
     if (FiUserElmPlugin::instance()->validate(plugin))
       udePlugin = plugin.c_str();
     else
-      ListUI <<"  ** Ignoring invalid user-defined element plugin: "<< plugin <<"\n";
+      ListUI <<"  ** Ignoring invalid user-defined element plugin: "
+             << plugin <<"\n";
   }
   if (!udfPlugin && !mech->activeFunctionPlugin.getValue().empty())
   {
@@ -587,7 +575,8 @@ DLLexport(bool) FmSolve (char* rdbDir, bool keepRes,
     if (FFaUserFuncPlugin::instance()->validate(plugin))
       udfPlugin = plugin.c_str();
     else
-      ListUI <<"  ** Ignoring invalid user-defined function plugin: "<< plugin <<"\n";
+      ListUI <<"  ** Ignoring invalid user-defined function plugin: "
+             << plugin <<"\n";
   }
 
   Strings plugins, rdbPath;
@@ -750,12 +739,8 @@ DLLexport(int) FmCreateTriad (const char* description,
 
 DLLexport(int) FmTriadOnNode (const char* description, int node, int part)
 {
-  FmPart* ownerPart;
-  if (!FmFind(part,ownerPart) || !ownerPart->isFEPart(true))
-  {
-    ListUI <<" *** Error: No FE part with base ID "<< part <<".\n";
-    return -node;
-  }
+  FmPart* ownerPart = FmFindFEpart(part);
+  if (!ownerPart) return -node;
 
   // Check if there already is a triad for this node
   FmTriad* triad = ownerPart->getTriadAtNode(node);
@@ -785,19 +770,10 @@ DLLexport(int) FmTriadOnNode (const char* description, int node, int part)
 DLLexport(int) FmCreateBeam (const char* description,
                              int t1, int t2, int cs = 0)
 {
-  FmTriad* triad1;
-  if (!FmFind(t1,triad1))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
-    return -t1;
-  }
-
-  FmTriad* triad2;
-  if (!FmFind(t2,triad2))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t2 <<".\n";
-    return -t2;
-  }
+  FmTriad* triad1 = FmFind(t1,triad1);
+  FmTriad* triad2 = FmFind(t2,triad2);
+  if (!triad1) return -t1;
+  if (!triad2) return -t2;
 
   FmBeam* beam = Fedem::createBeam(triad1,triad2);
   if (!beam) return 0;
@@ -805,9 +781,9 @@ DLLexport(int) FmCreateBeam (const char* description,
   if (description)
     beam->setUserDescription(description);
 
-  FmBeamProperty* bProp;
-  if (FmFind(cs,bProp))
-    beam->setProperty(bProp);
+  if (cs > 0)
+    if (FmBeamProperty* bProp = FmFind(cs,bProp); bProp)
+      beam->setProperty(bProp);
 
   return beam->getBaseID();
 }
@@ -820,8 +796,6 @@ DLLexport(int) FmCreatePart (const char* description, int nT, int* tIds)
   for (int i = 0; i < nT; i++)
     if (FmFind(tIds[i],triads[nTriads]))
       nTriads++;
-    else
-      ListUI <<" *** Error: No triad with base ID "<< tIds[i] <<".\n";
 
   if (nTriads < nT)
     return nTriads-nT;
@@ -924,19 +898,10 @@ DLLexport(int) FmCreateSpring (const char* description, int t1, int t2,
                                int sz, const double* x, const double* y,
                                int extrapol_type, int lcid = 0)
 {
-  FmTriad* triad1;
-  if (!FmFind(t1,triad1))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
-    return -t1;
-  }
-
-  FmTriad* triad2;
-  if (!FmFind(t2,triad2))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t2 <<".\n";
-    return -t2;
-  }
+  FmTriad* triad1 = FmFind(t1,triad1);
+  FmTriad* triad2 = FmFind(t2,triad2);
+  if (!triad1) return -t1;
+  if (!triad2) return -t2;
 
   FmAxialSpring* spring = Fedem::createAxialSpring(triad1,triad2);
   if (!spring) return 0;
@@ -952,7 +917,7 @@ DLLexport(int) FmCreateSpring (const char* description, int t1, int t2,
   {
     // The Base Id of the spring stiffness function to use is given.
     // Check that its usage flag is valid
-    if (FmFind(spring_charac,plx))
+    if (FmFind(spring_charac,plx,false,true))
       if (plx->getFunctionUse() < FmMathFuncBase::SPR_TRA_STIFF ||
           plx->getFunctionUse() > FmMathFuncBase::SPR_TRA_FORCE)
         plx = NULL;
@@ -977,9 +942,9 @@ DLLexport(int) FmCreateSpring (const char* description, int t1, int t2,
   // Check if a stress-free length function is specified.
   // Notice that a positive lcid value is assumed to be the FmEngine user ID
   // whereas a negative value is interpreted as the base ID.
-  FmEngine* e;
-  if (FmFind(lcid,e,true))
-    spring->setEngine(e);
+  if (lcid != 0)
+    if (FmEngine* e; FmFind(lcid,e,true))
+      spring->setEngine(e);
 
   return spring->getBaseID();
 }
@@ -991,19 +956,10 @@ DLLexport(int) FmCreateDamper (const char* description, int t1, int t2,
                                int sz, const double* x, const double* y,
                                int extrapol_type)
 {
-  FmTriad* triad1;
-  if (!FmFind(t1,triad1))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
-    return -t1;
-  }
-
-  FmTriad* triad2;
-  if (!FmFind(t2,triad2))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t2 <<".\n";
-    return -t2;
-  }
+  FmTriad* triad1 = FmFind(t1,triad1);
+  FmTriad* triad2 = FmFind(t2,triad2);
+  if (!triad1) return -t1;
+  if (!triad2) return -t2;
 
   FmAxialDamper* damper = Fedem::createAxialDamper(triad1,triad2);
   if (!damper) return 0;
@@ -1019,7 +975,7 @@ DLLexport(int) FmCreateDamper (const char* description, int t1, int t2,
   {
     // The Base Id of the damper function to use is given.
     // Check that its usage flag is valid
-    if (FmFind(damp_charac,plx))
+    if (FmFind(damp_charac,plx,false,true))
       if (plx->getFunctionUse() < FmMathFuncBase::DA_TRA_COEFF ||
           plx->getFunctionUse() > FmMathFuncBase::DA_TRA_FORCE)
         plx = NULL;
@@ -1047,12 +1003,8 @@ DLLexport(int) FmCreateDamper (const char* description, int t1, int t2,
 DLLexport(int) FmCreateJoint (const char* description, int jType,
                               int t1, int* t2 = NULL, int nr_t2 = 0)
 {
-  FmTriad* follower;
-  if (!FmFind(t1,follower))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
-    return -t1;
-  }
+  FmTriad* follower = FmFind(t1,follower);
+  if (!follower) return -t1;
 
   FmBase* triad1 = t2 && t2[0] > 0 ? FmDB::findObject(t2[0]) : NULL;
   FaVec3 jointPnt = follower->getGlobalTranslation();
@@ -1082,14 +1034,10 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
 
   bool ok = true;
   FmMMJointBase* mjoint = dynamic_cast<FmMMJointBase*>(jnt);
-  if (mjoint && nr_t2 > 2)
-  {
-    // Additional glider triads for prismatic/cylindric joint
-    FmTriad* triad = NULL;
+  if (mjoint) // Additional glider triads for prismatic/cylindric joint
     for (int i = 2; i < nr_t2; i++)
-      if (FmFind(t2[i],triad))
+      if (FmTriad* triad; FmFind(t2[i],triad))
         ok &= mjoint->addAsMasterTriad(triad);
-  }
 
   return ok ? jnt->getBaseID() : 0;
 }
@@ -1142,12 +1090,8 @@ DLLexport(int) FmCreateLoad (const char* description, int lType,
                              int t1, double dx, double dy, double dz,
                              const char* magnitude = NULL, int f1 = 0)
 {
-  FmTriad* triad1;
-  if (!FmFind(t1,triad1))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
-    return -t1;
-  }
+  FmTriad* triad1 = FmFind(t1,triad1);
+  if (!triad1) return -t1;
 
   FmLoad* load = Fedem::createLoad(lType,triad1->getGlobalTranslation(),
                                    FaVec3(dx,dy,dz),triad1);
@@ -1159,10 +1103,14 @@ DLLexport(int) FmCreateLoad (const char* description, int lType,
   // Check if a magnitude function is specified.
   // Notice that a positive f1 value is assumed to be the FmEngine user ID
   // whereas a negative value is interpreted as the base ID.
-  FmEngine* e = FmFindFunction(f1);
-  if (e) load->setEngine(e);
+  if (f1 != 0)
+    if (FmEngine* e; FmFind(f1,e,true))
+    {
+      load->setEngine(e);
+      return load->getBaseID();
+    }
 
-  if (e || !magnitude)
+  if (!magnitude)
     return load->getBaseID();
 
   // Check if magnitude is a constant
@@ -1278,16 +1226,13 @@ DLLexport(int) FmCreateDeviceFunc (const char* descr, const char* tag,
 static bool setArgument (FmEngine* engine, int id1, int id2, int var, int dof)
 {
   FmIsMeasuredBase* object[2] = { NULL, NULL };
-  if (!FmFind(id1,object[0]))
-  {
-    ListUI <<" *** Error: No measurable object with base ID "<< id1 <<".\n";
-    return false;
-  }
+
+  FmFind(id1,object[0]);
   if (id2 > 0 && !FmFind(id2,object[1]))
-  {
-    ListUI <<" *** Error: No measurable object with base ID "<< id2 <<".\n";
     return false;
-  }
+
+  if (!engine || !object[0])
+    return false;
 
   if (object[1])
   {
@@ -1343,9 +1288,7 @@ static bool setArgument (FmEngine* engine, int id1, int id2, int var, int dof)
 
 DLLexport(bool) FmSetFunctionArg (int id, int var, int dof, int i1, int i2 = 0)
 {
-  FmEngine* engine = FmFindFunction(id);
-  if (!engine) return false;
-
+  FmEngine* engine = FmFind(id,engine,true);
   return setArgument(engine,i1,i2,var,dof);
 }
 
@@ -1407,29 +1350,18 @@ DLLexport(int) FmCreateStrainRosette (const char* description,
                                       const double* dir, double angle,
                                       bool startAtZero)
 {
-  FmPart* part;
-  if (!FmFind(id,part) || !part->isFEPart(true))
-  {
-    ListUI <<" *** Error: No FE part with base ID "<< id <<".\n";
-    return -id;
-  }
+  FmPart* part = FmFindFEpart(id);
+  if (!part) return -id;
 
   ListUI <<"Creating Strain Rosette.\n";
   FmStrainRosette* rosette = new FmStrainRosette();
-  rosette->rosetteLink.setRef(part);
-  rosette->rosetteType.setValue(FmStrainRosette::SINGLE_GAGE);
-  rosette->numNodes.setValue(nnod);
-  rosette->node1.setValue(nodes[0]);
-  rosette->node2.setValue(nodes[1]);
-  rosette->node3.setValue(nodes[2]);
-  rosette->node4.setValue(nnod > 3 ? nodes[3] : 0);
-  rosette->angleOrigin.setValue(FmStrainRosette::LINK_VECTOR);
+  rosette->setTopology(part,IntVec(nodes,nodes+nnod));
   rosette->angleOriginVector.setValue(dir);
   rosette->angle.setValue(angle);
   rosette->removeStartStrains.setValue(startAtZero);
   rosette->connect();
 
-  if (rosette->syncWithFEModel().back())
+  if (rosette->syncWithFEModel(true).back())
   {
     ListUI <<" *** Error: Invalid node numbers ("<< nodes[0];
     for (int i = 1; i < nnod; i++) ListUI <<","<< nodes[i];
@@ -1448,16 +1380,12 @@ DLLexport(int) FmCreateStrainRosette (const char* description,
 DLLexport(int) FmCreateUDE2 (const char* description, int t1, int t2)
 {
   std::vector<FmTriad*> triads(2);
+
   if (!FmFind(t1,triads.front()))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t1 <<".\n";
     return -t1;
-  }
+
   if (!FmFind(t2,triads.back()))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< t2 <<".\n";
     return -t2;
-  }
 
   FmModelMemberBase* uelm = Fedem::createUserElm(triads);
   if (!uelm) return 0;
@@ -1473,8 +1401,9 @@ DLLexport(int) FmCreateAssembly (const char* description, int n, const int* id)
 {
   std::vector<FmModelMemberBase*> members(n,NULL);
   for (int i = 0; i < n; i++)
-    if (!FmFind(id[i],members[i]))
-      ListUI <<"  ** Warning: No object with base ID "<< id[i] <<" (ignored).\n";
+    if (!FmFind(id[i],members[i],false,true))
+      ListUI <<"  ** Warning: No object with base ID "<< id[i]
+             <<" (ignored).\n";
 
   FmSubAssembly* subAss = Fedem::createSubAssembly(members);
   subAss->setUserDescription(description);
@@ -1485,12 +1414,8 @@ DLLexport(int) FmCreateAssembly (const char* description, int n, const int* id)
 
 DLLexport(int) FmGetNode (int id, const double* pos)
 {
-  FmPart* part;
-  if (!FmFind(id,part) || !part->isFEPart(true))
-  {
-    ListUI <<" *** Error: No FE part with base ID "<< id <<".\n";
-    return -id;
-  }
+  FmPart* part = FmFindFEpart(id);
+  if (!part) return -id;
 
   FFlNode* node = part->getClosestNode(pos);
 #ifdef FM_DEBUG
@@ -1507,12 +1432,8 @@ DLLexport(int) FmGetNode (int id, const double* pos)
 
 DLLexport(bool) FmGetPosition (int id, double* pos)
 {
-  FmIsPositionedBase* object;
-  if (!FmFind(id,object))
-  {
-    ListUI <<" *** Error: No positioned object with base ID "<< id <<".\n";
-    return false;
-  }
+  FmIsPositionedBase* object = FmFind(id,object);
+  if (!object) return false;
 
   FaVec3 X = object->getGlobalCS().translation();
   for (int i = 0; i < 3; i++) pos[i] = X[i];
@@ -1524,28 +1445,18 @@ DLLexport(bool) FmGetPosition (int id, double* pos)
 DLLexport(bool) FmMoveObject (int id, const double* delta,
                               int traRefId = 0, int rotRefId = 0)
 {
-  FmIsPositionedBase* object;
-  if (!FmFind(id,object))
-  {
-    ListUI <<" *** Error: No movable object with base ID "<< id <<".\n";
-    return false;
-  }
+  FmIsPositionedBase* object = FmFind(id,object);
+  if (!object) return false;
 
   FmIsPositionedBase* traRef = NULL;
   if (traRefId > 0 && !FmFind(traRefId,traRef))
-  {
-    ListUI <<" *** Error: No movable object with base ID "<< traRefId <<".\n";
     return false;
-  }
   else if (traRef)
     object->setPosRef(traRef);
 
   FmIsPositionedBase* rotRef = NULL;
   if (rotRefId > 0 && !FmFind(rotRefId,rotRef))
-  {
-    ListUI <<" *** Error: No movable object with base ID "<< rotRefId <<".\n";
     return false;
-  }
   else if (rotRef)
     object->setRotRef(rotRef);
 
@@ -1575,13 +1486,10 @@ DLLexport(bool) FmMoveObject (int id, const double* delta,
 
 DLLexport(bool) FmAddMass (int id, int nMass, const double* mass, int fid = 0)
 {
-  FmTriad* triad;
-  if (!FmFind(id,triad))
-  {
-    ListUI <<" *** Error: No triad with base ID "<< id <<".\n";
-    return false;
-  }
-  else if (nMass < 1)
+  FmTriad* triad = FmFind(id,triad);
+  if (!triad) return false;
+
+  if (nMass < 1)
   {
     ListUI <<" *** Error: Empty mass array for triad "<< id <<".\n";
     return false;
@@ -1597,8 +1505,7 @@ DLLexport(bool) FmAddMass (int id, int nMass, const double* mass, int fid = 0)
   // Check if a mass scaling function is specified.
   // Notice that a positive fid value is assumed to be the FmEngine user ID
   // whereas a negative value is interpreted as the base ID.
-  FmEngine* engine = FmFindFunction(fid);
-  if (engine)
+  if (FmEngine* engine; FmFind(fid,engine,true))
     triad->setMassEngine(engine);
 
   return true;
@@ -1607,14 +1514,11 @@ DLLexport(bool) FmAddMass (int id, int nMass, const double* mass, int fid = 0)
 
 DLLexport(bool) FmConstrainObject (int id, int dof, int dofStatus)
 {
-  FmHasDOFsBase* object;
-  if (!FmFind(id,object))
-  {
-    ListUI <<" *** Error: No object with DOFs and base ID "<< id <<".\n";
-    return false;
-  }
+  FmHasDOFsBase* object = FmFind(id,object);
+  if (!object) return false;
 
-  if (dof == FmHasDOFsBase::Z_TRANS && object->isOfType(FmRevJoint::getClassTypeID()))
+  if (dof == FmHasDOFsBase::Z_TRANS &&
+      object->isOfType(FmRevJoint::getClassTypeID()))
     static_cast<FmRevJoint*>(object)->setHasTzDOF(true);
 
   if (dof < FmHasDOFsBase::MAX_DOF)
@@ -1629,16 +1533,12 @@ DLLexport(bool) FmConstrainObject (int id, int dof, int dofStatus)
 DLLexport(bool) FmDofProperty (int id, int dof, int propertyType,
                                double value, int fid = 0)
 {
-  FmHasDOFsBase* object;
-  if (!FmFind(id,object))
-  {
-    ListUI <<" *** Error: No object with DOFs and base ID "<< id <<".\n";
-    return false;
-  }
+  FmHasDOFsBase* object = FmFind(id,object);
+  if (!object) return false;
 
   FmEngine* engine = NULL;
   if (fid != 0 && (propertyType == 1 || propertyType == 4))
-    if (!(engine = FmFindFunction(fid)))
+    if (!FmFind(fid,engine,true))
       return false;
 
   // Convenience lambda function for generating error message.
@@ -1727,12 +1627,8 @@ DLLexport(bool) FmDofProperty (int id, int dof, int propertyType,
 
 DLLexport(bool) FmStructDamp (int id, double alpha1, double alpha2)
 {
-  FmLink* object;
-  if (!FmFind(id,object))
-  {
-    ListUI <<" *** Error: No link with base ID "<< id <<".\n";
-    return false;
-  }
+  FmLink* object = FmFind(id,object);
+  if (!object) return false;
 
   object->alpha1.setValue(alpha1);
   object->alpha2.setValue(alpha2);
@@ -1743,12 +1639,8 @@ DLLexport(bool) FmStructDamp (int id, double alpha1, double alpha2)
 
 DLLexport(bool) FmReduceOpts (int id, int nComp, bool consMass)
 {
-  FmPart* object;
-  if (!FmFind(id,object))
-  {
-    ListUI <<" *** Error: No part with base ID "<< id <<".\n";
-    return false;
-  }
+  FmPart* object = FmFind(id,object);
+  if (!object) return false;
 
   object->nGenModes.setValue(nComp);
   object->useConsistentMassMatrix.setValue(consMass);
@@ -1759,12 +1651,8 @@ DLLexport(bool) FmReduceOpts (int id, int nComp, bool consMass)
 
 DLLexport(bool) FmRecoverOpts (int id, int recoveryFlag, bool amend)
 {
-  FmPart* object;
-  if (!FmFind(id,object))
-  {
-    ListUI <<" *** Error: No part with base ID "<< id <<".\n";
-    return false;
-  }
+  FmPart* object = FmFind(id,object);
+  if (!object) return false;
 
   if (recoveryFlag < 0 || recoveryFlag > 3)
     ListUI <<"  ** Warning: Invalid part recovery flag "<< recoveryFlag
