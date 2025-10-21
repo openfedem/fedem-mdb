@@ -15,9 +15,6 @@
 #include "vpmDB/FmModesOptions.H"
 #include "vpmDB/FmGageOptions.H"
 #include "vpmDB/FmFppOptions.H"
-#ifdef FT_HAS_NCODE
-#include "vpmDB/FmDutyCycleOptions.H"
-#endif
 #include "vpmDB/FmGlobalViewSettings.H"
 
 #include "vpmDB/FmAnimation.H"
@@ -148,9 +145,6 @@ void FmDB::initHeadMap(FmHeadMap& headMap, FmFuncTree*& funcTree)
   headMap[FmModesOptions::getClassTypeID()] = new FmRingStart("Modes Options");
   headMap[FmGageOptions::getClassTypeID()] = new FmRingStart("Gage Options");
   headMap[FmFppOptions::getClassTypeID()] = new FmRingStart("Fpp Options");
-#ifdef FT_HAS_NCODE
-  headMap[FmDutyCycleOptions::getClassTypeID()] = new FmRingStart("Duty Cycle Options");
-#endif
   headMap[FmModelExpOptions::getClassTypeID()] = new FmRingStart("Model Export Options");
 
   headMap[FmRefPlane::getClassTypeID()] = new FmRingStart("Reference planes", referencePlane_xpm);
@@ -1226,15 +1220,6 @@ FmFppOptions* FmDB::getFppOptions(bool createIfNone)
   FmFppOptions* fpp = NULL;
   return FmdGet_Object(fpp,createIfNone);
 }
-
-
-#ifdef FT_HAS_NCODE
-FmDutyCycleOptions* FmDB::getDutyCycleOptions(bool createIfNone)
-{
-  FmDutyCycleOptions* dc = NULL;
-  return FmdGet_Object(dc,createIfNone);
-}
-#endif
 
 
 FmModelExpOptions* FmDB::getModelExportOptions(bool createIfNone)
@@ -2387,9 +2372,6 @@ int FmDB::readFMF(std::istream& fs)
 	    case MODESOPTIONS: FmdPARSE_AND_BUILD_LOG(FmModesOptions); break;
 	    case GAGEOPTIONS: FmdPARSE_AND_BUILD_LOG(FmGageOptions); break;
 	    case FPPOPTIONS: FmdPARSE_AND_BUILD_LOG(FmFppOptions); break;
-#ifdef FT_HAS_NCODE
-	    case DUTYCYCLEOPTIONS: FmdPARSE_AND_BUILD_LOG(FmDutyCycleOptions); break;
-#endif
 	    case MODEL_EXPORT_OPTIONS: FmdPARSE_AND_BUILD_LOG(FmModelExpOptions); break;
 	    case GENERIC_DB_OBJECT: FmdPARSE_AND_BUILD_LOG(FmGenericDBObject); break;
 	    case FILE_REFERENCE: FmdPARSE_AND_BUILD_LOG(FmFileReference); break;

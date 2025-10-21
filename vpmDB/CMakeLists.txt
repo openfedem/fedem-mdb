@@ -105,10 +105,6 @@ if ( USE_EXT_CTRLSYS )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_HAS_EXTCTRL" )
   list ( APPEND COMPONENT_FILE_LIST FmExternalCtrlSys )
 endif ( USE_EXT_CTRLSYS )
-if ( USE_NCODE_INTERFACE )
-  string ( APPEND CMAKE_CXX_FLAGS " -DFT_HAS_NCODE" )
-  list ( APPEND COMPONENT_FILE_LIST FmDutyCycleOptions )
-endif ( USE_NCODE_INTERFACE )
 
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HPP_FILE_LIST FmAllControlHeaders FmAllFunctionHeaders
