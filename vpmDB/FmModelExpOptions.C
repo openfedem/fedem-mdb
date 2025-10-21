@@ -39,7 +39,8 @@ FmModelExpOptions::FmModelExpOptions()
 
   //FMU
   FFA_FIELD_DEFAULT_INIT(fmuFilename, "FMU_FILENAME");
-  FFA_FIELD_INIT(fmuAppExport, false, "FMU_APP_EXPORT");
+  FFA_FIELD_INIT(inclExtFuncFile, false, "INCLUDE_EXT_FUNC_FILE");
+  FFA_FIELD_INIT(fmuExport, false, "FMU_APP_EXPORT");
 }
 
 
