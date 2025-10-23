@@ -46,7 +46,8 @@ public:
   FFaField<bool>        batchAppExport;
   //FMU
   FFaField<std::string> fmuFilename;
-  FFaField<bool>        fmuAppExport;
+  FFaField<bool>        inclExtFuncFile;
+  FFaField<bool>        fmuExport;
 };
 
 #endif

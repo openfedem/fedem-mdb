@@ -15,9 +15,6 @@
 #include "vpmDB/FmModesOptions.H"
 #include "vpmDB/FmGageOptions.H"
 #include "vpmDB/FmFppOptions.H"
-#ifdef FT_HAS_NCODE
-#include "vpmDB/FmDutyCycleOptions.H"
-#endif
 #include "vpmDB/FmGlobalViewSettings.H"
 
 #include "vpmDB/FmAnimation.H"
@@ -148,9 +145,6 @@ void FmDB::initHeadMap(FmHeadMap& headMap, FmFuncTree*& funcTree)
   headMap[FmModesOptions::getClassTypeID()] = new FmRingStart("Modes Options");
   headMap[FmGageOptions::getClassTypeID()] = new FmRingStart("Gage Options");
   headMap[FmFppOptions::getClassTypeID()] = new FmRingStart("Fpp Options");
-#ifdef FT_HAS_NCODE
-  headMap[FmDutyCycleOptions::getClassTypeID()] = new FmRingStart("Duty Cycle Options");
-#endif
   headMap[FmModelExpOptions::getClassTypeID()] = new FmRingStart("Model Export Options");
 
   headMap[FmRefPlane::getClassTypeID()] = new FmRingStart("Reference planes", referencePlane_xpm);
@@ -490,10 +484,8 @@ int FmDB::getObjectCount(int typeID, const FmHeadMap* root)
   if (!head) return count;
 
   for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-  {
-    FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt);
-    if (subAss) count += FmDB::getObjectCount(typeID,subAss->getHeadMap());
-  }
+    if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+      count += FmDB::getObjectCount(typeID,subAss->getHeadMap());
 
   return count;
 }
@@ -547,11 +539,9 @@ bool FmDB::appendAllOfType(std::vector<FmModelMemberBase*>& toBeFilled,
   FmBase* head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
   if (head && classTypeID >= 0)
     for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-    {
-      FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt);
-      if (subAss) FmDB::appendAllOfType(toBeFilled,classTypeID,except,
-                                        tagged,subAss->getHeadMap());
-    }
+      if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+        FmDB::appendAllOfType(toBeFilled,classTypeID,except,
+                              tagged,subAss->getHeadMap());
 
   return toBeFilled.size() > oldSize;
 }
@@ -581,15 +571,14 @@ void FmDB::getQuery(std::vector<FmModelMemberBase*>& toBeFilled, FmQuery* query)
 
   if (query->verifyCB.empty())
     FmDB::getTypeQuery(toBeFilled,query->typesToFind);
-  else {
+  else
+  {
     bool isOK = false;
     std::vector<FmModelMemberBase*> tmp;
     FmDB::getTypeQuery(tmp,query->typesToFind);
-    for (FmModelMemberBase* obj : tmp) {
-      query->verifyCB.invoke(isOK,obj);
-      if (isOK)
+    for (FmModelMemberBase* obj : tmp)
+      if (query->verifyCB.invoke(isOK,obj); isOK)
         toBeFilled.push_back(obj);
-    }
   }
 }
 
@@ -610,10 +599,8 @@ template<class T> static void FmdFill_Vec(std::vector<T*>& queName,
   head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
   if (head)
     for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-    {
-      FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt);
-      if (subAss) FmdFill_Vec(queName,subAss->getHeadMap(),classTypeId);
-    }
+      if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+        FmdFill_Vec(queName,subAss->getHeadMap(),classTypeId);
 }
 
 
@@ -824,11 +811,9 @@ bool FmDB::hasObjects(int typeID, const FmHeadMap* root)
   if (!head) return false;
 
   for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-  {
-    FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt);
-    if (subAss && FmDB::hasObjects(typeID,subAss->getHeadMap()))
-      return true;
-  }
+    if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+      if (FmDB::hasObjects(typeID,subAss->getHeadMap()))
+        return true;
 
   return false;
 }
@@ -837,20 +822,16 @@ bool FmDB::hasObjects(int typeID, const FmHeadMap* root)
 bool FmDB::hasObjectsOfType(int classTypeID, const FmHeadMap* root)
 {
   for (const FmHeadMap::value_type& head : *root)
-  {
-    FmBase* pt = head.second->getNext();
-    if (pt && pt != head.second && pt->isOfType(classTypeID))
-      return true;
-  }
+    if (FmBase* pt = head.second->getNext(); pt)
+      if (pt != head.second && pt->isOfType(classTypeID))
+        return true;
 
   FmBase* head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
   if (head)
     for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-    {
-      FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt);
-      if (subAss && FmDB::hasObjectsOfType(classTypeID,subAss->getHeadMap()))
-	return true;
-    }
+      if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+        if (FmDB::hasObjectsOfType(classTypeID,subAss->getHeadMap()))
+          return true;
 
   return false;
 }
@@ -962,10 +943,8 @@ void FmDB::getAllJointDampers(std::vector<FmJointDamper*>& dampers)
   FmDB::getAllJoints(jnts);
   for (FmJointBase* joint : jnts)
     for (int dof = 0; dof < FmJointBase::MAX_DOF; dof++)
-    {
-      FmJointDamper* dmp = joint->getDamperAtDOF(dof);
-      if (dmp) dampers.push_back(dmp);
-    }
+      if (FmJointDamper* dmp = joint->getDamperAtDOF(dof); dmp)
+        dampers.push_back(dmp);
 }
 
 
@@ -976,10 +955,8 @@ void FmDB::getAllJointSprings(std::vector<FmJointSpring*>& springs)
   FmDB::getAllJoints(jnts);
   for (FmJointBase* joint : jnts)
     for (int dof = 0; dof < FmJointBase::MAX_DOF; dof++)
-    {
-      FmJointSpring* spr = joint->getSpringAtDOF(dof);
-      if (spr) springs.push_back(spr);
-    }
+      if (FmJointSpring* spr = joint->getSpringAtDOF(dof); spr)
+        springs.push_back(spr);
 }
 
 
@@ -1089,10 +1066,9 @@ void FmDB::getAllBladeDesigns(std::vector<FmBladeDesign*>& blades)
   std::vector<FmSubAssembly*> subass;
   FmdFill_Vec(subass,&ourHeadMap);
 
-  FmBladeDesign* bs;
   blades.clear();
   for (FmSubAssembly* obj : subass)
-    if ((bs = dynamic_cast<FmBladeDesign*>(obj)))
+    if (FmBladeDesign* bs = dynamic_cast<FmBladeDesign*>(obj); bs)
       blades.push_back(bs);
 }
 
@@ -1246,15 +1222,6 @@ FmFppOptions* FmDB::getFppOptions(bool createIfNone)
 }
 
 
-#ifdef FT_HAS_NCODE
-FmDutyCycleOptions* FmDB::getDutyCycleOptions(bool createIfNone)
-{
-  FmDutyCycleOptions* dc = NULL;
-  return FmdGet_Object(dc,createIfNone);
-}
-#endif
-
-
 FmModelExpOptions* FmDB::getModelExportOptions(bool createIfNone)
 {
   FmModelExpOptions* exp = NULL;
@@ -1334,6 +1301,8 @@ void FmDB::getAllPaths(std::vector<FFaField<std::string>*>& allPathNames,
   FmDB::getAllOfType(allObjs,FmfDeviceFunction::getClassTypeID(),subAss);
   for (FmModelMemberBase* obj : allObjs)
     allPathNames.push_back(&(static_cast<FmfDeviceFunction*>(obj)->deviceName));
+  if (FmAnalysis* anal = FmDB::getActiveAnalysis(false); anal)
+    allPathNames.push_back(&(anal->externalFuncFileName));
 
   // Reference curve files
   FmDB::getAllOfType(allObjs,FmCurveSet::getClassTypeID(),subAss);
@@ -1358,10 +1327,9 @@ void FmDB::getAllPaths(std::vector<FFaField<std::string>*>& allPathNames,
   }
 
   // Tower shadow file
-  FmTurbine* turbine;
   FmDB::getAllOfType(allObjs,FmSubAssembly::getClassTypeID(),subAss);
   for (FmModelMemberBase* obj : allObjs)
-    if ((turbine = dynamic_cast<FmTurbine*>(obj)))
+    if (FmTurbine* turbine = dynamic_cast<FmTurbine*>(obj); turbine)
       allPathNames.push_back(&(turbine->towerFile));
 
   // Remove the empty fields
@@ -1376,7 +1344,7 @@ void FmDB::getAllPaths(std::vector<FFaField<std::string>*>& allPathNames,
 /*!
   Utility method to translate all relative paths in the model such that they
   are correct after saving, when changing the model file path of the model.
-  Used by "Save As..."
+  Used by "Save As..." and "Export Digital Twin...".
 */
 
 void FmDB::translateRelativePaths(const std::string& oldPath,
@@ -1388,11 +1356,8 @@ void FmDB::translateRelativePaths(const std::string& oldPath,
   // Find all pathnames in the model and store a pointer to each in a vector
   std::vector<FFaField<std::string>*> allPathNames;
   FmDB::getAllPaths(allPathNames,subAss);
-  FmAnalysis* anal = FmDB::getActiveAnalysis(false);
-  if (anal && !anal->externalFuncFileName.getValue().empty())
-    allPathNames.push_back(&(anal->externalFuncFileName));
 
-  // Now modify the relative path names to comply with the new model file path
+  // Modify the relative path names to comply with the new model file path
   for (FFaField<std::string>* field : allPathNames)
   {
     std::string fName = field->getValue();
@@ -1437,11 +1402,9 @@ bool FmDB::purgeJointComponents()
   int nErasedL = 0;
   FmDB::getAllOfType(objs,FmDofLoad::getClassTypeID());
   for (FmModelMemberBase* obj : objs)
-  {
-    FmDofLoad* dl = static_cast<FmDofLoad*>(obj);
-    if (!dl->getActiveOwner() || !(dl->getInitLoad() || dl->getEngine()))
+    if (FmDofLoad* dl = static_cast<FmDofLoad*>(obj);
+        !dl->getActiveOwner() || !(dl->getInitLoad() || dl->getEngine()))
       if (obj->erase()) nErasedL++;
-  }
 
   if (nErasedL > 0)
     ListUI <<" --> Purging "<< nErasedL <<" inactive DOF loads\n";
@@ -1599,10 +1562,8 @@ void FmDB::displayMembers(int typeID, const FmHeadMap* root)
   if (!head) return;
 
   for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-  {
-    FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt);
-    if (subAss) FmDB::displayMembers(typeID,subAss->getHeadMap());
-  }
+    if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+      FmDB::displayMembers(typeID,subAss->getHeadMap());
 }
 
 
@@ -1685,13 +1646,11 @@ FmBase* FmDB::findID(int type, int IDnr,
 
   // It probably wasn't, see if it is a parent class then
   for (const FmHeadMap::value_type& head : *headMap)
-  {
-    FmBase* runner = head.second->getNext();
-    if (runner && runner->isOfType(type))
+    if (FmBase* runner = head.second->getNext();
+        runner && runner->isOfType(type))
       for (; runner && runner != head.second; runner = runner->getNext())
         if (runner->isOfType(type) && runner->getID() == IDnr)
           return runner;
-  }
 
   return NULL;
 }
@@ -1703,13 +1662,11 @@ FmBase* FmDB::findID(const std::string& type, int IDnr,
   if (!headMap) return NULL;
 
   for (const FmHeadMap::value_type& head : *headMap)
-  {
-    FmBase* runner = head.second->getNext();
-    if (runner && runner->getUITypeName() == type)
+    if (FmBase* runner = head.second->getNext();
+        runner && runner->getUITypeName() == type)
       for (; runner && runner != head.second; runner = runner->getNext())
         if (runner->getID() == IDnr)
           return runner;
-  }
 
   return NULL;
 }
@@ -2101,7 +2058,8 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
 #endif
 
   std::ifstream fs(name.c_str(),std::ios::in);
-  if (!fs) {
+  if (!fs)
+  {
     FFaMsg::dialog("The file \"" + name + "\" could not be opened.\n"
 		   "Please check that you have read permission on this file.",
 		   FFaMsg::ERROR);
@@ -2113,7 +2071,8 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
   char line[256];
   fs.getline(line,80);
   std::string firstLine(line);
-  if (firstLine.empty()) {
+  if (firstLine.empty())
+  {
     FFaMsg::dialog("The file \"" + name + "\" is empty!",FFaMsg::ERROR);
     return false;
   }
@@ -2247,7 +2206,8 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
   // due to parsing of old (R5.0 and older) model files.
   FmMMJointBase::connectTmpMasters();
 
-  if (dataIsRead < 0) {
+  if (dataIsRead < 0)
+  {
     FFaMsg::dialog("Parsing the file \"" + name + "\" aborted.\nIt has to "
 		   "be manually corrected (see Output List for details).",
 		   FFaMsg::ERROR);
@@ -2325,7 +2285,8 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
   std::vector<FmModelMemberBase*> allSensors;
   FmDB::getAllOfType(allSensors,FmSimpleSensor::getClassTypeID());
   for (FmModelMemberBase* sensor : allSensors)
-    if (!static_cast<FmSimpleSensor*>(sensor)->getMeasured()) {
+    if (!static_cast<FmSimpleSensor*>(sensor)->getMeasured())
+    {
       sensor->releaseReferencesToMe("mySensor",FmDB::getTimeSensor());
       sensor->erase();
     }
@@ -2344,7 +2305,8 @@ bool FmDB::readAll(const std::string& name, char ignoreFileVersion)
 #ifdef FT_USE_CMDLINEARG
   int incID = 0;
   FFaCmdLineArg::instance()->getValue("ID_increment",incID);
-  if (incID > 0) {
+  if (incID > 0)
+  {
     ListUI <<"===> Incrementing all IDs with "<< incID <<"\n";
     for (const FmHeadMap::value_type& head : ourHeadMap)
       // Skip incrementing for the reference plane
@@ -2410,9 +2372,6 @@ int FmDB::readFMF(std::istream& fs)
 	    case MODESOPTIONS: FmdPARSE_AND_BUILD_LOG(FmModesOptions); break;
 	    case GAGEOPTIONS: FmdPARSE_AND_BUILD_LOG(FmGageOptions); break;
 	    case FPPOPTIONS: FmdPARSE_AND_BUILD_LOG(FmFppOptions); break;
-#ifdef FT_HAS_NCODE
-	    case DUTYCYCLEOPTIONS: FmdPARSE_AND_BUILD_LOG(FmDutyCycleOptions); break;
-#endif
 	    case MODEL_EXPORT_OPTIONS: FmdPARSE_AND_BUILD_LOG(FmModelExpOptions); break;
 	    case GENERIC_DB_OBJECT: FmdPARSE_AND_BUILD_LOG(FmGenericDBObject); break;
 	    case FILE_REFERENCE: FmdPARSE_AND_BUILD_LOG(FmFileReference); break;

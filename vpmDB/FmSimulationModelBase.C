@@ -25,9 +25,6 @@
 #include "vpmDB/FmCylJoint.H"
 #include "vpmDB/FmDofLoad.H"
 #include "vpmDB/FmDofMotion.H"
-#ifdef FT_HAS_NCODE
-#include "vpmDB/FmDutyCycleOptions.H"
-#endif
 #include "vpmDB/FmElementGroupProxy.H"
 #include "vpmDB/FmEngine.H"
 #ifdef FT_HAS_EXTCTRL
@@ -249,10 +246,6 @@ FmSimulationModelBase* FmSimulationModelBase::copy(int cloneDepth) const
     newObj = new FmDofLoad();
   else if (this->isOfType(FmDofMotion::getClassTypeID()))
     newObj = new FmDofMotion();
-#ifdef FT_HAS_NCODE
-  else if (this->isOfType(FmDutyCycleOptions::getClassTypeID()))
-    newObj = new FmDutyCycleOptions();
-#endif
   else if (this->isOfType(FmElementGroupProxy::getClassTypeID()))
     newObj = new FmElementGroupProxy();
   else if (this->isOfType(FmEngine::getClassTypeID()))

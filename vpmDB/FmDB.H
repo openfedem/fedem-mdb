@@ -69,7 +69,6 @@ class FmAnalysis;
 class FmModesOptions;
 class FmGageOptions;
 class FmFppOptions;
-class FmDutyCycleOptions;
 class FmModelExpOptions;
 class FmGlobalViewSettings;
 class FaMat34;
@@ -210,7 +209,6 @@ public:
   static FmModesOptions* getModesOptions(bool createIfNone = true);
   static FmGageOptions* getGageOptions(bool createIfNone = true);
   static FmFppOptions* getFppOptions(bool createIfNone = true);
-  static FmDutyCycleOptions* getDutyCycleOptions(bool createIfNone = true);
   static FmModelExpOptions* getModelExportOptions(bool createIfNone = true);
   static FmVesselMotion* getActiveRAO();
 
