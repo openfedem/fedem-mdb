@@ -60,10 +60,21 @@ FmMathFuncBase::~FmMathFuncBase()
  *
  **********************************************************************/
 
+bool FmMathFuncBase::interactiveErase()
+{
+  if (this->getFunctionUse() == DRIVE_FILE)
+    if (FmEngine* engine = NULL; this->hasReferringObjs(engine))
+      return engine->erase(); // Erase the engine instead
+
+  return this->erase();
+}
+
+
 FmMathFuncBase* FmMathFuncBase::copy() const
 {
   FmMathFuncBase* newFunc = FmFuncAdmin::createFunction(this->getTypeID());
-  if (newFunc) {
+  if (newFunc)
+  {
     newFunc->clone((FmBase*)this,FmBase::SHALLOW);
     newFunc->setUserDescription("Copy of " + this->getInfoString());
   }
@@ -167,7 +178,8 @@ int FmMathFuncBase::getCurvePoints(double start, double stop, double inc,
       return -1;
   }
 
-  if (!this->initGetValue()) return -2;
+  if (!this->initGetValue())
+    return -2;
 
   int ierr = 0;
   y.clear();
@@ -294,11 +306,11 @@ bool FmMathFuncBase::setFunctionUsage(int usage)
 
 bool FmMathFuncBase::setFunctionUse(FuncUse newUse, bool checkUniqueID)
 {
-  if (myUse.getValue() == newUse) return false;
+  if (!myUse.setValue(newUse))
+    return false; // unchanged
 
-  myUse.setValue(newUse);
-
-  if (!checkUniqueID || newUse <= DRIVE_FILE) return false;
+  if (!checkUniqueID || newUse <= DRIVE_FILE)
+    return false;
 
   // Check all other functions with same use to find a unique ID of the
   // this function that doesn't conflict with existing functions (TT #2606).
@@ -309,7 +321,7 @@ bool FmMathFuncBase::setFunctionUse(FuncUse newUse, bool checkUniqueID)
     if (f != this)
     {
       if (f->getTypeID() == this->getTypeID())
-	usedIDs.insert(f->getID());
+        usedIDs.insert(f->getID());
       else if (f->getFunctionUse() == newUse && f->getID() != this->getID())
         usedIDs.insert(f->getID());
     }
@@ -423,15 +435,15 @@ void FmMathFuncBase::resolveAfterRead()
 
     // Get all objects that are using this function
     std::multimap<std::string,FFaFieldContainer*> refs;
-    std::multimap<std::string,FFaFieldContainer*>::const_iterator it;
     f->getReferringObjs(refs);
 
     std::vector<FmSpringBase*> springs;
     std::vector<FmDamperBase*> dampers;
     std::vector<FmEngine*>     engines;
     std::vector<FmRoad*>       roads;
-    for (it = refs.begin(); it != refs.end(); it++) {
-      FmBase* refObj = (FmBase*)it->second;
+    for (const std::pair<const std::string,FFaFieldContainer*>& ref : refs)
+    {
+      FmBase* refObj = (FmBase*)ref.second;
       if (refObj->isOfType(FmSpringBase::getClassTypeID()))
 	springs.push_back((FmSpringBase*)refObj);
       else if (refObj->isOfType(FmDamperBase::getClassTypeID()))
@@ -463,9 +475,23 @@ void FmMathFuncBase::resolveAfterRead()
       }
     }
 
+    // Lambda function making a copy of a spring/damper function.
+    std::map<FuncUse,FmMathFuncBase*> createMap;
+    auto&& copyFunc = [&createMap](FmMathFuncBase* func, FuncUse fu)
+    {
+      std::map<FuncUse,FmMathFuncBase*>::const_iterator it = createMap.find(fu);
+      if (it != createMap.end())
+        return it->second;
+
+      // No copy of this type exist yet, create one
+      FmMathFuncBase* newFunc = func->copy();
+      newFunc->setFunctionUse(fu);
+      newFunc->connect();
+      return createMap.emplace(fu,newFunc).first->second;
+    };
+
     // Springs
 
-    std::map<FuncUse,FmMathFuncBase*> createMap;
     for (FmSpringBase* spring : springs)
     {
       bool isT = spring->getDOF() < 3 ? true : false;
@@ -473,27 +499,17 @@ void FmMathFuncBase::resolveAfterRead()
 
       FuncUse ft;
       if (isT)
-	ft = isF ? SPR_TRA_FORCE  : SPR_TRA_STIFF;
+        ft = isF ? SPR_TRA_FORCE  : SPR_TRA_STIFF;
       else
-	ft = isF ? SPR_ROT_TORQUE : SPR_ROT_STIFF;
+        ft = isF ? SPR_ROT_TORQUE : SPR_ROT_STIFF;
 
       // If current function is still NONE, change use type to <ft> and proceed
       // If the function has a different use type than this spring should have,
       // assign a copy of the function with use type <ft> to the spring
       if (f->getFunctionUse() == NONE)
-	newID = f->setFunctionUse(ft,true);
-
-      else if (f->getFunctionUse() != ft) {
-	std::map<FuncUse,FmMathFuncBase*>::const_iterator fit = createMap.find(ft);
-	if (fit == createMap.end()) {
-	  // No copy of this type exist yet, create one
-	  FmMathFuncBase* newF = f->copy();
-	  newF->setFunctionUse(ft);
-	  newF->connect();
-	  fit = createMap.insert(std::make_pair(ft,newF)).first;
-	}
-	spring->setSpringCharOrStiffFunction(fit->second);
-      }
+        newID = f->setFunctionUse(ft,true);
+      else if (f->getFunctionUse() != ft)
+        spring->setSpringCharOrStiffFunction(copyFunc(f,ft));
     }
 
     // Dampers
@@ -506,33 +522,24 @@ void FmMathFuncBase::resolveAfterRead()
 
       FuncUse ft;
       if (isT)
-	ft = isF ? DA_TRA_FORCE  : DA_TRA_COEFF;
+        ft = isF ? DA_TRA_FORCE  : DA_TRA_COEFF;
       else
-	ft = isF ? DA_ROT_TORQUE : DA_ROT_COEFF;
+        ft = isF ? DA_ROT_TORQUE : DA_ROT_COEFF;
 
       // If current function is still NONE, change use type to <ft> and proceed
       // If the function has a different use type than this damper should have,
       // assign a copy of the function with use type <ft> to the damper
       if (f->getFunctionUse() == NONE)
-	newID = f->setFunctionUse(ft,true);
-
-      else if (f->getFunctionUse() != ft) {
-	std::map<FuncUse,FmMathFuncBase*>::const_iterator fit = createMap.find(ft);
-	if (fit == createMap.end()) {
-	  // No copy of this type exist yet, create one
-	  FmMathFuncBase* newF = f->copy();
-	  newF->setFunctionUse(ft);
-	  newF->connect();
-	  fit = createMap.insert(std::make_pair(ft,newF)).first;
-	}
-	damper->setFunction(fit->second);
-      }
+        newID = f->setFunctionUse(ft,true);
+      else if (f->getFunctionUse() != ft)
+        damper->setFunction(copyFunc(f,ft));
     }
 
     // If no usage is detected, touch the function, to make it appear in the
     // objects browser. We also need to reconnect if it was assigned a new ID.
 
-    if (f->getFunctionUse() == NONE || newID) {
+    if (f->getFunctionUse() == NONE || newID)
+    {
       f->disconnect();
       f->connect();
     }
@@ -540,14 +547,10 @@ void FmMathFuncBase::resolveAfterRead()
 
   // Correct the curve type of the old function preview curves, if any
   for (int oldID : oldPreviewFunc)
-  {
-    FmBase* found = FmDB::findID(FmCurveSet::getClassTypeID(),oldID);
-    if (found) {
-      FmCurveSet* curve = static_cast<FmCurveSet*>(found);
-      if (curve->usingInputMode() == FmCurveSet::INT_FUNCTION)
-	curve->useInputMode(FmCurveSet::PREVIEW_FUNC);
-    }
-  }
+    if (FmBase* found = FmDB::findID(FmCurveSet::getClassTypeID(),oldID); found)
+      if (FmCurveSet* curve = static_cast<FmCurveSet*>(found);
+          curve->usingInputMode() == FmCurveSet::INT_FUNCTION)
+        curve->useInputMode(FmCurveSet::PREVIEW_FUNC);
 
   oldPreviewFunc.clear();
 }
