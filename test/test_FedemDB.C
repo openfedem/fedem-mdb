@@ -14,7 +14,7 @@
 
 extern "C" {
   void FmInit(const char* = NULL, const char* = NULL);
-  void FmNew (const char* = NULL);
+  void FmNew (const char* = NULL, const char* = NULL);
   bool FmOpen(const char* = NULL);
   bool FmSave(const char* = NULL);
   void FmClose(bool = true);

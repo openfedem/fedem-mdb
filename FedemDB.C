@@ -44,6 +44,7 @@
 #include "vpmDB/FmfExternalFunction.H"
 #include "vpmDB/FmStrainRosette.H"
 #include "vpmDB/FmUserDefinedElement.H"
+#include "vpmDB/FmRefPlane.H"
 #include "vpmDB/FmDB.H"
 #include "vpmDB/FmFileSys.H"
 #include "vpmDB/FmCreate.H"
@@ -71,98 +72,98 @@
 #endif
 
 
-static IntVec  typeMap; //!< Python-to-Fedem object type mapping
-static Strings funcMap; //!< Channel-to-tag input function mapping
-
-
-/*!
-  \brief Safe mapping from object type index to class Type ID.
-*/
-
-inline int classType (int objType)
+namespace
 {
-  return objType < 0 || objType >= (int)typeMap.size() ? 0 : typeMap[objType];
-}
+  IntVec  typeMap; //!< Python-to-Fedem object type mapping
+  Strings funcMap; //!< Channel-to-tag input function mapping
+
+  /*!
+    \brief Safe mapping from object type index to class Type ID.
+  */
+  inline int classType (int objType)
+  {
+    return objType < 0 || objType >= (int)typeMap.size() ? 0 : typeMap[objType];
+  }
 
 
-/*!
-  \brief Initializes the channel-to-tag input function mapping.
-*/
+  /*!
+    \brief Initializes the channel-to-tag input function mapping.
+  */
+  bool initFuncMap ()
+  {
+    std::vector<FmEngine*> engines;
+    FmDB::getAllEngines(engines);
+    for (FmEngine* eng : engines)
+      if (FmfExternalFunction* fn =
+          dynamic_cast<FmfExternalFunction*>(eng->getFunction()); fn)
+      {
+        size_t channel = fn->channel.getValue();
+        if (channel > funcMap.size() && !eng->getTag().empty())
+          funcMap.resize(channel);
+        if (channel <= funcMap.size())
+          funcMap[channel-1] = eng->getTag();
+      }
 
-static bool initFuncMap ()
-{
-  FmfExternalFunction* fn = NULL;
-  std::vector<FmEngine*> engines;
-  FmDB::getAllEngines(engines);
-  for (FmEngine* eng : engines)
-    if ((fn = dynamic_cast<FmfExternalFunction*>(eng->getFunction())))
+    return !funcMap.empty();
+  }
+
+
+  /*!
+    \brief A sub-class of FFaMsg that writes the list-messages to the log-file.
+  */
+  class FileMsg : public FFaMsg
+  {
+    std::ofstream os; //!< File stream for log-messages
+
+  public:
+    //! \brief The constructor opens the log-file \a logf in append mode.
+    FileMsg(const std::string& logf)
     {
-      size_t channel = fn->channel.getValue();
-      if (channel > funcMap.size() && !eng->getTag().empty())
-        funcMap.resize(channel);
-      if (channel <= funcMap.size())
-        funcMap[channel-1] = eng->getTag();
+      os.open(logf,std::ios_base::app);
+      if (!os)
+        std::cerr <<" *** Failed to open log-file "<< logf <<"\n"
+                  <<"     Output will be written to console instead."
+                  << std::endl;
     }
 
-  return !funcMap.empty();
-}
+    //! \brief The destructor closes the log-file.
+    virtual ~FileMsg() { if (os) os.close(); }
+
+  protected:
+    //! \brief Writes the \a msg to the log-file.
+    virtual void listVt(const std::string& msg, bool)
+    {
+      if (os)
+        os << msg << std::flush;
+      else
+        std::cout << msg << std::flush;
+    }
+    //! \brief Writes the \a msg to the log-file.
+    virtual int dialogVt(const std::string& msg,
+                         const FFaDialogType, const char**)
+    {
+      if (os)
+        os << msg << std::endl;
+      else
+        std::cout << msg << std::endl;
+      return -1;
+    }
+  };
 
 
-/*!
-  \brief A sub-class of FFaMsg that writes the list-messages to the log-file.
-*/
-
-class FileMsg : public FFaMsg
-{
-  std::ofstream os; //!< File stream for log-messages
-
-public:
-  //! \brief The constructor opens the log-file \a logf in append mode.
-  FileMsg(const std::string& logf)
+  /*!
+    \brief Opens the log-file associated with the given model file.
+  */
+  void openAssociatedLogFile (const char* fmmFile)
   {
-    os.open(logf,std::ios_base::app);
-    if (!os)
-      std::cerr <<" *** Failed to open log-file "<< logf <<"\n"
-                <<"     Output will be written to console instead."<< std::endl;
-  }
-
-  //! \brief The destructor closes the log-file.
-  virtual ~FileMsg() { if (os) os.close(); }
-
-protected:
-  //! \brief Writes the \a msg to the log-file.
-  virtual void listVt(const std::string& msg, bool)
-  {
-    if (os)
-      os << msg << std::flush;
+    std::string logFile(fmmFile);
+    size_t idot = logFile.find_last_of('.');
+    if (idot < logFile.size())
+      logFile.replace(idot,std::string::npos,".log");
     else
-      std::cout << msg << std::flush;
+      logFile.append(".log");
+    FFaMsg::setMessager(new FileMsg(logFile));
   }
-  //! \brief Writes the \a msg to the log-file.
-  virtual int dialogVt(const std::string& msg, const FFaDialogType, const char**)
-  {
-    if (os)
-      os << msg << std::endl;
-    else
-      std::cout << msg << std::endl;
-    return -1;
-  }
-};
-
-
-/*!
-  \brief Opens the log-file associated with the given model file.
-*/
-
-static void openAssociatedLogFile (const char* fmmFile)
-{
-  std::string logFile(fmmFile);
-  size_t idot = logFile.find_last_of('.');
-  if (idot < logFile.size())
-    logFile.replace(idot,std::string::npos,".log");
-  else
-    logFile.append(".log");
-  FFaMsg::setMessager(new FileMsg(logFile));
 }
 
 
@@ -201,7 +202,8 @@ DLLexport(void) FmInit (const char* plugin1, const char* plugin2)
     FmAxialSpring::getClassTypeID(),
     FmAxialDamper::getClassTypeID(),
     FmStrainRosette::getClassTypeID(),
-    FmUserDefinedElement::getClassTypeID()
+    FmUserDefinedElement::getClassTypeID(),
+    FmRefPlane::getClassTypeID()
   };
 
   // Lambda function for loading plugin libraries
@@ -247,7 +249,7 @@ DLLexport(void) FmClose (bool removeSingletons = false)
 }
 
 
-DLLexport(void) FmNew (const char* newFile)
+DLLexport(void) FmNew (const char* newFile, const char* description = NULL)
 {
   if (FmDB::getFreeBaseID() > 1)
     FmClose();
@@ -256,6 +258,7 @@ DLLexport(void) FmNew (const char* newFile)
   std::cout <<"\nFmNew(";
   if (newFile) std::cout << newFile;
   std::cout <<")"<< std::endl;
+  if (description) std::cout <<": \""<< description <<"\""<< std::endl;
 #endif
 
   FmMechanism* mech = NULL;
@@ -271,6 +274,9 @@ DLLexport(void) FmNew (const char* newFile)
     mech = FmDB::newMechanism();
     mech->syncPath(newName, newFile ? true : false);
   }
+  if (description)
+    mech->setUserDescription(description);
+
   if (newFile)
     openAssociatedLogFile(newFile);
   FmDB::getActiveAnalysis();
@@ -326,7 +332,7 @@ DLLexport(int) FmGetObjects (int* baseId, int objType, const char* tag = NULL)
 
 #ifdef FM_DEBUG
   std::cout <<"FmGetObjects("<< objType;
-  if (tag) std::cout <<",\","<< tag <<"\"";
+  if (tag) std::cout <<",\""<< tag <<"\"";
   std::cout <<"): "<< objs.size() << std::endl;
 #endif
   return objs.size();
@@ -349,46 +355,47 @@ DLLexport(int) FmTagObjects (const int* baseId, int n, const char* tag)
 }
 
 
-/*!
-  \brief Helper searching for an object of given type and base- or user ID.
-  \details If \a id is negative while \a assumeUserId is \e true,
-  then \a -id is interpreted as the base ID of the object to search for.
-*/
-
-template<class T> T* FmFind (int id, T*& obj,
-                             bool assumeUserId = false, bool silence = false)
+namespace
 {
-  if (!assumeUserId) // Assume base ID
-    obj = dynamic_cast<T*>(FmDB::findObject(id));
-  else if (id >= 0) // Assume user ID
-    obj = dynamic_cast<T*>(FmDB::findID(T::getClassTypeID(),id));
-  else // Assume the absolute value is the base ID
-    obj = dynamic_cast<T*>(FmDB::findObject(-id));
+  /*!
+    \brief Helper searching for an object of given type and base- or user ID.
+    \details If \a id is negative while \a assumeUserId is \e true,
+    then \a -id is interpreted as the base ID of the object to search for.
+  */
+  template<class T> T* FmFind (int id, T*& obj,
+                               bool assumeUserId = false, bool silence = false)
+  {
+    if (!assumeUserId) // Assume base ID
+      obj = dynamic_cast<T*>(FmDB::findObject(id));
+    else if (id >= 0) // Assume user ID
+      obj = dynamic_cast<T*>(FmDB::findID(T::getClassTypeID(),id));
+    else // Assume the absolute value is the base ID
+      obj = dynamic_cast<T*>(FmDB::findObject(-id));
 
-  if (!obj && !silence)
-    ListUI <<" *** ERROR: No "<< T::getClassTypeIDName()+2
-           <<" object with "<< (assumeUserId && id >= 0 ? "user": "base")
-           <<" ID "<< (!assumeUserId && id < 0 ? -id : id) <<".\n";
+    if (!obj && !silence)
+      ListUI <<" *** ERROR: No "<< T::getClassTypeIDName()+2
+             <<" object with "<< (assumeUserId && id >= 0 ? "user": "base")
+             <<" ID "<< (!assumeUserId && id < 0 ? -id : id) <<".\n";
 
-  return obj;
-}
+    return obj;
+  }
 
 
-/*!
-  \brief Helper searching for an FE part with given base ID.
-*/
+  /*!
+    \brief Helper searching for an FE part with given base ID.
+  */
+  FmPart* FmFindFEpart (int pid, bool loadedOnly = true)
+  {
+    FmPart* part = FmFind(pid,part);
+    if (!part) return NULL;
 
-static FmPart* FmFindFEpart (int pid, bool loadedOnly = true)
-{
-  FmPart* part = FmFind(pid,part);
-  if (!part) return NULL;
+    if (part->isFEPart(loadedOnly))
+      return part;
 
-  if (part->isFEPart(loadedOnly))
-    return part;
-
-  ListUI <<" *** Error: "<< part->getIdString(true)
-         <<" is not an FE part.\n";
-  return NULL;
+    ListUI <<" *** Error: "<< part->getIdString(true)
+           <<" is not an FE part.\n";
+    return NULL;
+  }
 }
 
 
@@ -510,11 +517,15 @@ DLLexport(void) FmSolveSetup (double tStart, double tInc, double tStop,
       analy->setEndTime(tQuasi);
   }
 
+  if (tStart < tStop)
+    analy->useDynStressStiffening.setValue(true);
+
   analy->setSolveEigenvalueFlag(nModes > 0);
   if (nModes > 0)
   {
     analy->setRequestedEigenmodes(nModes);
     analy->setEigenvalueSolutionTimeInterval(eInc);
+    analy->useEigStressStiffening.setValue(true);
   }
 
   if (add_opts)
@@ -874,21 +885,23 @@ DLLexport(int) FmCreateMaterialProperty (const char* description,
 }
 
 
-/*!
-  \brief Static helper that creates a polyline function object.
-*/
-
-static FmfLinVar* createPolyline (int n, const double* x, const double* y,
-                                  int extrapol_type)
+namespace
 {
-  if (n < 1) return NULL;
+  /*!
+    \brief Helper that creates a polyline function object.
+  */
+  FmfLinVar* createPolyline (int n, const double* x, const double* y,
+                             int extrapol_type)
+  {
+    if (n < 1) return NULL;
 
-  FmfLinVar* f = new FmfLinVar();
-  for (int i = 0; i < n; i++)
-    f->addXYset(x[i],y[i]);
-  f->setExtrapolationType(extrapol_type);
-  f->connect();
-  return f;
+    FmfLinVar* f = new FmfLinVar();
+    for (int i = 0; i < n; i++)
+      f->addXYset(x[i],y[i]);
+    f->setExtrapolationType(extrapol_type);
+    f->connect();
+    return f;
+  }
 }
 
 
@@ -1011,11 +1024,11 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
   FmJointBase* jnt = NULL;
 
   if (jType <= 10) // point-to-point joint (rigid, revolute, ball or free joint)
-    jnt = Fedem::createJoint(classType(jType),triad1,follower,&jointPnt);
+    jnt = Fedem::createJoint(classType(jType), triad1, follower, &jointPnt);
   else if (jType <= 12 && t2 && nr_t2 >= 2) // prismatic or cylindric joint
   {
     FmBase* triad2 = t2[1] > 0 ? FmDB::findObject(t2[1]) : NULL;
-    jnt = Fedem::createJoint(classType(jType), triad1,triad2,
+    jnt = Fedem::createJoint(classType(jType), triad1, triad2,
                              FaVec3(), follower, NULL, nr_t2==2);
   }
   if (!jnt) return -jType;
@@ -1023,18 +1036,21 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
   if (description)
     jnt->setUserDescription(description);
 
-  FmSMJointBase* sjoint = dynamic_cast<FmSMJointBase*>(jnt);
-  if (sjoint && !sjoint->isOfType(FmFreeJoint::getClassTypeID()))
+  if (FmSMJointBase* sjoint = dynamic_cast<FmSMJointBase*>(jnt); sjoint)
   {
-    // Check if the two joint triads are co-located
     FmTriad* triad = sjoint->getItsMasterTriad();
-    if (!triad->getGlobalTranslation().equals(jointPnt,1.0e-8))
-      sjoint->setSlaveMovedAlong(false);
+    if (!triad1) // A grounded master triad was created
+      triad->setUserDescription("Ground");
+
+    if (!sjoint->isOfType(FmFreeJoint::getClassTypeID()))
+      // Check if the two joint triads are co-located
+      if (!triad->getGlobalTranslation().equals(jointPnt,1.0e-8))
+        sjoint->setSlaveMovedAlong(false);
   }
 
   bool ok = true;
-  FmMMJointBase* mjoint = dynamic_cast<FmMMJointBase*>(jnt);
-  if (mjoint) // Additional glider triads for prismatic/cylindric joint
+  if (FmMMJointBase* mjoint = dynamic_cast<FmMMJointBase*>(jnt); mjoint)
+    // Additional glider triads for prismatic/cylindric joint
     for (int i = 2; i < nr_t2; i++)
       if (FmTriad* triad; FmFind(t2[i],triad))
         ok &= mjoint->addAsMasterTriad(triad);
@@ -1043,46 +1059,47 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
 }
 
 
-/*!
-  \brief Static helper that creates a general function object.
-*/
-
-static FmEngine* createGeneralFunction (FmMathFuncBase* func,
-                                        const char* description,
-                                        const char* tag = NULL)
+namespace
 {
-  if (func)
+  /*!
+    \brief Helper that creates a general function object.
+  */
+  FmEngine* createGeneralFunction (FmMathFuncBase* func,
+                                   const char* description,
+                                   const char* tag = NULL)
   {
-    func->connect();
-    if (func->getFunctionUse() == FmMathFuncBase::NONE)
-      func->setFunctionUse(FmMathFuncBase::GENERAL);
+    if (func)
+    {
+      func->connect();
+      if (func->getFunctionUse() == FmMathFuncBase::NONE)
+        func->setFunctionUse(FmMathFuncBase::GENERAL);
+    }
+    FmEngine* eng = new FmEngine();
+    eng->setFunction(func);
+    if (func)
+      eng->setParentAssembly(func->getParentAssembly());
+    eng->connect();
+
+    if (description)
+      eng->setUserDescription(description);
+
+    if (tag)
+      eng->setTag(tag);
+
+    return eng;
   }
-  FmEngine* eng = new FmEngine();
-  eng->setFunction(func);
-  if (func)
-    eng->setParentAssembly(func->getParentAssembly());
-  eng->connect();
-
-  if (description)
-    eng->setUserDescription(description);
-
-  if (tag)
-    eng->setTag(tag);
-
-  return eng;
-}
 
 
-/*!
-  \brief Static helper that creates a general function object.
-  \return User ID of the function, or base ID if \a returnBaseId is \e true.
-*/
-
-static int createFunction (bool returnBaseId, FmMathFuncBase* func,
-                           const char* description, const char* tag)
-{
-  FmEngine* eng = createGeneralFunction(func,description,tag);
-  return returnBaseId ? eng->getBaseID() : eng->getID();
+  /*!
+    \brief Helper that creates a general function object.
+    \return User ID of the function, or base ID if \a returnBaseId is \e true.
+  */
+  int createFunction (bool returnBaseId, FmMathFuncBase* func,
+                      const char* description, const char* tag)
+  {
+    FmEngine* eng = createGeneralFunction(func,description,tag);
+    return returnBaseId ? eng->getBaseID() : eng->getID();
+  }
 }
 
 
@@ -1219,70 +1236,108 @@ DLLexport(int) FmCreateDeviceFunc (const char* descr, const char* tag,
 }
 
 
-/*!
-  \brief Static helper that changes the argument of a general function object.
-*/
-
-static bool setArgument (FmEngine* engine, int id1, int id2, int var, int dof)
+namespace
 {
-  FmIsMeasuredBase* object[2] = { NULL, NULL };
-
-  FmFind(id1,object[0]);
-  if (id2 > 0 && !FmFind(id2,object[1]))
-    return false;
-
-  if (!engine || !object[0])
-    return false;
-
-  if (object[1])
+  /*!
+    \brief Helper that changes the argument of a general function object.
+  */
+  bool setArgument (FmEngine* engine, int id1, int id2, int var, int dof)
   {
-    // Relative sensor
-    engine->setSensor(Fedem::createSensor(object[0],object[1]));
-    // Translate possible simple-sensor DOF and variable identifiers
-    // to corresponding relative-sensor equivalents
-    if (dof < FmIsMeasuredBase::REL)
-      dof += FmIsMeasuredBase::REL_X;
-    if (var <= FmIsMeasuredBase::POS || var == FmIsMeasuredBase::REL_POS)
-      var = FmIsMeasuredBase::DISTANCE;
-    else if (var <= FmIsMeasuredBase::GLOBAL_VEL)
-      var = FmIsMeasuredBase::VEL;
-    else if (var <= FmIsMeasuredBase::GLOBAL_ACC)
-      var = FmIsMeasuredBase::ACCEL;
-  }
-  else
-  {
-    // Simple sensor
-    engine->setSensor(Fedem::createSensor(object[0]));
-    if (object[0]->isOfType(FmTriad::getClassTypeID()))
+    FmIsMeasuredBase* object[2] = { NULL, NULL };
+
+    FmFind(id1,object[0]);
+    if (id2 > 0 && !FmFind(id2,object[1]))
+      return false;
+
+    if (!engine || !object[0])
+      return false;
+
+    if (!object[1])
     {
-      // Translate possible relative-sensor DOF identifiers
-      // to the corresponding simple-sensor equivalents
-      if (var == FmIsMeasuredBase::DISTANCE)
-        var = FmIsMeasuredBase::POS;
-      else if (var == FmIsMeasuredBase::VEL)
-        var = FmIsMeasuredBase::GLOBAL_VEL;
-      else if (var == FmIsMeasuredBase::ACCEL)
-        var = FmIsMeasuredBase::GLOBAL_ACC;
+      // Simple sensor
+      engine->setSensor(Fedem::createSensor(object[0]));
+      if (object[0]->isOfType(FmTriad::getClassTypeID()))
+      {
+        // Translate possible relative-sensor DOF identifiers
+        // to the corresponding simple-sensor equivalents
+        if (var == FmIsMeasuredBase::DISTANCE)
+          var = FmIsMeasuredBase::POS;
+        else if (var == FmIsMeasuredBase::VEL)
+          var = FmIsMeasuredBase::GLOBAL_VEL;
+        else if (var == FmIsMeasuredBase::ACCEL)
+          var = FmIsMeasuredBase::GLOBAL_ACC;
+      }
+      else if (object[0]->isOfType(FmJointBase::getClassTypeID()))
+      {
+        // Translate possible triad DOF identifiers
+        // to the corresponding joint DOF equivalents
+        if (var <= FmIsMeasuredBase::POS || var == FmIsMeasuredBase::DISTANCE)
+          var = FmIsMeasuredBase::REL_POS;
+        else if (var <= FmIsMeasuredBase::GLOBAL_VEL)
+          var = FmIsMeasuredBase::VEL;
+        else if (var <= FmIsMeasuredBase::GLOBAL_ACC)
+          var = FmIsMeasuredBase::ACCEL;
+      }
     }
-    else if (object[0]->isOfType(FmJointBase::getClassTypeID()))
+    else if (object[0]->isOfType(FmTriad::getClassTypeID()) &&
+             object[1]->isOfType(FmTriad::getClassTypeID()))
     {
-      // Translate possible triad DOF identifiers
-      // to the corresponding joint DOF equivalents
-      if (var <= FmIsMeasuredBase::POS || var == FmIsMeasuredBase::DISTANCE)
-        var = FmIsMeasuredBase::REL_POS;
+      // Relative sensor between triads
+      engine->setSensor(Fedem::createSensor(object[0],object[1]));
+      // Translate possible simple-sensor DOF and variable identifiers
+      // to corresponding relative-sensor equivalents
+      if (dof < FmIsMeasuredBase::REL)
+        dof += FmIsMeasuredBase::REL_X;
+      if (var <= FmIsMeasuredBase::POS || var == FmIsMeasuredBase::REL_POS)
+        var = FmIsMeasuredBase::DISTANCE;
       else if (var <= FmIsMeasuredBase::GLOBAL_VEL)
         var = FmIsMeasuredBase::VEL;
       else if (var <= FmIsMeasuredBase::GLOBAL_ACC)
         var = FmIsMeasuredBase::ACCEL;
     }
+    else
+    {
+      // Sum or difference of the two quantities, create a 1:1 function for each
+      const char* oper = var > 0 ? "x+y" : "x-y";
+      if (var < 0) var = -var;
+
+      FmEngine* e1 = new FmEngine(false);
+      if (!setArgument(e1,id1,0,var,dof))
+      {
+        e1->erase();
+        return false;
+      }
+      e1->setParentAssembly(e1->getSensor()->getParentAssembly());
+      e1->connect();
+
+      FmEngine* e2 = new FmEngine(false);
+      if (!setArgument(e2,id2,0,var,dof))
+      {
+        e2->erase();
+        return false;
+      }
+      e2->setParentAssembly(e2->getSensor()->getParentAssembly());
+      e2->connect();
+
+      ListUI <<"Creating Math expression function \""<< oper <<"\".\n";
+      FmMathFuncBase* func = new FmfMathExpr(oper);
+      func->setNoArgs(2);
+      func->setFunctionUse(FmMathFuncBase::GENERAL);
+      func->connect();
+      engine->setFunction(func);
+      engine->setSensor(e1->getSimpleSensor(true),0);
+      engine->setSensor(e2->getSimpleSensor(true),1);
+      return true;
+    }
+
+    engine->setEntity(var);
+    engine->setDof(dof);
+
+    if (engine->isDriveFile())
+      engine->getFunction()->setFunctionUse(FmMathFuncBase::GENERAL);
+
+    return engine->getSensor() != NULL;
   }
-  engine->setEntity(var);
-  engine->setDof(dof);
-
-  if (engine->isDriveFile())
-    engine->getFunction()->setFunctionUse(FmMathFuncBase::GENERAL);
-
-  return engine->getSensor() != NULL;
 }
 
 
@@ -1588,33 +1643,31 @@ DLLexport(bool) FmDofProperty (int id, int dof, int propertyType,
       break;
 
     case 2: // Spring stiffness
-      if (jnt && jnt->getStatusOfDOF(dof) >= FmHasDOFsBase::SPRING_CONSTRAINED)
-        jnt->getSpringAtDOF(dof,true)->setInitStiff(value);
-      else
+      if (!jnt || jnt->getStatusOfDOF(dof) < FmHasDOFsBase::SPRING_CONSTRAINED)
         return jointError("spring stiffness");
+
+      jnt->getSpringAtDOF(dof,true)->setInitStiff(value);
       break;
 
     case 3: // Damping coefficient
-      if (jnt && jnt->getStatusOfDOF(dof) >= FmHasDOFsBase::SPRING_CONSTRAINED)
-        jnt->getDamperAtDOF(dof,true)->setInitDamp(value);
-      else
+      if (!jnt || jnt->getStatusOfDOF(dof) < FmHasDOFsBase::SPRING_CONSTRAINED)
         return jointError("damping coefficient");
+
+      jnt->getDamperAtDOF(dof,true)->setInitDamp(value);
       break;
 
     case 4: // Stress-free length/angle control
-      if (jnt && jnt->getStatusOfDOF(dof) >= FmHasDOFsBase::SPRING_CONSTRAINED)
-      {
-        // Note: Not creating a spring object here
-        FmJointSpring* spr = jnt->getSpringAtDOF(dof);
-        if (!spr) break; // Silently ignore if not existing
+      if (!jnt || jnt->getStatusOfDOF(dof) < FmHasDOFsBase::SPRING_CONSTRAINED)
+        return jointError("stress-free length change");
 
+      // Note: Not creating a spring object here, silently ignore if nonexisting
+      if (FmJointSpring* spr = jnt->getSpringAtDOF(dof); spr)
+      {
         if (engine)
           spr->setEngine(engine);
         else
           spr->setInitLengthOrDefl(value,true);
       }
-      else
-        return jointError("stress-free length change");
       break;
 
     default: // Logic error, should never get here
