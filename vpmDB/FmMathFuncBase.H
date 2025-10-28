@@ -70,6 +70,8 @@ public:
   virtual bool hasSmartPoints() const;
   virtual bool isSurfaceFunc() const { return false; }
 
+  virtual bool interactiveErase();
+
   virtual int printSolverEntry(FILE* fp);
 
   virtual const char* getFunctionFsiName() const;
