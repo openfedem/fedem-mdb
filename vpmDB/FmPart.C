@@ -141,10 +141,10 @@ FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
     mech->modelDatabaseUnits.getValue().inverse(defaultMass,"MASS");
   }
 
-  FFA_FIELD_INIT(kt,       defaultTraStiff, "GEN_TRANS_STIFF");
-  FFA_FIELD_INIT(kr,       defaultRotStiff, "GEN_ROT_STIFF");
-  FFA_FIELD_INIT(myCG, FFa3DLocation(true), "CENTER_OF_GRAVITY");
+  FFA_FIELD_INIT(kt, defaultTraStiff, "GEN_TRANS_STIFF");
+  FFA_FIELD_INIT(kr, defaultRotStiff, "GEN_ROT_STIFF");
 
+  FFA_FIELD_DEFAULT_INIT(myCG, "CENTER_OF_GRAVITY");
   FFA_REFERENCE_FIELD_INIT(myCGPosRefField, myCGPosRef, "CENTER_OF_GRAVITY_POS_REF");
   FFA_REFERENCE_FIELD_INIT(myCGRotRefField, myCGRotRef, "CENTER_OF_GRAVITY_ROT_REF");
 
@@ -195,6 +195,7 @@ FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
 
   myFEData = NULL;
 
+  myCG.getValue().saveMyNumericalData();
   this->setCGPosRef(this);
   this->setCGRotRef(this);
   isCGedited = false;
