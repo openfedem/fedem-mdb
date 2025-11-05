@@ -725,8 +725,7 @@ bool FmPart::cloneLocal(FmBase* obj, int depth)
   else if (depth < FmBase::SHALLOW)
     return true;
 
-  FmPart* copyObj = static_cast<FmPart*>(obj);
-  if (copyObj->myFEData)
+  if (FmPart* copyObj = static_cast<FmPart*>(obj); copyObj->myFEData)
     myFEData = new FFlLinkHandler(*(copyObj->myFEData));
 
   return true;
@@ -1483,15 +1482,14 @@ bool FmPart::importPart(const std::string& fileName,
     {
       // Check if a triad already exists at this nodes position
       FaVec3 point = (*it)->getPos();
-      FmTriad* candidate = this->getTriadAtPoint(point,positionTol);
-      if (candidate)
+      if (FmTriad* triad = this->getTriadAtPoint(point,positionTol); triad)
         // Check that the closest node to this position
         // is the same node that we want to attach
-        if (this->getNodeAtPoint(candidate->getLocalTranslation(),
+        if (this->getNodeAtPoint(triad->getLocalTranslation(),
                                  positionTol) == *it)
         {
           // The node matches, no new triad needed
-          ListUI <<"   > Existing "<< candidate->getIdString()
+          ListUI <<"   > Existing "<< triad->getIdString()
                  <<" matches external FE node "<< (*it)->getID() <<"\n";
           continue;
         }
@@ -1889,8 +1887,8 @@ bool FmPart::convertOP2files(const std::string& absPartPath)
   int ndim = this->getNumberOfTriads()*6 + (int)myFEData->getNumberOfGenDofs();
   // Assuming all OP2-files have a common basename
   std::string partName = myFEData->getOP2files()[0];
-  size_t lastUS = partName.rfind('_');
-  if (lastUS < partName.size()) partName.erase(lastUS);
+  if (size_t lastUS = partName.rfind('_'); lastUS < partName.size())
+    partName.erase(lastUS);
 
   // Create the conversion command and execute using the op2fmx utility
   std::string command = "-cwd " + absPartPath;
@@ -2166,8 +2164,7 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int myCS)
     }; // End of lambda function
 
     // Check that baseFTLFile is not already in use by other parts in the model
-    int nTrial = checkName(baseFTLFile.getValue());
-    if (nTrial > 0)
+    if (int nTrial = checkName(baseFTLFile.getValue()); nTrial > 0)
       ListUI <<"  -> Conflicting file name for "<< this->getIdString()
              <<". New FTL base name: "<< baseFTLFile.getValue()
              <<" ("<< nTrial <<")\n";
@@ -2269,9 +2266,8 @@ void FmPart::createElemGroupProxies()
 
   // Create group proxies
 
-  int newGid = 0;
   for (FFlGroup* group : groups)
-    if ((newGid = newGProxy(group)) > 0 && group->getID() == 0)
+    if (int newGid = newGProxy(group); newGid > 0 && group->getID() == 0)
     {
       // Connecting will result in a new ID for those groups with ID == 0
       // Print warning and update FFlGroup::ID
@@ -2434,12 +2430,12 @@ bool FmPart::hasLoads() const
 
 void FmPart::printSolverLoads(FILE* fd) const
 {
-  FmEngine* loadEngine = NULL;
   const IntVec& loadCases  = myLoadCases.getValue();
   const DoubleVec& factors = myLoadFactors.getValue();
   const DoubleVec& delays  = myLoadDelays.getValue();
   for (size_t i = 0; i < loadCases.size(); i++)
-    if ((loadEngine = myLoadEngines.getPtr(i)) || factors[i] != 0.0)
+    if (FmEngine* loadEngine = myLoadEngines.getPtr(i);
+        loadEngine || factors[i] != 0.0)
     {
       double f0 = loadEngine ? 0.0 : factors[i]; // Constant load part
       double f1 = loadEngine ? 1.0 : 0.0;        // Scalable load part
@@ -2493,12 +2489,11 @@ bool FmPart::updateTriadTopologyRefs(bool checkUnloaded, char useOutput)
       }
 
     // Syncronize the FE node references
-    int nodeNo = 0;
     for (FmTriad* triad : triads)
-      if ((nodeNo = triad->syncOnFEmodel(useOutput / 2)) < 0)
-        badTriads.push_back(triad);
-      else
+      if (int nodeNo = triad->syncOnFEmodel(useOutput / 2); nodeNo > 0)
         newExt.insert(nodeNo);
+      else
+        badTriads.push_back(triad);
 
     // Check if any nodes have changed their status
     if (newExt.size() != oldExt.size())
@@ -2588,10 +2583,9 @@ int FmPart::checkParts()
       }
 
     if (activePart->myFEData)
-    {
       // Check that the number of component modes is valid
-      int nIntDofs = activePart->myFEData->getDofCount(false);
-      if (activePart->nGenModes.getValue() > nIntDofs)
+      if (int nIntDofs = activePart->myFEData->getDofCount(false);
+          activePart->nGenModes.getValue() > nIntDofs)
       {
 	ListUI <<"  -> Warning: The specified number of component modes for "
 	       << activePart->getIdString(true) <<" is too high.\n"
@@ -2599,7 +2593,6 @@ int FmPart::checkParts()
 	activePart->nGenModes.setValue(nIntDofs);
 	activePart->onChanged();
       }
-    }
 
     if (activePart->overrideChecksum.getValue())
     {
@@ -2909,15 +2902,20 @@ void FmPart::setPositionCG(const FaVec3& CoG, bool edited)
 void FmPart::setLocationCG(const FaVec3& CoG, const FaVec3& Iaxes)
 {
   isCGedited = true;
-  myCG.setValue(FFa3DLocation(FFa3DLocation::CART_X_Y_Z,CoG,
-			      FFa3DLocation::EUL_Z_Y_X,Iaxes));
+  // See comment below (Issue #102)
+  myCG = FFa3DLocation(FFa3DLocation::CART_X_Y_Z,CoG,
+                       FFa3DLocation::EUL_Z_Y_X,Iaxes);
 }
 
 
 void FmPart::setLocationCG(const FFa3DLocation& cg)
 {
   isCGedited = true;
-  myCG.setValue(cg);
+  // Fix fedem-gui Issue #102: We can't use FFaField::setValue() here, since it
+  // will use the equality operator on the FFa3DLocation objects which only
+  // compares the resulting matrices, and not the coordinate type flag.
+  // The value will thus not be updated if only the CS type flag is changed.
+  myCG = cg;
 }
 
 
@@ -3050,16 +3048,13 @@ bool FmPart::createConnector(const IntVec& nodes, const FaVec3& refNodePos,
   geometry.addGeometry(pointsGeom);
   int nErr = 0;
   for (int ID : nodes)
-  {
-    FFlNode* node = this->getNode(ID);
-    if (node)
+    if (FFlNode* node = this->getNode(ID); node)
       pointsGeom.addPoint(node->getPos());
     else
     {
       ListUI <<" --> Error: Node "<< ID <<" does not exist.\n";
       ++nErr;
     }
-  }
   if (nErr > 0) return false;
 
   // Position of the spider reference node
