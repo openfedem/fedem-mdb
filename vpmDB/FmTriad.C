@@ -195,13 +195,13 @@ FmPart* FmTriad::getOwnerPart(int partIndex) const
 
 FmLink* FmTriad::getOwnerLink(int linkIndex) const
 {
-  FmLink* part = this->getOwnerPart(linkIndex);
-  if (part) return part;
+  if (FmLink* part = this->getOwnerPart(linkIndex); part)
+    return part;
 
   std::vector<FmLink*> elms;
   this->getReferringObjs(elms,"myTriads");
   int elmIndex = linkIndex - myAttachedLinks.size();
-  if (elmIndex >= (int)elms.size())
+  if (elmIndex >= static_cast<int>(elms.size()))
     return NULL;
   else if (elmIndex >= 0)
     return elms[elmIndex];
@@ -230,7 +230,7 @@ FmLink* FmTriad::getOwnerLink(int linkIndex) const
         replacing the erased one.
   1.2.3 If the erased triad is among the independent triads of a joint,
         try to erase that triad if the number of independent triads of the joint
-	are greater than two, otherwise erase the joint
+        are greater than two, otherwise erase the joint
         and erase the other triads connected if they are empty.
   2. Invoke the parent class eraseOptions method.
 */
@@ -301,8 +301,7 @@ bool FmTriad::eraseOptions()
           if (line)
           {
             static_cast<FmMMJointBase*>(joint)->setMaster(NULL);
-            FmMMJointBase* other = NULL;
-            if (line->hasReferringObjs(other))
+            if (FmMMJointBase* other; line->hasReferringObjs(other))
               line->updateTopologyInViewer();
             else
               line->erase();
@@ -334,8 +333,7 @@ bool FmTriad::eraseOptions()
         if (line)
         {
           static_cast<FmMMJointBase*>(joint)->setMaster(NULL);
-          FmMMJointBase* other = NULL;
-          if (line->hasReferringObjs(other))
+          if (FmMMJointBase* other; line->hasReferringObjs(other))
             line->updateTopologyInViewer();
           else
             line->erase();
@@ -396,7 +394,7 @@ bool FmTriad::isLegalDOF(int dof) const
 
 FmHasDOFsBase::DOFStatus FmTriad::getStatusOfDOF(int dof) const
 {
-  if (dof >= 0 && (size_t)dof < itsBndC.getValue().size())
+  if (dof >= 0 && dof < static_cast<int>(itsBndC.getValue().size()))
     return itsBndC.getValue()[dof];
   else
     return FREE;
@@ -533,7 +531,7 @@ double FmTriad::getAddMass(int DOF) const
   const DoubleVec& mass = itsMass.getValue();
   if (DOF < 0 && mass.size() > 2)
     return (mass[0] + mass[1] + mass[2]) / 3.0;
-  else if (DOF >= 0 && DOF < (int)mass.size())
+  else if (DOF >= 0 && DOF < static_cast<int>(mass.size()))
     return mass[DOF];
   else
     return 0.0;
@@ -721,8 +719,7 @@ void FmTriad::initAfterResolve()
       // If this was the first beam this triad is connected to,
       // its coordinate system was local to the beam/part coordinate system.
       // We must therefore transform it to global system here.
-      FmAssemblyBase* parent = beam->getPositionedAssembly();
-      if (parent)
+      if (FmAssemblyBase* parent = beam->getPositionedAssembly(); parent)
         globCS = parent->toGlobal(beam->myCS.getValue())*this->getLocalCS();
       else
         globCS = beam->myCS.getValue()*this->getLocalCS();
@@ -730,8 +727,8 @@ void FmTriad::initAfterResolve()
   }
   if (nBeams > 0)
   {
-    FmPart* owner = this->getOwnerPart(0);
-    if (owner) // Convert to local CS w.r.t. owner part
+    if (FmPart* owner = this->getOwnerPart(0); owner)
+      // Convert to local CS w.r.t. owner part
       this->setLocalCS(owner->getGlobalCS().inverse()*globCS);
     else
       this->setGlobalCS(globCS);
@@ -739,24 +736,24 @@ void FmTriad::initAfterResolve()
 
   // Move additional BCs on dependent triads over to the joint DOFs
   // (this can only happen when reading pre R5.1 model files)
-  FmJointBase* joint = this->getJointWhereSlave();
-  if (joint && this->hasConstraints()) {
-    for (size_t i = 0; i < itsBndC.getValue().size(); i++)
-      switch (itsBndC.getValue()[i])
-	{
-	case FIXED:
-	  joint->setStatusForDOF(i,FIXED);
-	  break;
-	case FREE_DYNAMICS:
-	  if (joint->getStatusOfDOF(i) == SPRING_CONSTRAINED)
-	    joint->setStatusForDOF(i,SPRING_DYNAMICS);
-	  else if (joint->getStatusOfDOF(i) == FREE)
-	    joint->setStatusForDOF(i,FREE_DYNAMICS);
+  if (this->hasConstraints())
+    if (FmJointBase* joint = this->getJointWhereSlave(); joint)
+    {
+      for (size_t i = 0; i < itsBndC.getValue().size(); i++)
+        switch (itsBndC.getValue()[i]) {
+        case FIXED:
+          joint->setStatusForDOF(i,FIXED);
+          break;
+        case FREE_DYNAMICS:
+          if (joint->getStatusOfDOF(i) == SPRING_CONSTRAINED)
+            joint->setStatusForDOF(i,SPRING_DYNAMICS);
+          else if (joint->getStatusOfDOF(i) == FREE)
+            joint->setStatusForDOF(i,FREE_DYNAMICS);
         default:
-	  break;
-	}
-    itsBndC.getValue().clear();
-  }
+          break;
+        }
+      itsBndC.getValue().clear();
+    }
 
 #ifdef FT_USE_CONNECTORS
   // Clear the connector type field if the connector geometry field
@@ -768,13 +765,11 @@ void FmTriad::initAfterResolve()
   this->updateFENodeAndDofs(this->getOwnerPart(0));
 
   if (FmDB::getModelFileVer() <= FFaVersionNumber(7,3,0,11))
-  {
     // The definition of triad DOF loads are changed in R7.3
     // to refer to the System direction of the triad.
     // This is to retain backward compatibility for older models.
-    FmDofLoad* load = nullptr;
     for (int d = 0; d < itsNDOFs.getValue(); d++)
-      if ((load = this->getLoadAtDOF(d)))
+      if (FmDofLoad* load = this->getLoadAtDOF(d); load)
       {
         FFaString lDesc = load->getUserDescription();
         if (lDesc.empty())
@@ -782,7 +777,6 @@ void FmTriad::initAfterResolve()
         else if (!lDesc.hasSubString("#LocalAx"))
           load->setUserDescription(lDesc + " #LocalAxis");
       }
-  }
 }
 
 
@@ -894,8 +888,7 @@ bool FmTriad::disconnect()
 #endif
 
     // remove the FE node connectivity
-    FFlNode* tmpNode = owner->getNode(FENodeNo.getValue());
-    if (tmpNode)
+    if (FFlNode* tmpNode = owner->getNode(FENodeNo.getValue()); tmpNode)
       if (tmpNode->setExternal(false))
         owner->delayedCheckSumUpdate();
 
@@ -946,11 +939,18 @@ bool FmTriad::detach(FmLink* fromThisOnly, bool notFromDisabledPart)
     return true;
   }
 
+  std::vector<FmLink*> links;
+  myAttachedLinks.getPtrs(links);
+
   this->disconnect();
   this->connect();
   if (this->setNDOFs(6)) // in case it was grounded (TT #3009)
     this->onChanged(); // to udate triad icon
   this->updateTopologyInViewer();
+
+  // fedem-gui Issue #104: Update spider when detaching from Generic Part(s)
+  for (FmLink* link : links)
+    link->updateGPVisualization();
 
   if (this->isMasterTriad())
   {
@@ -1169,13 +1169,11 @@ bool FmTriad::isAttached(bool ignoreGPandEarth, bool allowMultipleLinks) const
   {
     if (allowMultipleLinks)
       return true;
-    else
-    {
-      std::vector<FmLink*> elms;
-      this->getElementBinding(elms);
-      if (elms.size() == 1)
-        return true;
-    }
+
+    std::vector<FmLink*> elms;
+    this->getElementBinding(elms);
+    if (elms.size() == 1)
+      return true;
   }
 
   std::vector<FmLink*> links;
@@ -1250,10 +1248,9 @@ bool FmTriad::hasOnlyFreeJoints() const
 bool FmTriad::isMultiMaster() const
 {
   std::vector<Fm1DMaster*> lines;
-  FmMMJointBase* joint = NULL;
   this->getReferringObjs(lines,"myTriads");
   for (Fm1DMaster* line : lines)
-    if (line->hasReferringObjs(joint,"myMaster"))
+    if (FmMMJointBase* joint; line->hasReferringObjs(joint,"myMaster"))
       return true;
 
   return false;
@@ -1262,8 +1259,7 @@ bool FmTriad::isMultiMaster() const
 
 bool FmTriad::isInLinJoint() const
 {
-  FmMMJointBase* joint = NULL;
-  if (this->hasReferringObjs(joint,"itsSlaveTriad"))
+  if (FmMMJointBase* joint; this->hasReferringObjs(joint,"itsSlaveTriad"))
     return !joint->isOfType(FmCamJoint::getClassTypeID());
 
   std::vector<FmMMJointBase*> joints;
@@ -1388,19 +1384,17 @@ void FmTriad::getLoadBinding(std::vector<FmDofLoad*>& loads) const
 bool FmTriad::hasTireBinding() const
 {
   FmTire* tire = NULL;
-  FmJointBase* joint = this->getJointWhereSlave();
-  if (joint)
+  if (FmJointBase* joint = this->getJointWhereSlave(); joint)
     return joint->hasReferringObjs(tire,"bearingJoint");
-  else
-    return false;
+
+  return false;
 }
 
 
 void FmTriad::getTireBinding(std::vector<FmTire*>& tires) const
 {
   tires.clear();
-  FmJointBase* joint = this->getJointWhereSlave();
-  if (joint)
+  if (FmJointBase* joint = this->getJointWhereSlave(); joint)
     joint->getReferringObjs(tires,"bearingJoint");
 }
 
@@ -2272,8 +2266,8 @@ FmTriad* FmTriad::createAtNode(FFlNode* node, FmBase* parent,
 {
   if (!node) return NULL;
 
-  FmBase* triad = FmDB::findID(FmTriad::getClassTypeID(),IDoffset+node->getID(),
-                               std::vector<int>(1,parent->getID()));
+  FmBase* triad = FmDB::findID(FmTriad::getClassTypeID(),
+                               IDoffset+node->getID(), {parent->getID()});
   if (triad) return static_cast<FmTriad*>(triad);
 
   FmTriad* newTriad = new FmTriad(node->getPos());
