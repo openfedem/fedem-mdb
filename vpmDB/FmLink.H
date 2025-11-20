@@ -9,7 +9,6 @@
 #define FM_LINK_H
 
 #include "FFaLib/FFaAlgebra/FFaUnitCalculator.H"
-#include "FFaLib/FFaContainers/FFaByteArray.H"
 #include "FFaLib/FFaString/FFaEnum.H"
 
 #include "vpmDB/FmColor.H"
@@ -20,12 +19,6 @@ template<>
 inline bool FFaField<FFaUnitCalculator>::isPrintable() const
 {
   return !this->isDefault();
-}
-
-template<>
-inline bool FFaField<FFaByteArray>::isPrintable() const
-{
-  return !myData.empty();
 }
 
 
@@ -179,9 +172,6 @@ public:
   FFaField<FFaUnitCalculator> visDataFileUnitConverter;
   //! File that stores internal CAD data
   FFaField<std::string>       baseCadFileName;
-  //! Id used to look up this link in the CAD system
-  FFaField<FFaByteArray>      cadMainComponentId;
-
 
   // Structural damping properties
   FFaField<double> alpha1; //!< Mass proportional damping
