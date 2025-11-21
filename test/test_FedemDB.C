@@ -23,8 +23,7 @@ extern "C" {
   bool FmAddMass(int, int, const double*, int = 0);
   int  FmCreatePart(const char*, int, int*);
   int  FmCreateJoint(const char*, int, int, int*, int);
-  bool FmSolve(const char*, bool = true,
-               const char* = NULL, const char* = NULL);
+  bool FmSolve(char*, bool = true, const char* = NULL, const char* = NULL);
 }
 
 static std::string srcdir; //!< Full path of the source directory of this test
@@ -42,9 +41,8 @@ int loadTest (const char* fmmFile)
   if (!FmOpen(oldFmm.c_str())) return 1;
   if (!FmSave(newFmm.c_str())) return 2;
   // Write solver input and save updated model
-  std::string newRDB = newFmm.substr(0,newFmm.find_last_of(".")) + "_RDB";
-  if (!FmSolve(newRDB.c_str())) return 3;
-  return FmSave() ? 0 : 4;
+  char newRDB[512];
+  return FmSolve(newRDB) ? (FmSave() ? 0 : 4) : 3;
 }
 
 /*!
@@ -139,16 +137,19 @@ TEST_P(TestCase,SolverRDB)
 {
   ASSERT_FALSE(srcdir.empty());
 
-  // GetParam() will be substituted with the actual file name.
+  // GetParam() will be substituted with the actual file name
   std::string fmmFile = srcdir + GetParam();
+  std::cout <<"\n   * Opening "<< fmmFile;
 
   // Open the model and save to current working directory
   std::string newFmm = fmmFile.substr(fmmFile.find_last_of("/\\")+1);
   ASSERT_TRUE(FmOpen(fmmFile.c_str()));
   ASSERT_TRUE(FmSave(newFmm.c_str()));
+
   // Write solver input and save updated model
-  std::string newRDB = newFmm.substr(0,newFmm.find_last_of(".")) + "_RDB";
-  ASSERT_TRUE(FmSolve(newRDB.c_str()));
+  char newRDB[512];
+  ASSERT_TRUE(FmSolve(newRDB));
+  std::cout <<"   * Solver input files written to "<< newRDB << std::endl;
   ASSERT_TRUE(FmSave());
 }
 

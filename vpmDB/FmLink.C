@@ -65,7 +65,6 @@ FmLink::FmLink(const FaVec3& globalPos)
 
   FFA_FIELD_DEFAULT_INIT(visDataFile,              "VISUALIZATION_FILE");
   FFA_FIELD_DEFAULT_INIT(visDataFileUnitConverter, "ORIGINAL_VISDATA_FILE_CONVERSION");
-  FFA_FIELD_DEFAULT_INIT(cadMainComponentId,       "CAD_MAIN_COMPONENT_ID");
   FFA_FIELD_DEFAULT_INIT(baseCadFileName,          "BASE_CAD_FILE");
 
   FFA_FIELD_INIT(alpha1, 0.0, "MASS_PROP_DAMP");
