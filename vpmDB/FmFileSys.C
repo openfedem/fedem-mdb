@@ -422,7 +422,7 @@ int FmFileSys::removeDir(const std::string& dirName, bool removeFiles)
   if (ndel < 0) return ndel;
 
 #if FT_HAS_QT > 4
-  ret = dir.rmdir(dirName.c_str()) ? ndel : -1;
+  ret = dir.rmdir(dir.absolutePath()) ? ndel : -1;
 #elif defined(FT_HAS_QT)
   ret = dir.rmdir(".") ? ndel : -1;
 #else
