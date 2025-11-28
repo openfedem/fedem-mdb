@@ -138,7 +138,6 @@ void FmGlobalViewSettings::sync() const
   FdDB::showStrainRosettes(this->visibleStrainRosettes());
   FdDB::showRefPlanes(this->visibleRefPlanes());
   FdDB::showSeaStates(this->visibleSeaStates());
-  FdDB::showWaves(this->visibleWaves());
   FdDB::setTireColor(this->getTireColor());
   FdDB::setViewerBackground(this->getViewerBackgroundColor());
   FdDB::setSolidView(this->getSolidMode());
@@ -204,10 +203,8 @@ bool FmGlobalViewSettings::visibleWaves() const
 
 void FmGlobalViewSettings::showWaves(bool var)
 {
-  itsIsWavesVisible = var;
-#ifdef USE_INVENTOR
-  FdDB::showWaves(var);
-#endif
+  if (itsIsWavesVisible.setValue(var))
+    FmDB::drawSea();
 }
 
 //****************************** SOLID MODE
@@ -1017,8 +1014,7 @@ bool FmGlobalViewSettings::localParse(const char* keyWord,
                                       FmGlobalViewSettings* obj)
 {
   // Substitute LINK by PART in keyWord
-  char* link = strstr(const_cast<char*>(keyWord),"LINK");
-  if (link)
+  if (char* link = strstr(const_cast<char*>(keyWord),"LINK"); link)
   {
     const char* part = "PART";
     for (int i = 0; i < 4; i++)

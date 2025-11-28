@@ -116,151 +116,135 @@ bool FmSeaState::readAndConnect(std::istream& is, std::ostream&)
 }
 
 
-bool FmSeaState::setRGBColor(const FmColor& col)
+bool FmSeaState::setRGBColor(const FmColor& col, bool redraw)
 {
-  if (col == myRGBColor.getValue()) return false;
-
-  myRGBColor.setValue(col);
-  this->draw();
+  if (!myRGBColor.setValue(col))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setTransparency(double var)
+bool FmSeaState::setTransparency(double var, bool redraw)
 {
-  if (var == myTransparency.getValue()) return false;
-
-  myTransparency.setValue(var);
-  this->draw();
+  if (!myTransparency.setValue(var))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setX(double var)
+bool FmSeaState::setX(double var, bool redraw)
 {
-  if (var == x.getValue()) return false;
-
-  x.setValue(var);
-  this->draw();
+  if (!x.setValue(var))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setY(double var)
+bool FmSeaState::setY(double var, bool redraw)
 {
-  if (var == y.getValue()) return false;
-
-  y.setValue(var);
-  this->draw();
+  if (!y.setValue(var))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setQuantization(double var)
+bool FmSeaState::setQuantization(double var, bool redraw)
 {
-  if (var == myQuantization.getValue()) return false;
-
-  myQuantization.setValue(var);
-  this->draw();
+  if (!myQuantization.setValue(var))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setShowGrid(bool var)
+bool FmSeaState::setShowGrid(bool var, bool redraw)
 {
-  if (var == showGrid.getValue()) return false;
-
-  showGrid.setValue(var);
-  this->draw();
+  if (!showGrid.setValue(var))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setShowSolid(bool var)
+bool FmSeaState::setShowSolid(bool var, bool redraw)
 {
-  if (var == showSolid.getValue()) return false;
-
-  showSolid.setValue(var);
-  this->draw();
+  if (!showSolid.setValue(var))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setWaterDensity(double rho)
+bool FmSeaState::setMeanSeaLevel(double z0, bool redraw)
 {
-  if (rho == waterDensity.getValue()) return false;
-
-  waterDensity.setValue(rho);
+  if (!meanSeaLevel.setValue(z0))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setMeanSeaLevel(double z0)
+bool FmSeaState::setWaveDir(const FaVec3& dir, bool redraw)
 {
-  if (z0 == meanSeaLevel.getValue()) return false;
-
-  meanSeaLevel.setValue(z0);
-  this->draw();
+  if (!waveDir.setValue(dir))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setWaveDir(const FaVec3& dir)
+bool FmSeaState::setSeaDepth(double z, bool redraw)
 {
-  if (dir == waveDir.getValue()) return false;
-
-  waveDir.setValue(dir);
-  this->draw();
+  if (!seaDepth.setValue(z))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setSeaDepth(double z)
+bool FmSeaState::setLengthX(double x, bool redraw)
 {
-  if (z == seaDepth.getValue()) return false;
-
-  seaDepth.setValue(z);
-  this->draw();
+  if (!xLength.setValue(x))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
 }
 
 
-bool FmSeaState::setLengthX(double x)
+bool FmSeaState::setLengthY(double y, bool redraw)
 {
-  if (x == xLength.getValue()) return false;
-
-  xLength.setValue(x);
-  this->draw();
+  if (!yLength.setValue(y))
+    return false;
+  else if (redraw)
+    this->draw();
 
   return true;
-}
-
-
-bool FmSeaState::setLengthY(double y)
-{
-  if (y == yLength.getValue()) return false;
-
-  yLength.setValue(y);
-  this->draw();
-
-  return true;
-}
-
-
-void FmSeaState::onEventSwitched(const FmSimulationEvent*)
-{
-  this->draw();
 }
 
 
