@@ -67,6 +67,14 @@ FmResultStatusData* FmMechanism::getResultStatusData(bool current)
 }
 
 
+bool FmMechanism::isUntitled() const
+{
+  if (myModelFileName.empty()) return true;
+
+  return myModelFileName.find("untitled_") != std::string::npos;
+}
+
+
 std::string FmMechanism::getModelName(bool keepExt) const
 {
   if (keepExt)
@@ -85,23 +93,21 @@ std::string FmMechanism::getAbsModelLRDBPath(bool createDir) const
   {
     // An internal link repository is used
     retVar = myAbsModelRDBPath;
-    if (createDir)
-      if (!FmFileSys::verifyDirectory(retVar))
-      {
-	ListUI <<"===> Could not access directory "<< retVar <<"\n";
-	return "";
-      }
-
-    FFaFilePath::appendToPath(retVar,"link_DB");
-  }
-
-  // Ensure that the directory really exist
-  if (createDir)
-    if (!FmFileSys::verifyDirectory(retVar))
+    if (createDir && !FmFileSys::verifyDirectory(retVar))
     {
       ListUI <<"===> Could not access directory "<< retVar <<"\n";
       return "";
     }
+
+    FFaFilePath::appendToPath(retVar,"link_DB");
+  }
+
+  // Ensure that the directory really exists
+  if (createDir && !FmFileSys::verifyDirectory(retVar))
+  {
+    ListUI <<"===> Could not access directory "<< retVar <<"\n";
+    return "";
+  }
 
   return retVar;
 }
@@ -126,12 +132,11 @@ std::string FmMechanism::getPropertyLibPath(bool createDir) const
   }
 
   // Ensure that the directory really exist
-  if (createDir)
-    if (!FmFileSys::verifyDirectory(retVar))
-    {
-      ListUI <<"===> Could not access directory "<< retVar <<"\n";
-      return "";
-    }
+  if (createDir && !FmFileSys::verifyDirectory(retVar))
+  {
+    ListUI <<"===> Could not access directory "<< retVar <<"\n";
+    return "";
+  }
 
   return retVar;
 }
@@ -174,18 +179,17 @@ bool FmMechanism::isEnabled(const std::string& fileName) const
 }
 
 
-bool FmMechanism::getDisabledResultFiles(Strings& disabledFiles,
-                                         bool absPath) const
+bool FmMechanism::getDisabledResultFiles(Strings& fileNames, bool absPath) const
 {
-  disabledFiles.clear();
-  disabledFiles.reserve(myDisabledResults.getValue().size());
+  fileNames.clear();
+  fileNames.reserve(myDisabledResults.getValue().size());
   for (const std::string& file : myDisabledResults.getValue())
     if (absPath && FFaFilePath::isRelativePath(file))
-      disabledFiles.push_back(FFaFilePath::appendFileNameToPath(myAbsModelRDBPath,file));
+      fileNames.push_back(FFaFilePath::appendFileNameToPath(myAbsModelRDBPath,file));
     else
-      disabledFiles.push_back(file);
+      fileNames.push_back(file);
 
-  return !disabledFiles.empty();
+  return !fileNames.empty();
 }
 
 

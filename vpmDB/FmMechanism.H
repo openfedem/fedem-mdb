@@ -39,6 +39,8 @@ public:
   const std::string& getAbsModelFilePath() const { return myAbsModelFilePath; }
   const std::string& getAbsModelRDBPath() const  { return myAbsModelRDBPath; }
 
+  bool isUntitled() const;
+
   std::string getRelativePath(const std::string& fullName) const;
   std::string getModelName(bool keepExt = false) const;
   std::string getAbsModelLRDBPath(bool createDir = false) const;
@@ -50,7 +52,7 @@ public:
   bool setGravity(const FaVec3& vec);
 
   bool isEnabled(const std::string& resultFileName) const;
-  bool getDisabledResultFiles(Strings& disabledFiles, bool absPath = true) const;
+  bool getDisabledResultFiles(Strings& fileNames, bool absPath = true) const;
   bool hasDisabledFiles() const;
   bool disableResultFile(const std::string& fileName);
   bool enableResultFile(const std::string& fileName);
