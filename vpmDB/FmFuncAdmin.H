@@ -11,16 +11,13 @@
 #include "FFaLib/FFaTypeCheck/FFaTypeCheck.H"
 #include <string>
 #include <vector>
-#include <map>
 
 class FmMathFuncBase;
 
 
 struct FmFuncTypeInfo
 {
-  FmFuncTypeInfo() { funcType = FFaTypeCheck::NO_TYPE_ID; funcMenuEnum = -1; }
-  FmFuncTypeInfo(const std::string& name, int ft = FFaTypeCheck::NO_TYPE_ID)
-  { listName = name; funcType = ft; funcMenuEnum = -1; }
+  FmFuncTypeInfo(const char* fn = NULL, int ft = FFaTypeCheck::NO_TYPE_ID);
   int getFuncType() const;
 
   std::string listName;
@@ -28,33 +25,21 @@ struct FmFuncTypeInfo
   int funcMenuEnum;
 };
 
-typedef std::map<int,FmFuncTypeInfo> FuncInfoMap;
 
-
-class FmFuncAdmin
+namespace FmFuncAdmin
 {
-  static void init();
+  const std::vector<int>& getAllowableSprDmpFuncTypes();
 
-public:
-  static const std::vector<int>& getAllowableSprDmpFuncTypes();
+  bool hasSmartPoints(int type);
 
-  static bool hasSmartPoints(int type);
+  void getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& toFill,
+                                  FmMathFuncBase* compatibleFunc);
 
-  static void getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& toFill,
-					 FmMathFuncBase* compatibleFunc);
+  FmMathFuncBase* createFunction(int type);
 
-  static FmMathFuncBase* createFunction(int type);
+  void clearInfoTable();
 
-  static void clearInfoTable() { itsFuncInfoTable.clear(); }
-
-private:
-  static FuncInfoMap itsFuncInfoTable;
-  static std::vector<int> allowableSprDmpFuncs;
-
-  static bool isAllowableSprDmpFuncType(int type);
-
-public:
-  enum
+  enum FuncType
   {
     INTERNAL = -2,
     UNDEFINED = -1,
@@ -96,6 +81,6 @@ public:
 
     USER_HEADING
   };
-};
+}
 
 #endif
