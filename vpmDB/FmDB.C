@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <algorithm>
+#include <functional>
 #include <fstream>
 #include <ctime>
 
@@ -96,34 +97,163 @@
 #include "Admin/FedemAdmin.H"
 
 
-/**********************************************************************
- *
- * STATIC VARIABLES
- *
- **********************************************************************/
+namespace
+{
+  using namespace FmDB;
 
-FmDB::FmHeadMap                  FmDB::ourHeadMap;
-std::map<int,FmModelMemberBase*> FmDB::ourBaseIDMap;
-std::map<std::string,int>        FmDB::unknownKeywords;
+  // Private FmDB variables
+  /////////////////////////
 
-double FmDB::parallelTol = 1.0e-6;
+  FmHeadMap                        ourHeadMap;
+  std::map<int,FmModelMemberBase*> ourBaseIDMap;
+  std::map<int,int>                readLog;
+  std::map<std::string,int>        unknownKeywords;
 
-FmFuncTree* FmDB::itsFuncTree  = NULL;
-FmLink*     FmDB::itsEarthLink = NULL;
+  double parallelTol = 1.0e-6;
 
-FFaVersionNumber FmDB::ourCurrentFedemVersion;
-FFaVersionNumber FmDB::ourModelFileVersion;
-int              FmDB::ourSaveNr = 0;
+  FmFuncTree* itsFuncTree  = NULL;
+  FmLink*     itsEarthLink = NULL;
+
+  FFaVersionNumber ourCurrentFedemVersion;
+  FFaVersionNumber ourModelFileVersion;
+  int              ourSaveNr = 0;
+
+  // Private FmDB functions:
+  //////////////////////////
+
+  FmRingStart* getMapHead(int classTypeID, const FmHeadMap* headMap)
+  {
+    if (!headMap) return NULL;
+
+    FmHeadMap::const_iterator it = headMap->find(classTypeID);
+    return it == headMap->end() ? NULL : it->second;
+  }
+
+  bool appendAll(std::vector<FmModelMemberBase*>& toBeFilled, int classTypeID,
+                 const IntVec& except, const char* tagged,
+                 const FmHeadMap* root)
+  {
+    size_t oldSize = toBeFilled.size();
+    size_t nExclude = except.size();
+    for (const FmHeadMap::value_type& head : *root)
+    {
+      FmBase* runner = head.second->getNext();
+      bool okToUse = runner->isOfType(std::abs(classTypeID));
+      for (size_t i = 0; i < nExclude && okToUse; i++)
+        if (runner->isOfType(except[i])) okToUse = false;
+
+      if (okToUse)
+        while (runner && runner != head.second)
+        {
+          FmModelMemberBase* obj = static_cast<FmModelMemberBase*>(runner);
+          if (!tagged || obj->isTagged(tagged))
+            toBeFilled.push_back(obj);
+          runner = runner->getNext();
+        }
+    }
+
+    if (classTypeID >= 0)
+      if (FmBase* head = getMapHead(FmSubAssembly::getClassTypeID(),root); head)
+        for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
+          if (FmSubAssembly* sass = dynamic_cast<FmSubAssembly*>(pt); sass)
+            appendAll(toBeFilled,classTypeID,except,tagged,sass->getHeadMap());
+
+    return toBeFilled.size() > oldSize;
+  }
+
+  bool appendAll(std::vector<FmModelMemberBase*>& toBeFilled, int classTypeID,
+                 const IntVec& except, const char* tagged = NULL)
+  {
+    return appendAll(toBeFilled,classTypeID,except,tagged,&ourHeadMap);
+  }
+
+  const FmHeadMap* getMap(const FmHeadMap* root,
+                          IntVec::const_iterator it, IntVec::const_iterator end,
+                          int parentAssemblyID = 0)
+  {
+    if (it == end || *it < 1) return root;
+
+    // For each level in the assembly id path,
+    // find the correct assembly, then return the headMap of that assembly
+    FmHeadMap::const_iterator ait = root->find(FmSubAssembly::getClassTypeID());
+    if (ait == root->end()) return NULL; // Logic error; no sub-assembly ring
+
+    // Find sub-assembly with correct ID
+    FmSubAssembly* subAss;
+    FmBase* ringStart = ait->second;
+    for (FmBase* pt = ringStart->getNext(); pt != ringStart; pt = pt->getNext())
+      if (pt->getID() == *it)
+      {
+        if ((subAss = dynamic_cast<FmSubAssembly*>(pt)))
+          // Invoke recursively for the next sub-assembly level
+          return getMap(subAss->getHeadMap(),++it,end,subAss->getID());
+        else
+          return NULL; // Logic error; object found is of incorrect type
+      }
+
+    // The sub-assembly does not exist yet, so create it here
+    subAss = new FmSubAssembly();
+    subAss->setID(*it);
+    subAss->setParentAssembly(parentAssemblyID);
+    subAss->connect();
+
+    // Invoke recursively for the next sub-assembly level
+    return getMap(subAss->getHeadMap(),++it,end,subAss->getID());
+  }
+
+  const FmHeadMap* getMap(const IntVec& assID, const FmHeadMap* root)
+  {
+    return getMap(root ? root : &ourHeadMap, assID.begin(), assID.end());
+  }
+
+  template<class T> void FmdFill_Vec(std::vector<T*>& queName,
+                                     const FmHeadMap* root,
+                                     int classTypeId = -1,
+                                     bool thisLevelOnly = false)
+  {
+    if (classTypeId < 0) classTypeId = T::getClassTypeID();
+
+    if (FmBase* head = getMapHead(classTypeId,root); head)
+      for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
+        queName.push_back((T*)pt);
+
+    if (thisLevelOnly) return;
+
+    if (FmBase* head = getMapHead(FmSubAssembly::getClassTypeID(),root); head)
+      for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
+        if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+          FmdFill_Vec(queName,subAss->getHeadMap(),classTypeId);
+  }
+
+  template<class T> T* FmdGet_Object(T* object, bool createIfNone)
+  {
+    FmBase* head = getHead(T::getClassTypeID());
+    if (!head) return NULL; // Logic error, should never happen
+
+    if (head->getNext() != head)
+      object = static_cast<T*>(head->getNext());
+    else if (createIfNone)
+    {
+      object = new T();
+      object->connect();
+    }
+    else
+      object = NULL;
+
+    return object;
+  }
+
+} // end anonymous namespace
 
 
 /*******************************************************************************
  *
- * STATIC METHODS
+ * Public FmDB functions
  *
  ******************************************************************************/
 
 /*!
-  Initialization method for \a headMap containing all entities in a model.
+  Initialization for \a headMap containing all entities in a model.
   The initialization creates one FmRingStart object for each type of object,
   and sets up a parent-child relationship if neccesary for use in the GUI.
 
@@ -400,7 +530,7 @@ void FmDB::init()
 
 
 /*!
-  This method cleans up the heap-allocated singelton objects
+  This cleans up the heap-allocated singelton objects
   in FmDB which are not related to a mechanism model as such.
   Used mainly in test programs to verify no memory leaks, etc.
 */
@@ -473,14 +603,16 @@ FmMechanism* FmDB::newMechanism()
 
 int FmDB::getObjectCount(int typeID, const FmHeadMap* root)
 {
-  FmRingStart* head = FmDB::getHead(typeID,root);
+  if (!root) root = &ourHeadMap;
+
+  FmRingStart* head = getMapHead(typeID,root);
   int count = head ? head->countRingMembers() : 0;
   if (!head || (count == 0 && !head->getChildren().empty()))
     for (const FmHeadMap::value_type& child : *root)
       if (child.second->getNext()->isOfType(std::abs(typeID)))
         count += child.second->countRingMembers();
 
-  head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
+  head = getMapHead(FmSubAssembly::getClassTypeID(),root);
   if (!head) return count;
 
   for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
@@ -492,8 +624,8 @@ int FmDB::getObjectCount(int typeID, const FmHeadMap* root)
 
 
 /*!
-  This method fills a vector of all objects in the DB of requested type.
-  The method returns false if no objects of the type queried for are found.
+  This fills a vector of all objects in the DB of requested type.
+  The function returns false if no objects of the type queried for are found.
 */
 
 bool FmDB::getAllOfType(std::vector<FmModelMemberBase*>& toBeFilled,
@@ -501,106 +633,36 @@ bool FmDB::getAllOfType(std::vector<FmModelMemberBase*>& toBeFilled,
                         const char* tag)
 {
   toBeFilled.clear();
-  return FmDB::appendAllOfType(toBeFilled,classTypeID,std::vector<int>(),
-                               tag ? tag : "", FmDB::getHeadMap(subAss));
-
-}
-
-bool FmDB::appendAllOfType(std::vector<FmModelMemberBase*>& toBeFilled,
-                           int classTypeID, const std::vector<int>& except,
-                           const std::string& tagged)
-{
-  return FmDB::appendAllOfType(toBeFilled,classTypeID,except,tagged,&ourHeadMap);
-}
-
-bool FmDB::appendAllOfType(std::vector<FmModelMemberBase*>& toBeFilled,
-                           int classTypeID, const std::vector<int>& except,
-                           const std::string& tagged, const FmHeadMap* root)
-{
-  size_t oldSize = toBeFilled.size();
-  size_t nExclude = except.size();
-  for (const FmHeadMap::value_type& head : *root)
-  {
-    FmBase* runner = head.second->getNext();
-    bool okToUse = runner->isOfType(std::abs(classTypeID));
-    for (size_t i = 0; i < nExclude && okToUse; i++)
-      if (runner->isOfType(except[i])) okToUse = false;
-
-    if (okToUse)
-      while (runner && runner != head.second)
-      {
-        FmModelMemberBase* obj = static_cast<FmModelMemberBase*>(runner);
-        if (tagged.empty() || obj->isTagged(tagged))
-          toBeFilled.push_back(obj);
-        runner = runner->getNext();
-      }
-  }
-
-  FmBase* head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
-  if (head && classTypeID >= 0)
-    for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-      if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
-        FmDB::appendAllOfType(toBeFilled,classTypeID,except,
-                              tagged,subAss->getHeadMap());
-
-  return toBeFilled.size() > oldSize;
-}
-
-
-void FmDB::getTypeQuery(std::vector<FmModelMemberBase*>& toBeFilled,
-			const std::map<int,bool>& query)
-{
-  toBeFilled.clear();
-  if (query.empty()) return;
-
-  std::vector<int> dontWantTypes;
-  for (const std::pair<const int,bool>& qp : query)
-    if (!qp.second)
-      dontWantTypes.push_back(qp.first);
-
-  for (const std::pair<const int,bool>& qp : query)
-    if (qp.second)
-      FmDB::appendAllOfType(toBeFilled, qp.first, dontWantTypes);
+  return appendAll(toBeFilled,classTypeID,{},tag,FmDB::getHeadMap(subAss));
 }
 
 
 void FmDB::getQuery(std::vector<FmModelMemberBase*>& toBeFilled, FmQuery* query)
 {
   toBeFilled.clear();
-  if (!query) return;
+  if (!query || query->typesToFind.empty())
+    return;
+
+  IntVec dontWantTypes;
+  for (const std::pair<const int,bool>& qp : query->typesToFind)
+    if (!qp.second) dontWantTypes.push_back(qp.first);
 
   if (query->verifyCB.empty())
-    FmDB::getTypeQuery(toBeFilled,query->typesToFind);
+  {
+    for (const std::pair<const int,bool>& qp : query->typesToFind)
+      if (qp.second) appendAll(toBeFilled,qp.first,dontWantTypes);
+  }
   else
   {
-    bool isOK = false;
     std::vector<FmModelMemberBase*> tmp;
-    FmDB::getTypeQuery(tmp,query->typesToFind);
+    for (const std::pair<const int,bool>& qp : query->typesToFind)
+      if (qp.second) appendAll(tmp,qp.first,dontWantTypes);
+
+    bool isOK = false;
     for (FmModelMemberBase* obj : tmp)
       if (query->verifyCB.invoke(isOK,obj); isOK)
         toBeFilled.push_back(obj);
   }
-}
-
-
-template<class T> static void FmdFill_Vec(std::vector<T*>& queName,
-					  const std::map<int,FmRingStart*>* root,
-					  int classTypeId = -1,
-					  bool thisLevelOnly = false)
-{
-  if (classTypeId < 0) classTypeId = T::getClassTypeID();
-  FmBase* head = FmDB::getHead(classTypeId,root);
-  if (head)
-    for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-      queName.push_back((T*)pt);
-
-  if (thisLevelOnly) return;
-
-  head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
-  if (head)
-    for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-      if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
-        FmdFill_Vec(queName,subAss->getHeadMap(),classTypeId);
 }
 
 
@@ -682,7 +744,7 @@ bool FmDB::insertInBaseIDMap(FmModelMemberBase* pt)
 {
   if (!pt) return false;
 
-  bool status = ourBaseIDMap.insert(std::make_pair(pt->getBaseID(),pt)).second;
+  bool status = ourBaseIDMap.emplace(pt->getBaseID(),pt).second;
 #ifdef FM_DEBUG
   std::cout <<"FmDB::insertInBaseIDMap() "<< pt->getTypeIDName()
 	    <<" "<< pt->getID() <<" ("<< pt->getBaseID()
@@ -704,10 +766,7 @@ void FmDB::removeFromBaseIDMap(FmModelMemberBase* pt)
 
 int FmDB::getFreeBaseID()
 {
-  if (ourBaseIDMap.empty())
-    return 1;
-  else
-    return ourBaseIDMap.rbegin()->first + 1;
+  return ourBaseIDMap.empty() ? 1 : ourBaseIDMap.rbegin()->first + 1;
 }
 
 
@@ -802,12 +861,14 @@ void FmDB::eraseAllControlObjects()
 
 bool FmDB::hasObjects(int typeID, const FmHeadMap* root)
 {
-  FmBase* head = FmDB::getHead(typeID,root);
+  if (!root) root = &ourHeadMap;
+
+  FmBase* head = getMapHead(typeID,root);
   if (!head) return false;
 
   if (head->getNext() != head) return true;
 
-  head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
+  head = getMapHead(FmSubAssembly::getClassTypeID(),root);
   if (!head) return false;
 
   for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
@@ -821,13 +882,14 @@ bool FmDB::hasObjects(int typeID, const FmHeadMap* root)
 
 bool FmDB::hasObjectsOfType(int classTypeID, const FmHeadMap* root)
 {
+  if (!root) root = &ourHeadMap;
+
   for (const FmHeadMap::value_type& head : *root)
     if (FmBase* pt = head.second->getNext(); pt)
       if (pt != head.second && pt->isOfType(classTypeID))
         return true;
 
-  FmBase* head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
-  if (head)
+  if (FmBase* head = getMapHead(FmSubAssembly::getClassTypeID(),root); head)
     for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
       if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
         if (FmDB::hasObjectsOfType(classTypeID,subAss->getHeadMap()))
@@ -1078,6 +1140,16 @@ double FmDB::getPositionTolerance()
   return FmDB::getMechanismObject()->positionTolerance.getValue();
 }
 
+double FmDB::getParallelTolerance()
+{
+  return parallelTol;
+}
+
+void FmDB::setParallelTolerance(double eps)
+{
+  parallelTol = eps;
+}
+
 
 const FaVec3& FmDB::getGrav()
 {
@@ -1113,9 +1185,8 @@ FaMat34 FmDB::getSeaCS()
   if (!seastate) return FaMat34();
 
   // Define the sea coordinate system based on the vessel configuration
-  FmMechanism*    mech = FmDB::getMechanismObject();
-  FmVesselMotion* raom = FmDB::getActiveRAO();
-  if (raom)
+  FmMechanism* mech = FmDB::getMechanismObject();
+  if (FmVesselMotion* raom = FmDB::getActiveRAO(); raom)
     return raom->getWaveCS(mech->gravity.getValue(),
 			   seastate->waveDir.getValue(),
 			   seastate->meanSeaLevel.getValue());
@@ -1141,28 +1212,14 @@ bool FmDB::useSeaCS()
 
 void FmDB::drawSea()
 {
-  FmSeaState* seaState = FmDB::getSeaStateObject(false);
-  if (seaState)
+  if (FmSeaState* seaState = FmDB::getSeaStateObject(false); seaState)
     seaState->draw();
 }
 
 
-template<class T> static T* FmdGet_Object(T* object, bool createIfNone)
+FmLink* FmDB::getEarthLink()
 {
-  FmBase* head = FmDB::getHead(T::getClassTypeID());
-  if (!head) return NULL; // Logic error, should never happen
-
-  if (head->getNext() != head)
-    object = static_cast<T*>(head->getNext());
-  else if (createIfNone)
-  {
-    object = new T();
-    object->connect();
-  }
-  else
-    object = NULL;
-
-  return object;
+  return itsEarthLink;
 }
 
 
@@ -1258,7 +1315,7 @@ FmTurbine* FmDB::getTurbineObject(int ID)
 
 
 /*!
-  Utility method to collect all fields in the model containing a file path.
+  Utility to collect all fields in the model containing a file path.
 */
 
 void FmDB::getAllPaths(std::vector<FFaField<std::string>*>& allPathNames,
@@ -1342,7 +1399,7 @@ void FmDB::getAllPaths(std::vector<FFaField<std::string>*>& allPathNames,
 
 
 /*!
-  Utility method to translate all relative paths in the model such that they
+  Utility to translate all relative paths in the model such that they
   are correct after saving, when changing the model file path of the model.
   Used by "Save As..." and "Export Digital Twin...".
 */
@@ -1422,6 +1479,12 @@ bool FmDB::purgeJointComponents()
 }
 
 
+const FFaVersionNumber& FmDB::getModelFileVer()
+{
+  return ourModelFileVersion;
+}
+
+
 bool FmDB::updateModelVersionOnSave(bool warnOnNewVersion)
 {
   if (ourModelFileVersion == ourCurrentFedemVersion) return true;
@@ -1452,7 +1515,7 @@ bool FmDB::updateModelVersionOnSave(bool warnOnNewVersion)
 
 
 bool FmDB::reportAll(std::ostream& os, bool writeMetaData,
-		     const FmHeadMap& headMap, const char* addMetaData)
+		     const FmHeadMap* headMap, const char* metaData)
 {
   if (!os) return false;
 
@@ -1465,8 +1528,8 @@ bool FmDB::reportAll(std::ostream& os, bool writeMetaData,
     const time_t currentTime = time(NULL);
     os <<"!Last saved: #"<< ++ourSaveNr <<", "<< ctime(&currentTime);
   }
-  if (addMetaData)
-    os << addMetaData <<"\n";
+  if (metaData)
+    os << metaData <<"\n";
   os <<"\n";
 
   int oldPrec = os.precision(12); // Output precision for real values
@@ -1478,20 +1541,21 @@ bool FmDB::reportAll(std::ostream& os, bool writeMetaData,
 }
 
 
-void FmDB::reportMembers(std::ostream& os, const FmHeadMap& headMap)
+void FmDB::reportMembers(std::ostream& os, const FmHeadMap* root)
 {
   if (!os) return;
+  if (!root) root = &ourHeadMap;
 
   // Sort rings in output order
   FmHeadMap sortedMap;
-  FmDB::sortHeadMap(headMap,sortedMap);
+  FmDB::sortHeadMap(*root,sortedMap);
   // Swap the order for Functions and Function Definitions, such that
   // the headings are printed in the correct place in the model file.
   // This is a consequence of the May 14 2014 bugfix where the sorted order
   // of these two was changed to avoid crash when erasing sub-assemblies.
-  FmHeadMap::const_iterator itxE = headMap.find(FmEngine::getClassTypeID());
-  FmHeadMap::const_iterator itxF = headMap.find(FmMathFuncBase::getClassTypeID());
-  if (itxE != headMap.end() && itxF != headMap.end())
+  FmHeadMap::const_iterator itxE = root->find(FmEngine::getClassTypeID());
+  FmHeadMap::const_iterator itxF = root->find(FmMathFuncBase::getClassTypeID());
+  if (itxE != root->end() && itxF != root->end())
     std::swap(sortedMap[itxE->second->getSortNumber()],
               sortedMap[itxF->second->getSortNumber()]);
 
@@ -1516,54 +1580,57 @@ void FmDB::emergencyExitSave()
 }
 
 
-void FmDB::displayAll(const FmHeadMap& headMap)
+void FmDB::displayAll(const FmHeadMap* headMap)
 {
   if (FFaAppInfo::isConsole()) return;
 
-  std::vector<int> displayOrder;
+  const FmHeadMap* root = headMap ? headMap : &ourHeadMap;
 
-  displayOrder.push_back(FmPart::getClassTypeID());
-  displayOrder.push_back(FmTriad::getClassTypeID());
-  displayOrder.push_back(FmRevJoint::getClassTypeID());
-  displayOrder.push_back(FmBallJoint::getClassTypeID());
-  displayOrder.push_back(FmRigidJoint::getClassTypeID());
-  displayOrder.push_back(FmFreeJoint::getClassTypeID());
-  displayOrder.push_back(FmPrismJoint::getClassTypeID());
-  displayOrder.push_back(FmCylJoint::getClassTypeID());
-  displayOrder.push_back(FmCamJoint::getClassTypeID());
-  displayOrder.push_back(FmGear::getClassTypeID());
-  displayOrder.push_back(FmRackPinion::getClassTypeID());
+  static const IntVec displayOrder = {
+    FmPart::getClassTypeID(),
+    FmTriad::getClassTypeID(),
+    FmRevJoint::getClassTypeID(),
+    FmBallJoint::getClassTypeID(),
+    FmRigidJoint::getClassTypeID(),
+    FmFreeJoint::getClassTypeID(),
+    FmPrismJoint::getClassTypeID(),
+    FmCylJoint::getClassTypeID(),
+    FmCamJoint::getClassTypeID(),
+    FmGear::getClassTypeID(),
+    FmRackPinion::getClassTypeID()
+  };
+
+  // Recursive lambda function displaying a multi-level subassembly.
+  std::function<void(int,const FmHeadMap*)>
+  displayMembers = [&displayMembers](int typeID, const FmHeadMap* root)
+  {
+    if (!root) return;
+
+    FmHeadMap::const_iterator it = root->find(typeID);
+    if (it != root->end()) it->second->displayRingMembers();
+
+    FmBase* head = getMapHead(FmSubAssembly::getClassTypeID(),root);
+    if (!head) return;
+
+    for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
+      if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
+        displayMembers(typeID,subAss->getHeadMap());
+  };
 
   // First display the objects that must be displayed in given order
   for (int classType : displayOrder)
-    FmDB::displayMembers(classType,&headMap);
+    displayMembers(classType,root);
 
   // Then display the rest, taking care not to display any of
   // the already displayed ones
-  for (const FmHeadMap::value_type& head : headMap)
+  for (const FmHeadMap::value_type& head : *root)
     if (std::find(displayOrder.begin(),displayOrder.end(),head.first) == displayOrder.end())
-      FmDB::displayMembers(head.first,&headMap);
+      displayMembers(head.first,root);
 
-  if (&headMap != &ourHeadMap) return;
+  if (headMap) return;
 
   FmDB::drawGVector();
   FmDB::getActiveViewSettings()->sync();
-}
-
-
-void FmDB::displayMembers(int typeID, const FmHeadMap* root)
-{
-  if (!root) return;
-
-  FmHeadMap::const_iterator it = root->find(typeID);
-  if (it != root->end()) it->second->displayRingMembers();
-
-  FmBase* head = FmDB::getHead(FmSubAssembly::getClassTypeID(),root);
-  if (!head) return;
-
-  for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
-    if (FmSubAssembly* subAss = dynamic_cast<FmSubAssembly*>(pt); subAss)
-      FmDB::displayMembers(typeID,subAss->getHeadMap());
 }
 
 
@@ -1596,6 +1663,8 @@ void FmDB::forAllInDB(FFaDynCB2<bool&,FmBase*>& toBeCalledForEachHead,
 		      FFaDynCB1<FmBase*>& toBeCalledForEach,
 		      const FmHeadMap* root)
 {
+  if (!root) root = &ourHeadMap;
+
   for (const FmHeadMap::value_type& head : *root)
   {
     bool okToTraverseGroup = true;
@@ -1621,7 +1690,7 @@ bool FmDB::findIDrange(const FmBase* obj, int& fromID, int& toID)
   if (!obj) return false;
 
   FmSubAssembly* parentAss = dynamic_cast<FmSubAssembly*>(obj->getParentAssembly());
-  FmBase* hd = FmDB::getHead(obj->getTypeID(),FmDB::getHeadMap(parentAss));
+  FmBase* hd = getMapHead(obj->getTypeID(),FmDB::getHeadMap(parentAss));
   if (!hd) return false;
 
   fromID = hd->getNext()->getID();
@@ -1631,17 +1700,15 @@ bool FmDB::findIDrange(const FmBase* obj, int& fromID, int& toID)
 }
 
 
-FmBase* FmDB::findID(int type, int IDnr,
-		     const std::vector<int>& assemblyID)
+FmBase* FmDB::findID(int type, int IDnr, const IntVec& assemblyID)
 {
   // First, check if this is a leaf type
-  FmBase* hd = FmDB::getHead(type,assemblyID,FmSubAssembly::tmpHeadMap);
-  if (hd)
+  if (FmBase* hd = FmDB::getHead(type,assemblyID,FmSubAssembly::tmpHeadMap); hd)
     for (FmBase* pt = hd->getNext(); pt != hd; pt = pt->getNext())
       if (pt->getID() == IDnr)
-	return pt;
+        return pt;
 
-  const FmHeadMap* headMap = FmDB::getHeadMap(assemblyID,FmSubAssembly::tmpHeadMap);
+  const FmHeadMap* headMap = getMap(assemblyID,FmSubAssembly::tmpHeadMap);
   if (!headMap) return NULL;
 
   // It probably wasn't, see if it is a parent class then
@@ -1655,10 +1722,9 @@ FmBase* FmDB::findID(int type, int IDnr,
   return NULL;
 }
 
-FmBase* FmDB::findID(const std::string& type, int IDnr,
-		     const std::vector<int>& assemblyID)
+FmBase* FmDB::findID(const std::string& type, int IDnr, const IntVec& assemblyID)
 {
-  const FmHeadMap* headMap = FmDB::getHeadMap(assemblyID,FmSubAssembly::tmpHeadMap);
+  const FmHeadMap* headMap = getMap(assemblyID,FmSubAssembly::tmpHeadMap);
   if (!headMap) return NULL;
 
   for (const FmHeadMap::value_type& head : *headMap)
@@ -1674,81 +1740,29 @@ FmBase* FmDB::findID(const std::string& type, int IDnr,
 
 FmRingStart* FmDB::getHead(int classTypeID)
 {
-  return FmDB::getHead(classTypeID,&ourHeadMap);
+  return getMapHead(classTypeID,&ourHeadMap);
 }
 
-FmRingStart* FmDB::getHead(int classTypeID,
-                           const std::vector<int>& assemblyID,
+FmRingStart* FmDB::getHead(int classTypeID, const IntVec& assemblyID,
                            const FmHeadMap* root)
 {
-  return FmDB::getHead(classTypeID,FmDB::getHeadMap(assemblyID,root));
-}
-
-FmRingStart* FmDB::getHead(int classTypeID, const FmHeadMap* headMap)
-{
-  if (!headMap) return NULL;
-
-  FmHeadMap::const_iterator it = headMap->find(classTypeID);
-  return it == headMap->end() ? NULL : it->second;
+  return getMapHead(classTypeID,getMap(assemblyID,root));
 }
 
 
-const FmDB::FmHeadMap* FmDB::getHeadMap(const FmSubAssembly* subAss)
+const FmHeadMap* FmDB::getHeadMap(const FmSubAssembly* subAss)
 {
   return subAss ? subAss->getHeadMap() : &ourHeadMap;
 }
 
-const FmDB::FmHeadMap* FmDB::getHeadMap(const std::vector<int>& assemblyID,
-                                        const FmHeadMap* root)
-{
-  return FmDB::getHeadMap(root ? root : &ourHeadMap,
-                          assemblyID.begin(),assemblyID.end());
-}
 
-const FmDB::FmHeadMap* FmDB::getHeadMap(const FmHeadMap* root,
-                                        std::vector<int>::const_iterator it,
-                                        std::vector<int>::const_iterator end,
-                                        int parentAssemblyID)
-{
-  if (it == end || *it < 1) return root;
-
-  // For each level in the assembly id path,
-  // find the correct assembly, then return the headMap of that assembly
-  FmHeadMap::const_iterator ait = root->find(FmSubAssembly::getClassTypeID());
-  if (ait == root->end()) return NULL; // Logic error; no sub-assembly ring
-
-  // Find sub-assembly with correct ID
-  FmSubAssembly* subAss;
-  FmBase* ringStart = ait->second;
-  for (FmBase* pt = ringStart->getNext(); pt != ringStart; pt = pt->getNext())
-    if (pt->getID() == *it)
-    {
-      if ((subAss = dynamic_cast<FmSubAssembly*>(pt)))
-        // Invoke recursively for the next sub-assembly level
-        return FmDB::getHeadMap(subAss->getHeadMap(),++it,end,subAss->getID());
-      else
-        return NULL; // Logic error; object found is of incorrect type
-    }
-
-  // The sub-assembly does not exist yet, so create it here
-  subAss = new FmSubAssembly();
-  subAss->setID(*it);
-  subAss->setParentAssembly(parentAssemblyID);
-  subAss->connect();
-
-  // Invoke recursively for the next sub-assembly level
-  return FmDB::getHeadMap(subAss->getHeadMap(),++it,end,subAss->getID());
-}
-
-
-FmSubAssembly* FmDB::getSubAssembly(const std::vector<int>& assemblyID)
+FmSubAssembly* FmDB::getSubAssembly(const IntVec& assemblyID)
 {
   if (assemblyID.empty()) return NULL;
 
   int subAssID = assemblyID.back();
-  std::vector<int> assID(assemblyID); assID.pop_back();
-  FmBase* head = FmDB::getHead(FmSubAssembly::getClassTypeID(),assID);
-  if (head)
+  IntVec assID(assemblyID); assID.pop_back();
+  if (FmBase* head = FmDB::getHead(FmSubAssembly::getClassTypeID(),assID); head)
     for (FmBase* pt = head->getNext(); pt != head; pt = pt->getNext())
       if (pt->getID() == subAssID)
 	return dynamic_cast<FmSubAssembly*>(pt);
@@ -1758,8 +1772,6 @@ FmSubAssembly* FmDB::getSubAssembly(const std::vector<int>& assemblyID)
   return NULL;
 }
 
-
-static std::map<int,int> readLog;
 
 enum  { FEDEMMODELFILE = 1,
 	MECHANISM = 2,
@@ -2512,16 +2524,26 @@ int FmDB::readFMF(std::istream& fs)
 }
 
 
-static void findContainer(FFaFieldContainer*& found, int typeID, int ID,
-			  const std::vector<int>& assemblyID)
+void FmDB::unknownKeyword(const char* keyWord, const FmBase* obj)
 {
-  found = FmDB::findID(typeID,ID,assemblyID);
+  std::string msg(keyWord);
+  msg += " is not a defined fmm-file keyword for ";
+  msg += std::string(obj->getUITypeName()) + "s";
+  std::map<std::string,int>::iterator it = unknownKeywords.find(msg);
+  if (it == unknownKeywords.end())
+    unknownKeywords[msg] = 1;
+  else
+    ++it->second;
 }
 
 
 void FmDB::resolveObject(FmBase* obj)
 {
-  static FFaDynCB4<FFaFieldContainer*&,int,int,const std::vector<int>&> findCB = FFaDynCB4S(findContainer,FFaFieldContainer*&,int,int,const std::vector<int>&);
+  static FFaDynCB4<FFaFieldContainer*&,int,int,const IntVec&> findCB =
+    FFaDynCB4S([](FFaFieldContainer*& found,
+                  int typeID, int ID, const IntVec& assemblyID) {
+                 found = FmDB::findID(typeID,ID,assemblyID); },
+               FFaFieldContainer*&,int,int,const IntVec&);
 
   if (obj)
     obj->resolve(findCB);

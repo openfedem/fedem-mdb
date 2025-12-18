@@ -38,7 +38,7 @@ std::ostream& FmJacket::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
