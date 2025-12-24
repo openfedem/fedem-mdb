@@ -404,7 +404,7 @@ void FWP::createJacket (const FFlLinkHandler* jl, const std::string& name,
   }
 
   if (FmDB::hasObjectsOfType(FmLink::getClassTypeID(),jacket->getHeadMap()))
-    FmDB::displayAll(*jacket->getHeadMap());
+    FmDB::displayAll(jacket->getHeadMap());
   else
   {
     FFaMsg::list(" ==> Empty jacket assembly, deleted.\n",true);

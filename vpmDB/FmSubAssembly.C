@@ -224,7 +224,7 @@ std::ostream& FmSubAssembly::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,myHeadMap);
+    FmDB::reportMembers(os,&myHeadMap);
   else
     this->writeFMF(myModelFile.getValue());
 
@@ -244,7 +244,7 @@ bool FmSubAssembly::writeFMF(const std::string& fileName) const
 
   std::string metaData = "!Submodel: " + this->getIdString();
   std::ofstream fs(fullName.c_str(),std::ios::out);
-  if (FmDB::reportAll(fs,false,myHeadMap,metaData.c_str()))
+  if (FmDB::reportAll(fs,false,&myHeadMap,metaData.c_str()))
     return true;
 
   ListUI <<" ==> Failure writing Subassembly file: "<< fullName <<"\n";

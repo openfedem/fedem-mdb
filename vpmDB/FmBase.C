@@ -326,17 +326,9 @@ bool FmBase::localParse(const char* keyWord, std::istream& activeStatement,
                         FmBase* obj)
 {
   if (!obj->readField(keyWord,activeStatement))
-  {
-    std::string msg(keyWord);
-    msg += " is not a defined fmm-file keyword for ";
-    msg += std::string(obj->getUITypeName()) + "s";
-    std::map<std::string,int>::iterator it = FmDB::unknownKeywords.find(msg);
-    if (it == FmDB::unknownKeywords.end())
-      FmDB::unknownKeywords[msg] = 1;
-    else
-      ++it->second;
-  }
-  else if (strcmp(keyWord,"PARENT_ASSEMBLY") == 0 && FmSubAssembly::old2newAssID.first > 0)
+    FmDB::unknownKeyword(keyWord,obj);
+  else if (strcmp(keyWord,"PARENT_ASSEMBLY") == 0 &&
+           FmSubAssembly::old2newAssID.first > 0)
     if (obj->myParentAssembly.getRefID() == FmSubAssembly::old2newAssID.first)
       obj->myParentAssembly.setRef(FmSubAssembly::old2newAssID.second,
                                    obj->myParentAssembly.getRefTypeID());

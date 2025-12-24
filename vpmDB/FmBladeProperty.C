@@ -365,7 +365,7 @@ std::ostream& FmBladeDesign::writeFMF(std::ostream& os)
   this->writeFields(os);
   os <<"}\n\n";
 
-  FmDB::reportMembers(os,*this->getHeadMap());
+  FmDB::reportMembers(os,this->getHeadMap());
 
   return os;
 }
@@ -439,7 +439,7 @@ bool FmBladeDesign::writeToFMM(const std::string& fileName) const
   this->writeFields(os);
   os <<"}\n\n";
 
-  FmDB::reportMembers(os,*this->getHeadMap());
+  FmDB::reportMembers(os,this->getHeadMap());
 
   os <<"END {FEDEMMODELFILE}\n";
 

@@ -75,218 +75,177 @@ class FaMat34;
 class FaVec3;
 
 
-class FmDB
+namespace FmDB
 {
-  typedef std::map<int,FmRingStart*> FmHeadMap;
+  using FmHeadMap = std::map<int,FmRingStart*>;
 
-public:
-  static void init();
-  static void removeInstances();
+  void init();
+  void removeInstances();
 
-  static void initHeadMap(FmHeadMap& headMap, FmFuncTree*& funcTree);
-  static void sortHeadMap(const FmHeadMap& headMap, FmHeadMap& sortedHeadMap,
-                          bool reverse = false);
+  void initHeadMap(FmHeadMap& headMap, FmFuncTree*& funcTree);
+  void sortHeadMap(const FmHeadMap& headMap, FmHeadMap& sortedHeadMap,
+                   bool reverse = false);
 
-  static FmModelMemberBase* createObject(int classTypeId);
+  FmModelMemberBase* createObject(int classTypeId);
 
-  static FmMechanism* newMechanism();
+  FmMechanism* newMechanism();
 
   // Head object return
-  static FmRingStart* getHead(int classTypeID);
-  static FmRingStart* getHead(int classTypeID, const std::vector<int>& assemblyID,
-                              const FmHeadMap* root = NULL);
-  static FmRingStart* getHead(int classTypeID, const FmHeadMap* headMap);
+  FmRingStart* getHead(int classTypeID);
+  FmRingStart* getHead(int classTypeID, const std::vector<int>& assemblyID,
+                       const FmHeadMap* root = NULL);
 
   // Search for ID
-  static bool findIDrange(const FmBase* obj, int& fromID, int& toID);
-  static FmBase* findID(int type, int IDnr,
-			const std::vector<int>& assemblyID = std::vector<int>());
-  static FmBase* findID(const std::string& type, int IDnr,
-			const std::vector<int>& assemblyID = std::vector<int>());
+  bool findIDrange(const FmBase* obj, int& fromID, int& toID);
+  FmBase* findID(int type, int IDnr, const std::vector<int>& assemblyID = {});
+  FmBase* findID(const std::string& type, int IDnr,
+                 const std::vector<int>& assemblyID = {});
 
   // Collects all pathnames in the model
-  static void getAllPaths(std::vector<FFaField<std::string>*>& allPathNames,
-                          const FmSubAssembly* subAss = NULL);
+  void getAllPaths(std::vector<FFaField<std::string>*>& allPathNames,
+                   const FmSubAssembly* subAss = NULL);
   // Corrects all relative pathnames to external input files in the model
   // when moving it to a different directory (Save As...)
-  static void translateRelativePaths(const std::string& oldModelPath,
-				     const std::string& newModelPath,
-				     const FmSubAssembly* subAss = NULL);
+  void translateRelativePaths(const std::string& oldModelPath,
+                              const std::string& newModelPath,
+                              const FmSubAssembly* subAss = NULL);
 
   // Compresses the model by removing all inactive joint dof objects
-  static bool purgeJointComponents();
+  bool purgeJointComponents();
 
-  static bool updateModelVersionOnSave(bool warnOnNewVersion);
+  bool updateModelVersionOnSave(bool warnOnNewVersion);
 
-  static bool reportAll(std::ostream& os = std::cout, bool writeMetaData = true,
-                        const FmHeadMap& headMap = ourHeadMap,
-                        const char* addMetaData = NULL);
-  static void reportMembers(std::ostream& os, const FmHeadMap& headMap);
+  bool reportAll(std::ostream& os = std::cout, bool writeMetaData = true,
+                 const FmHeadMap* headMap = NULL, const char* metaData = NULL);
+  void reportMembers(std::ostream& os, const FmHeadMap* headMap);
 
-  static void displayAll(const FmHeadMap& headMap = ourHeadMap);
-  static bool eraseAll(bool showProgress = false);
+  void displayAll(const FmHeadMap* headMap = NULL);
+  bool eraseAll(bool showProgress = false);
 
-  static void forAllInDB(FFaDynCB2<bool&,FmBase*>& toBeCalled4EachHead,
-                         FFaDynCB1<FmBase*>& toBeCalled4Each,
-                         const FmHeadMap* root = &ourHeadMap);
+  void forAllInDB(FFaDynCB2<bool&,FmBase*>& toBeCalled4EachHead,
+                  FFaDynCB1<FmBase*>& toBeCalled4Each,
+                  const FmHeadMap* root = NULL);
 
-  static int getObjectCount(int type, const FmHeadMap* root = &ourHeadMap);
+  int getObjectCount(int type, const FmHeadMap* root = NULL);
 
-  // Vector to fill up, map with TypeID and a bool saying
-  // if we want/don't want objects of type TypeID
-  static void getTypeQuery(std::vector<FmModelMemberBase*>& toBeFilled,
-                           const std::map<int,bool>& query);
+  void getQuery(std::vector<FmModelMemberBase*>& toBeFilled, FmQuery* query);
 
-  static void getQuery(std::vector<FmModelMemberBase*>& toBeFilled, FmQuery* query);
+  bool getAllOfType(std::vector<FmModelMemberBase*>& toBeFilled, int typeID,
+                    const FmSubAssembly* subAss = NULL, const char* tag = NULL);
 
-  static bool getAllOfType(std::vector<FmModelMemberBase*>& toBeFilled, int typeID,
-                           const FmSubAssembly* subAss = NULL, const char* tag = NULL);
+  bool hasObjectsOfType(int typeID, const FmHeadMap* root = NULL);
 
-  static bool hasObjectsOfType(int typeID, const FmHeadMap* root = &ourHeadMap);
+  void getFEParts(std::vector<FmPart*>& toFill, bool reverseOrder = false);
+  void getUnsavedParts(std::vector<FmPart*>& toFill);
+  void getAllParts(std::vector<FmPart*>& toFill,
+                   const FmSubAssembly* subAss = NULL,
+                   bool thisLevelOnly = false);
+  void getAllBeams(std::vector<FmBeam*>& toFill,
+                   const FmSubAssembly* subAss = NULL,
+                   bool thisLevelOnly = false);
+  void getAllLinks(std::vector<FmLink*>& toFill,
+                   const FmSubAssembly* subAss = NULL,
+                   bool thisLevelOnly = false);
+  void getAllTriads(std::vector<FmTriad*>& toFill,
+                    const FmSubAssembly* subAss = NULL,
+                    bool thisLevelOnly = false);
+  void getAllFunctions(std::vector<FmMathFuncBase*>& toFill,
+                       const FmSubAssembly* subAss = NULL,
+                       bool thisLevelOnly = false);
 
-  static void getFEParts(std::vector<FmPart*>& toFill, bool reverseOrder = false);
-  static void getUnsavedParts(std::vector<FmPart*>& toFill);
-  static void getAllParts(std::vector<FmPart*>& toFill,
-			  const FmSubAssembly* subAss = NULL,
-			  bool thisLevelOnly = false);
-  static void getAllBeams(std::vector<FmBeam*>& toFill,
-			  const FmSubAssembly* subAss = NULL,
-			  bool thisLevelOnly = false);
-  static void getAllLinks(std::vector<FmLink*>& toFill,
-			  const FmSubAssembly* subAss = NULL,
-			  bool thisLevelOnly = false);
-  static void getAllTriads(std::vector<FmTriad*>& toFill,
-			   const FmSubAssembly* subAss = NULL,
-			   bool thisLevelOnly = false);
-  static void getAllFunctions(std::vector<FmMathFuncBase*>& toFill,
-			      const FmSubAssembly* subAss = NULL,
-			      bool thisLevelOnly = false);
+  void getAllSplines(std::vector<FmfSpline*>& toFill);
+  void getAllMultiVarFuncs(std::vector<FmfMultiVarBase*>& toFill);
+  void getAllDeviceFunctions(std::vector<FmfDeviceFunction*>& toFill);
+  void getAllJoints(std::vector<FmJointBase*>& toFill);
+  void getAllHPs(std::vector<FmHPBase*>& toFill);
 
-  static void getAllSplines(std::vector<FmfSpline*>& toFill);
-  static void getAllMultiVarFuncs(std::vector<FmfMultiVarBase*>& toFill);
-  static void getAllDeviceFunctions(std::vector<FmfDeviceFunction*>& toFill);
-  static void getAllJoints(std::vector<FmJointBase*>& toFill);
-  static void getAllHPs(std::vector<FmHPBase*>& toFill);
+  void getAllGears(std::vector<FmGear*>& toFill);
+  void getAllRackPinions(std::vector<FmRackPinion*>& toFill);
+  void getAllCylJoints(std::vector<FmCylJoint*>& toFill);
+  void getAllCamJoints(std::vector<FmCamJoint*>& toFill);
 
-  static void getAllGears(std::vector<FmGear*>& toFill);
-  static void getAllRackPinions(std::vector<FmRackPinion*>& toFill);
-  static void getAllCylJoints(std::vector<FmCylJoint*>& toFill);
-  static void getAllCamJoints(std::vector<FmCamJoint*>& toFill);
+  void getAllRevJoints(std::vector<FmRevJoint*>& toFill);
+  void getAllBallJoints(std::vector<FmBallJoint*>& toFill);
+  void getAllFreeJoints(std::vector<FmFreeJoint*>& toFill);
+  void getAllRigidJoints(std::vector<FmRigidJoint*>& toFill);
+  void getAllPrismJoints(std::vector<FmPrismJoint*>& toFill);
+  void getAllControlLines(std::vector<FmCtrlLine*>& toFill);
+  void getAllLoads(std::vector<FmLoad*>& toFill);
 
-  static void getAllRevJoints(std::vector<FmRevJoint*>& toFill);
-  static void getAllBallJoints(std::vector<FmBallJoint*>& toFill);
-  static void getAllFreeJoints(std::vector<FmFreeJoint*>& toFill);
-  static void getAllRigidJoints(std::vector<FmRigidJoint*>& toFill);
-  static void getAllPrismJoints(std::vector<FmPrismJoint*>& toFill);
-  static void getAllControlLines(std::vector<FmCtrlLine*>& toFill);
-  static void getAllLoads(std::vector<FmLoad*>& toFill);
+  void getAllAxialSprings(std::vector<FmAxialSpring*>& toFill);
+  void getAllJointSprings(std::vector<FmJointSpring*>& toFill);
+  void getAllSpringChars(std::vector<FmSpringChar*>& toFill);
+  void getAllAxialDampers(std::vector<FmAxialDamper*>& toFill);
+  void getAllJointDampers(std::vector<FmJointDamper*>& toFill);
 
-  static void getAllAxialSprings(std::vector<FmAxialSpring*>& toFill);
-  static void getAllJointSprings(std::vector<FmJointSpring*>& toFill);
-  static void getAllSpringChars(std::vector<FmSpringChar*>& toFill);
-  static void getAllAxialDampers(std::vector<FmAxialDamper*>& toFill);
-  static void getAllJointDampers(std::vector<FmJointDamper*>& toFill);
+  void getAllSensors(std::vector<FmSensorBase*>& toFill);
+  void getAllEngines(std::vector<FmEngine*>& engines);
+  void getAllExternalCtrlSys(std::vector<FmExternalCtrlSys*>& toFill);
+  void getAllRefPlanes(std::vector<FmRefPlane*>& toFill);
+  void getAllStickers(std::vector<FmSticker*>& toFill);
 
-  static void getAllSensors(std::vector<FmSensorBase*>& toFill);
-  static void getAllEngines(std::vector<FmEngine*>& engines);
-  static void getAllExternalCtrlSys(std::vector<FmExternalCtrlSys*>& toFill);
-  static void getAllRefPlanes(std::vector<FmRefPlane*>& toFill);
-  static void getAllStickers(std::vector<FmSticker*>& toFill);
+  void getAllControlOutput(std::vector<FmcOutput*>& toFill);
+  void getAllControlInput(std::vector<FmcInput*>& toFill);
+  void getAllControlElements(std::vector<FmCtrlInputElementBase*>& toFill);
 
-  static void getAllControlOutput(std::vector<FmcOutput*>& toFill);
-  static void getAllControlInput(std::vector<FmcInput*>& toFill);
-  static void getAllControlElements(std::vector<FmCtrlInputElementBase*>& toFill);
+  void getAllBladeDesigns(std::vector<FmBladeDesign*>& toFill);
+  void getAllSimulationEvents(std::vector<FmSimulationEvent*>& toFill,
+                              bool reverseOrder = false);
 
-  static void getAllBladeDesigns(std::vector<FmBladeDesign*>& toFill);
-  static void getAllSimulationEvents(std::vector<FmSimulationEvent*>& toFill,
-                                     bool reverseOrder = false);
+  bool readAll(const std::string& name, char ignoreFileVersion = 0);
+  int  readFMF(std::istream& is);
 
-  static bool readAll(const std::string& name, char ignoreFileVersion = 0);
-  static int  readFMF(std::istream& is);
+  void unknownKeyword(const char* keyWord, const FmBase* obj);
 
-  static FmGlobalViewSettings* getActiveViewSettings(bool createIfNone = true);
-  static FmAnalysis* getActiveAnalysis(bool createIfNone = true);
-  static FmModesOptions* getModesOptions(bool createIfNone = true);
-  static FmGageOptions* getGageOptions(bool createIfNone = true);
-  static FmFppOptions* getFppOptions(bool createIfNone = true);
-  static FmModelExpOptions* getModelExportOptions(bool createIfNone = true);
-  static FmVesselMotion* getActiveRAO();
+  FmGlobalViewSettings* getActiveViewSettings(bool createIfNone = true);
+  FmAnalysis* getActiveAnalysis(bool createIfNone = true);
+  FmModesOptions* getModesOptions(bool createIfNone = true);
+  FmGageOptions* getGageOptions(bool createIfNone = true);
+  FmFppOptions* getFppOptions(bool createIfNone = true);
+  FmModelExpOptions* getModelExportOptions(bool createIfNone = true);
+  FmVesselMotion* getActiveRAO();
 
-  static double getPositionTolerance();
-  static double getParallelTolerance() { return parallelTol; }
-  static void setParallelTolerance(double eps) { parallelTol = eps; }
-  static const FaVec3& getGrav();
-  static void drawGVector();
+  double getPositionTolerance();
+  double getParallelTolerance();
+  void setParallelTolerance(double eps);
+  const FaVec3& getGrav();
+  void drawGVector();
 
-  static FaMat34 getSeaCS();
-  static bool    useSeaCS();
-  static void    drawSea();
+  FaMat34 getSeaCS();
+  bool    useSeaCS();
+  void    drawSea();
 
-  static FmLink* getEarthLink() { return itsEarthLink; }
-  static FmSensorBase* getTimeSensor(bool createIfNone = true);
-  static FmSeaState* getSeaStateObject(bool createIfNone = true);
-  static FmAirState* getAirStateObject(bool createIfNone = true);
-  static FmMechanism* getMechanismObject(bool createIfNone = true);
-  static FmTurbine* getTurbineObject(int ID = 0);
+  FmLink* getEarthLink();
+  FmSensorBase* getTimeSensor(bool createIfNone = true);
+  FmSeaState* getSeaStateObject(bool createIfNone = true);
+  FmAirState* getAirStateObject(bool createIfNone = true);
+  FmMechanism* getMechanismObject(bool createIfNone = true);
+  FmTurbine* getTurbineObject(int ID = 0);
 
-  static void emergencyExitSave();
+  void emergencyExitSave();
 
-  static void eraseAllStickers();
-  static void eraseAllControlObjects();
+  void eraseAllStickers();
+  void eraseAllControlObjects();
 
-  static bool hasObjects(int typeID, const FmHeadMap* root = &ourHeadMap);
+  bool hasObjects(int typeID, const FmHeadMap* root = NULL);
 
-  static const FFaVersionNumber& getModelFileVer() { return ourModelFileVersion; }
+  const FFaVersionNumber& getModelFileVer();
 
-  static const FmHeadMap* getHeadMap(const FmSubAssembly* subAss = NULL);
-  static const FmHeadMap* getHeadMap(const std::vector<int>& assemblyID,
-                                     const FmHeadMap* root = &ourHeadMap);
+  const FmHeadMap* getHeadMap(const FmSubAssembly* subAss = NULL);
 
-  static FmSubAssembly* getSubAssembly(const std::vector<int>& assemblyID);
+  FmSubAssembly* getSubAssembly(const std::vector<int>& assemblyID);
 
   // Finds the model member based on baseID
-  static FmModelMemberBase* findObject(int baseID);
-  static bool insertInBaseIDMap(FmModelMemberBase* pt);
-  static void removeFromBaseIDMap(FmModelMemberBase* pt);
+  FmModelMemberBase* findObject(int baseID);
+  bool insertInBaseIDMap(FmModelMemberBase* pt);
+  void removeFromBaseIDMap(FmModelMemberBase* pt);
 
   // Returns next free baseID
-  static int getFreeBaseID();
+  int getFreeBaseID();
 
   // Convenience methods for resolving
-  static void resolveObject(FmBase* obj);
-  static void initAfterResolveObject(FmBase* obj);
-
-private:
-  static FmHeadMap                        ourHeadMap;
-  static std::map<int,FmModelMemberBase*> ourBaseIDMap;
-
-  static double parallelTol;
-
-  static FmFuncTree* itsFuncTree;
-  static FmLink*     itsEarthLink;
-
-  static FFaVersionNumber ourCurrentFedemVersion;
-  static FFaVersionNumber ourModelFileVersion;
-  static int              ourSaveNr;
-
-public:
-  static std::map<std::string,int> unknownKeywords;
-
-private:
-  static bool appendAllOfType(std::vector<FmModelMemberBase*>& toBeFilled, int typeID,
-                              const std::vector<int>& butNotOfTypes = std::vector<int>(),
-                              const std::string& tagged = "");
-
-  static bool appendAllOfType(std::vector<FmModelMemberBase*>& toBeFilled, int typeID,
-                              const std::vector<int>& butNotOfTypes,
-                              const std::string& tagged, const FmHeadMap* root);
-
-  static const FmHeadMap* getHeadMap(const FmHeadMap* root,
-				     std::vector<int>::const_iterator it,
-				     std::vector<int>::const_iterator end,
-				     int parentAssemblyID = 0);
-
-  static void displayMembers(int typeID, const FmHeadMap* root);
-};
+  void resolveObject(FmBase* obj);
+  void initAfterResolveObject(FmBase* obj);
+}
 
 #endif

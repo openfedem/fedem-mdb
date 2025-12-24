@@ -229,7 +229,7 @@ double FmTurbine::getRotorSize() const
 
 void FmTurbine::draw() const
 {
-  FmDB::displayAll(*this->getHeadMap());
+  FmDB::displayAll(this->getHeadMap());
 }
 
 
@@ -246,7 +246,7 @@ std::ostream& FmTurbine::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
@@ -710,7 +710,7 @@ std::ostream& FmTower::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
@@ -772,7 +772,7 @@ std::ostream& FmNacelle::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
@@ -829,7 +829,7 @@ std::ostream& FmGenerator::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
@@ -889,7 +889,7 @@ std::ostream& FmGearBox::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
@@ -953,7 +953,7 @@ std::ostream& FmShaft::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
@@ -1012,7 +1012,7 @@ std::ostream& FmRotor::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 
@@ -1070,7 +1070,7 @@ std::ostream& FmBlade::writeFMF(std::ostream& os)
   os <<"}\n\n";
 
   if (myModelFile.getValue().empty())
-    FmDB::reportMembers(os,*this->getHeadMap());
+    FmDB::reportMembers(os,this->getHeadMap());
   else
     this->FmSubAssembly::writeFMF(myModelFile.getValue());
 

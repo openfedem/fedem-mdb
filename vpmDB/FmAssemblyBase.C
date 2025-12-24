@@ -43,7 +43,7 @@ void FmAssemblyBase::setLocalCS(const FaMat34& cs, bool updateLoc)
   if (updateLoc)
     this->updateLocation();
 
-  FmDB::displayAll(*this->getHeadMap());
+  FmDB::displayAll(this->getHeadMap());
 }
 
 
