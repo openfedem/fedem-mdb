@@ -1089,6 +1089,8 @@ void FmPart::updateMassProperties()
     // We have a generic part without a FE data file.
     // Calculate mass properties from the associated CAD data file, if any.
     std::string cadFile = this->getGeometryFile();
+    if (FFaLowerCaseString(FFaFilePath::getExtension(cadFile)) == "obj")
+      myCalculateMass.setValue(EXPLICIT); // not implemented for obj-files
     if (!cadFile.empty() && myCalculateMass.getValue() == FROM_GEOMETRY)
     {
       ListUI <<"  -> Calculating mass properties for "<< this->getIdString(true)
