@@ -157,11 +157,11 @@ FmAnalysis::FmAnalysis()
   FFA_FIELD_DEFAULT_INIT(solverAddOpts, "SOLVER_ADD_OPTIONS");
   FFA_FIELD_DEFAULT_INIT(stressAddOpts, "STRESS_ADD_OPTIONS");
 
-  FFA_FIELD_INIT(useRamSizeGSF, true,"USE_RAMSIZE_GSF_SOLVER");
+  FFA_FIELD_INIT(useRamSizeGSF,false,"USE_RAMSIZE_GSF_SOLVER");
   FFA_FIELD_INIT(autoRamSizeGSF,true,"AUTO_RAMSIZE_GSF_SOLVER");
   FFA_FIELD_INIT(ramSizeGSF,       0,"RAMSIZE_GSF_SOLVER");
 
-  FFA_FIELD_INIT(useRamSizeBmat, true,"USE_RAMSIZE_RECOVERY_MATRIX");
+  FFA_FIELD_INIT(useRamSizeBmat,false,"USE_RAMSIZE_RECOVERY_MATRIX");
   FFA_FIELD_INIT(autoRamSizeBmat,true,"AUTO_RAMSIZE_RECOVERY_MATRIX");
   FFA_FIELD_INIT(ramSizeBmat,       0,"RAMSIZE_RECOVERY_MATRIX");
 
@@ -252,11 +252,11 @@ bool FmAnalysis::readAndConnect(std::istream& is, std::ostream&)
     else if (shadowPosAlg.getValue() == 0)
     {
       obj->defaultShadowPosAlg.setValue(3);
-      FFaMsg::dialog("This model used the depreciated \"Max triangle, with unit offset\" option in the\n"
-		     "\"Default positioning algorithm for the co-rotated reference coordinate system\"\n"
-		     "menu. This is now changed to \"Max triangle, with scaled offset\" instead.\n\n"
-		     "This change may affect the simulation, if the model contains Parts that\n"
-		     "rely on the default positioning algorithm.",FFaMsg::WARNING);
+      FFaMsg::dialog("This model used the deprecated \"Max triangle, with unit offset\" option in the\n"
+                     "\"Default positioning algorithm for the co-rotated reference coordinate system\"\n"
+                     "menu. This is now changed to \"Max triangle, with scaled offset\" instead.\n\n"
+                     "This change may affect the simulation, if the model contains Parts that\n"
+                     "rely on the default positioning algorithm.", FFaMsg::WARNING);
     }
     else
       obj->defaultShadowPosAlg.setValue(shadowPosAlg.getValue());
@@ -275,12 +275,21 @@ bool FmAnalysis::readAndConnect(std::istream& is, std::ostream&)
   if (old && obj->numEigenmodes.getValue() == 0)
     obj->numEigenmodes.setValue(old->numEigenmodes.getValue());
 
+  if (FmDB::getModelFileVer() < FFaVersionNumber(8,1,2,8))
+  {
+    // The default used to be true for these settings, but they should be false
+    if (obj->useRamSizeGSF.setValue(false))
+      ListUI <<"  -> Resetting the FE model Reducer out-of-core option to OFF.\n";
+    if (obj->useRamSizeBmat.setValue(false))
+      ListUI <<"  -> Resetting the Recovery matrix out-of-core option to OFF.\n";
+  }
+
   return obj->cloneOrConnect();
 }
 
 
 bool FmAnalysis::localParse(const char* keyWord, std::istream& activeStatement,
-			    FmAnalysis* obj)
+                            FmAnalysis* obj)
 {
   enum { MAX_EIGENMODES = 1,
          ABSOLUTE_INTEGRATION_TOLERANCE,
@@ -317,6 +326,7 @@ bool FmAnalysis::localParse(const char* keyWord, std::istream& activeStatement,
 				    "CURR_SCALE",
 				    NULL};
 
+  bool defsonly;
   int tmpInt;
   double tmp;
   switch (FaParse::findIndex(key_words, keyWord))
@@ -353,7 +363,6 @@ bool FmAnalysis::localParse(const char* keyWord, std::istream& activeStatement,
       break;
 
     case STRESS_DEFORMATIONS_ONLY:
-      bool defsonly;
       activeStatement >> defsonly;
       obj->stressDeformation.setValue(true);
       obj->stressStressTensor.setValue(!defsonly);
@@ -419,21 +428,18 @@ void FmAnalysis::initAfterResolve()
 
   if (seaEngine == 0) return;
 
-  FmMathFuncBase* sfunc = NULL;
-  FmBase* found = FmDB::findID(FmEngine::getClassTypeID(),seaEngine);
-  if (found) sfunc = static_cast<FmEngine*>(found)->getFunction();
-  if (sfunc)
-  {
-    sfunc->setUserDescription(found->getUserDescription());
-    sfunc->setFunctionUse(FmMathFuncBase::WAVE_FUNCTION);
-    FmDB::getSeaStateObject()->waveFunction.setRef(sfunc);
-    FmModelMemberBase* user = NULL;
-    if (!found->hasReferringObjs(user))
+  if (FmBase* found = FmDB::findID(FmEngine::getClassTypeID(),seaEngine); found)
+    if (FmMathFuncBase* swf = static_cast<FmEngine*>(found)->getFunction(); swf)
     {
-      static_cast<FmEngine*>(found)->setFunction(NULL);
-      found->erase();
+      swf->setUserDescription(found->getUserDescription());
+      swf->setFunctionUse(FmMathFuncBase::WAVE_FUNCTION);
+      FmDB::getSeaStateObject()->waveFunction.setRef(swf);
+      if (FmModelMemberBase* user; !found->hasReferringObjs(user))
+      {
+        static_cast<FmEngine*>(found)->setFunction(NULL);
+        found->erase();
+      }
     }
-  }
 
   seaEngine = 0;
 }
