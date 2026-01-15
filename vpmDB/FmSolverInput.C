@@ -261,12 +261,18 @@ std::string Fedem::createReducerInput(FmAnalysis* analysis,
   else if (!analysis->autoRamSizeBmat.getValue())
     fcoArgs.add("-Bramsize",analysis->ramSizeBmat.getValue());
   const std::string& addOptions = analysis->reducerAddOpts.getValue();
-  if (addOptions.find("-gsfSolver") != std::string::npos) {
-    if (!analysis->useRamSizeGSF.getValue())
+  if (analysis->useRamSizeGSF.getValue())
+  {
+    // Use the out-of-core GSF equation solver
+    if (addOptions.find("-gsfSolver") != std::string::npos)
+      fcoArgs.add("-gsfSolver",2);
+    if (analysis->autoRamSizeGSF.getValue())
       fcoArgs.add("-cachesize",0);
-    else if (!analysis->autoRamSizeGSF.getValue())
+    else if (analysis->ramSizeGSF.getValue() > 0)
       fcoArgs.add("-cachesize",analysis->ramSizeGSF.getValue());
+    // else switch off out-of-core for GSF
   }
+  // else use the SPR solver (default)
 
   int ngen = part->nGenModes.getValue();
   fcoArgs.add("-neval",        part->nEigvalsCalc.getValue());
@@ -614,12 +620,12 @@ std::string Fedem::createSolverInput(FmAnalysis* analysis,
   {
     fcoArgs.addComment("Eigenvalue solution parameters");
     if (analysis->dynamicsEnable.getValue())
-      fcoArgs.add("-eiginc",          analysis->eigenSolveTimeInterval.getValue());
-    fcoArgs.add("-numEigModes",       analysis->numEigenmodes.getValue());
-    fcoArgs.add("-damped",            analysis->dampedEigenvalues.getValue());
-    fcoArgs.add("-eigenshift",        analysis->eigenvalueShiftFactor.getValue());
+      fcoArgs.add("-eiginc",       analysis->eigenSolveTimeInterval.getValue());
+    fcoArgs.add("-numEigModes",    analysis->numEigenmodes.getValue());
+    fcoArgs.add("-damped",         analysis->dampedEigenvalues.getValue());
+    fcoArgs.add("-eigenshift",     analysis->eigenvalueShiftFactor.getValue());
     fcoArgs.add("-addBC_eigensolver", analysis->useBCsOnEigenvalues.getValue());
-    fcoArgs.add("-stressStiffEig",    analysis->useEigStressStiffening.getValue());
+    fcoArgs.add("-stressStiffEig", analysis->useEigStressStiffening.getValue());
   }
 
   if (analysis->solveFrequencyDomain.getValue())
@@ -677,7 +683,7 @@ std::string Fedem::createSolverInput(FmAnalysis* analysis,
   const std::string& addOptions = analysis->solverAddOpts.getValue();
 
   // Check if frs-output of recovery results has been enabled
-  // though the additional solver options
+  // through the additional solver options
   size_t iStr = addOptions.rfind("-partDeformation");
   bool saveStr = iStr == std::string::npos; // use "==" here since default value is 1
   if (!saveStr && iStr+17 < addOptions.size())

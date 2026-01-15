@@ -32,8 +32,8 @@ namespace FmFuncAdmin
 
   bool hasSmartPoints(int type);
 
-  void getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& toFill,
-                                  FmMathFuncBase* compatibleFunc);
+  void getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& types,
+                                  FmMathFuncBase* func);
 
   FmMathFuncBase* createFunction(int type);
 

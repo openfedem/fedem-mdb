@@ -67,17 +67,20 @@ namespace
       numClassTypes = FFaTypeCheck::getNewTypeID(NULL);
 
       std::string funcName(64,' ');
-      const char* fName = funcName.c_str()+4;
+      char* fName = const_cast<char*>(funcName.c_str()+4);
+      int funcIdx = USER_HEADING + 1;
       itsFuncInfoTable[USER_HEADING] = "-- User-defined Functions --";
-      for (int i = 1; i <= nUserFuncs; i++)
-        if (FFaUserFuncPlugin::instance()->getFuncName(funcId[i-1],60,const_cast<char*>(fName)) > 0)
-          itsFuncInfoTable[USER_HEADING+i] = FmFuncTypeInfo(funcName.c_str(),numClassTypes+funcId[i-1]);
+      for (int i = 0; i < nUserFuncs; i++, funcIdx++)
+        if (FFaUserFuncPlugin::instance()->getFuncName(funcId[i],60,fName) > 0)
+          itsFuncInfoTable[funcIdx] = FmFuncTypeInfo(funcName.c_str(),
+                                                     numClassTypes + funcId[i]);
     }
 
     for (std::pair<const int,FmFuncTypeInfo>& info : itsFuncInfoTable)
       info.second.funcMenuEnum = info.first;
 
-    itsFuncInfoTable[WAVE_SINUS].funcMenuEnum = INTERNAL; // Should not appear in Function type menu
+    // Should not appear in the Function type menu
+    itsFuncInfoTable[WAVE_SINUS].funcMenuEnum = INTERNAL;
   }
 }
 
@@ -140,36 +143,32 @@ bool FmFuncAdmin::hasSmartPoints(int type)
 }
 
 
-void FmFuncAdmin::getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& toFill,
-                                             FmMathFuncBase* compatibleFunc)
+void FmFuncAdmin::getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& types,
+                                             FmMathFuncBase* func)
 {
-  toFill.clear();
-  if (!compatibleFunc)
-    return;
-
   if (itsFuncInfoTable.empty())
     initFuncInfoTable();
 
   using FmFuncInfo = std::pair<const int,FmFuncTypeInfo>;
 
-  switch (compatibleFunc->getFunctionUse())
+  switch (func ? func->getFunctionUse() : FmMathFuncBase::GENERAL)
     {
     case FmMathFuncBase::GENERAL:
       // General function, allow all function types,
       // except for internal ones and wave spectrums
-      if (compatibleFunc->getTypeID() == FmfWaveSinus::getClassTypeID())
+      if (func && func->getTypeID() == FmfWaveSinus::getClassTypeID())
         // Internal function with predefined type, don't allow type switching
-        toFill.push_back(itsFuncInfoTable[FmFuncAdmin::WAVE_SINUS]);
+        types.push_back(itsFuncInfoTable[FmFuncAdmin::WAVE_SINUS]);
       else
         for (const FmFuncInfo& info : itsFuncInfoTable)
           if (info.second.funcMenuEnum > FmFuncAdmin::UNDEFINED &&
               info.second.funcMenuEnum != FmFuncAdmin::WAVE_SPECTRUM &&
               info.second.funcMenuEnum != FmFuncAdmin::FILE_SPECTRUM)
-            toFill.push_back(info.second);
+            types.push_back(info.second);
       return;
 
     case FmMathFuncBase::DRIVE_FILE:
-      toFill.push_back(itsFuncInfoTable[FmFuncAdmin::DEVICE]);
+      types.push_back(itsFuncInfoTable[FmFuncAdmin::DEVICE]);
       return;
 
     case FmMathFuncBase::NONE:
@@ -180,20 +179,20 @@ void FmFuncAdmin::getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& toFill
             info.second.funcMenuEnum != FmFuncAdmin::WAVE_SPECTRUM &&
             info.second.funcMenuEnum != FmFuncAdmin::FILE_SPECTRUM &&
             info.second.funcMenuEnum != FmFuncAdmin::REFERENCE)
-          toFill.push_back(info.second);
+          types.push_back(info.second);
       return;
 
     case FmMathFuncBase::WAVE_FUNCTION:
-      toFill.push_back(itsFuncInfoTable[FmFuncAdmin::SINUSOIDAL]);
-      toFill.push_back(itsFuncInfoTable[FmFuncAdmin::WAVE_SPECTRUM]);
-      toFill.push_back(itsFuncInfoTable[FmFuncAdmin::FILE_SPECTRUM]);
+      types.push_back(itsFuncInfoTable[FmFuncAdmin::SINUSOIDAL]);
+      types.push_back(itsFuncInfoTable[FmFuncAdmin::WAVE_SPECTRUM]);
+      types.push_back(itsFuncInfoTable[FmFuncAdmin::FILE_SPECTRUM]);
       // Check if we have user-defined wave functions
       for (const FmFuncInfo& info : itsFuncInfoTable)
         if (info.first > FmFuncAdmin::USER_HEADING &&
             info.second.funcType > numClassTypes)
           if (int fId = info.second.funcType - numClassTypes;
               FFaUserFuncPlugin::instance()->getFlag(fId) & 4)
-            toFill.push_back(info.second);
+            types.push_back(info.second);
       return;
 
     default: // Stiffness or Damper function
@@ -204,7 +203,7 @@ void FmFuncAdmin::getCompatibleFunctionTypes(std::vector<FmFuncTypeInfo>& toFill
     for (const FmFuncInfo& info : itsFuncInfoTable)
       if (std::find(ftyp.begin(),ftyp.end(),info.second.funcType) != ftyp.end())
         if (info.first != FmFuncAdmin::FILE_SPECTRUM)
-          toFill.push_back(info.second);
+          types.push_back(info.second);
 }
 
 
