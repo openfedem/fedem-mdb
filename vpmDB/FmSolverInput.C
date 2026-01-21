@@ -264,7 +264,7 @@ std::string Fedem::createReducerInput(FmAnalysis* analysis,
   if (analysis->useRamSizeGSF.getValue())
   {
     // Use the out-of-core GSF equation solver
-    if (addOptions.find("-gsfSolver") != std::string::npos)
+    if (addOptions.find("-gsfSolver") == std::string::npos)
       fcoArgs.add("-gsfSolver",2);
     if (analysis->autoRamSizeGSF.getValue())
       fcoArgs.add("-cachesize",0);
