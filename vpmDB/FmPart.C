@@ -1464,6 +1464,13 @@ bool FmPart::importPart(const std::string& fileName,
 
   fileVersion = 1; // Don't care about file version on import
   nFENodesTotal += myFEData->getNodeCount();
+#ifdef FT_USE_PROFILER
+#ifdef FT_USE_CMDLINEARG
+  int memPoll = 0;
+  FFaCmdLineArg::instance()->getValue("memPoll",memPoll);
+  if (memPoll > 0) myFEData->dump(this->getLinkIDString(true));
+#endif
+#endif
 
   needsCSupdate.setValue(true);
   originalFEFile.setValue(newFEFile);
@@ -1508,16 +1515,6 @@ bool FmPart::importPart(const std::string& fileName,
   this->updateElemGroupProxies();
   this->updateMassProperties();
   this->updateLoadCases();
-
-#ifdef FT_USE_CMDLINEARG
-  bool doMemPoll = false;
-  FFaCmdLineArg::instance()->getValue("memPoll",doMemPoll);
-  if (doMemPoll)
-  {
-    std::cout << this->getLinkIDString() << std::endl;
-    myFEData->dump();
-  }
-#endif
 
   // Check if the number of component modes was specified on the FE data file
   if (myFEData->getNumberOfGenDofs())
@@ -1637,22 +1634,19 @@ bool FmPart::openFEData()
   {
     FFaMsg::list(" ...OK\n");
     nFENodesTotal += myFEData->getNodeCount();
+#ifdef FT_USE_PROFILER
+#ifdef FT_USE_CMDLINEARG
+    int memPoll = 0;
+    FFaCmdLineArg::instance()->getValue("memPoll",memPoll);
+    if (memPoll > 0) myFEData->dump(this->getLinkIDString(true));
+#endif
+#endif
 
     this->updateElemGroupProxies();
     this->updateMassProperties();
     this->updateLoadCases();
 
     savedCS.setValue(myFEData->calculateChecksum());
-
-#ifdef FT_USE_CMDLINEARG
-    bool doMemPoll = false;
-    FFaCmdLineArg::instance()->getValue("memPoll",doMemPoll);
-    if (doMemPoll)
-    {
-      std::cout << this->getLinkIDString() << std::endl;
-      myFEData->dump();
-    }
-#endif
   }
   else if (myFEData->isTooLarge())
   {
