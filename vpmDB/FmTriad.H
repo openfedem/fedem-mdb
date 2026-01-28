@@ -86,7 +86,7 @@ public:
 
   bool isSlaveTriad(bool realSlavesOnly = false) const;
   bool isMasterTriad(bool realMastersOnly = false) const;
-  bool isMultiMaster() const;
+  bool isMultiMaster(bool includingCam = true) const;
   bool isInLinJoint() const;
 
   virtual std::string getLinkIDString(bool objPrefix) const;
@@ -111,9 +111,9 @@ public:
   FaMat34 getRelativeCS(const FmLink* link) const;
 
   virtual bool isTranslatable() const { return this->isTranslatable(NULL); }
-  virtual bool isRotatable() const { return this->isRotatable(NULL); }
+  virtual char isRotatable() const { return this->isRotatable(NULL); }
   bool isTranslatable(const FmJointBase* jointToIgnore) const;
-  bool isRotatable(const FmJointBase* jointToIgnore) const;
+  char isRotatable(const FmJointBase* jointToIgnore) const;
 
   bool hasReferences() const;
   bool showSymbol() const;

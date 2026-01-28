@@ -130,7 +130,7 @@ public:
 
   virtual void setLocalCS(const FaMat34& localCS);
 
-  virtual bool isRotatable() const { return this->isTranslatable(); }
+  virtual char isRotatable() const { return this->isTranslatable(); }
   virtual bool isTranslatable() const;
 
   // FE mesh generation
