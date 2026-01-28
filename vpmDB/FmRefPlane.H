@@ -26,7 +26,7 @@ public:
   virtual bool clone(FmBase* obj, int depth);
 
   virtual bool isTranslatable() const { return true; }
-  virtual bool isRotatable() const    { return true; }
+  virtual char isRotatable() const    { return true; }
 
   const FmColor& getRGBColor() const { return myRGBColor.getValue(); }
   bool setRGBColor(const FmColor& col);

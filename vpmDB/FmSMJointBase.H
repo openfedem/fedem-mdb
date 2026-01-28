@@ -28,7 +28,7 @@ public:
 
   FmTriad* getItsMasterTriad() const { return itsMasterTriad.getPointer(); }
   void setAsMasterTriad(FmTriad* triad) { itsMasterTriad.setRef(triad); }
-  void removeItsMasterTriad() { itsMasterTriad.setRef(0); }
+  void removeItsMasterTriad() { itsMasterTriad.setRef(NULL); }
   bool swapMasterAndSlave();
 
   virtual void getMasterTriads(std::vector<FmTriad*>& triadsToFill) const;
@@ -37,8 +37,8 @@ public:
   virtual FaMat34 getGlobalCS() const;
   virtual void    setGlobalCS(const FaMat34& globalMat, bool moveAlong = false);
 
-  virtual bool isTranslatable() const ;
-  virtual bool isRotatable() const ;
+  virtual bool isTranslatable() const;
+  virtual char isRotatable() const;
 
   bool isMasterMovedAlong() const { return IAmMovingMasterTriadAlong.getValue(); }
   bool isSlaveMovedAlong()  const { return IAmMovingSlaveTriadAlong.getValue(); }

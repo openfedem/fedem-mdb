@@ -114,16 +114,12 @@ bool FmSMJointBase::isMasterTriad(const FmTriad* triad) const
 FaMat34 FmSMJointBase::getGlobalCS() const
 {
   // The local coordinate system is relative to its independent triad
-  FmTriad* triad = this->getItsMasterTriad();
-  if (triad)
+  if (FmTriad* triad = this->getItsMasterTriad(); triad)
     return triad->getGlobalCS() * this->getLocalCS();
 
   // The local coordinate system is relative to the parent assembly (if any)
   FmAssemblyBase* parent = dynamic_cast<FmAssemblyBase*>(this->getParentAssembly());
-  if (parent)
-    return parent->toGlobal(this->getLocalCS());
-
-  return this->getLocalCS();
+  return parent ? parent->toGlobal(this->getLocalCS()) : this->getLocalCS();
 }
 
 
@@ -140,23 +136,24 @@ void FmSMJointBase::setGlobalCS(const FaMat34& globalMat,
 {
   FmTriad* triad1 = this->getItsMasterTriad();
   FmTriad* triad2 = this->getSlaveTriad();
-  FaMat34 xf2ToJoint;
   FaVec3 jointAngles = this->getRotJointVariables();
 
+  FaMat34 xf2ToJoint;
   if (triad2)
     xf2ToJoint = triad2->getGlobalCS().inverse() * this->getGlobalCS();
 
-  if (triad1)
-    if (moveRelationsAlong && this->isMasterMovedAlong()) {
-      triad1->setGlobalCS(globalMat * this->getLocalCS().inverse());
-      triad1->updateDisplayTopology();
-    }
-    else
-      this->setLocalCS(triad1->getGlobalCS().inverse() * globalMat);
-  else
+  if (!triad1)
     this->setLocalCS(globalMat);
+  else if (moveRelationsAlong && this->isMasterMovedAlong())
+  {
+    triad1->setGlobalCS(globalMat * this->getLocalCS().inverse());
+    triad1->updateDisplayTopology();
+  }
+  else
+    this->setLocalCS(triad1->getGlobalCS().inverse() * globalMat);
 
-  if (triad2 && moveRelationsAlong && this->isSlaveMovedAlong()) {
+  if (triad2 && moveRelationsAlong && this->isSlaveMovedAlong())
+  {
     triad2->setGlobalCS(globalMat * xf2ToJoint.inverse());
     triad2->updateDisplayTopology();
   }
@@ -168,35 +165,29 @@ void FmSMJointBase::setGlobalCS(const FaMat34& globalMat,
 bool FmSMJointBase::isTranslatable() const
 {
   if (this->isMasterMovedAlong())
-  {
-    FmTriad* triad = this->getItsMasterTriad();
-    if (triad && !triad->isTranslatable(this))
-      return false;
-  }
+    if (FmTriad* triad = this->getItsMasterTriad(); triad)
+      if (!triad->isTranslatable(this))
+        return false;
+
   if (this->isSlaveMovedAlong())
-  {
-    FmTriad* triad = this->getSlaveTriad();
-    if (triad && !triad->isTranslatable(this))
-      return false;
-  }
+    if (FmTriad* triad = this->getSlaveTriad(); triad)
+      if (!triad->isTranslatable(this))
+        return false;
 
   return true;
 }
 
-bool FmSMJointBase::isRotatable() const
+char FmSMJointBase::isRotatable() const
 {
   if (this->isMasterMovedAlong())
-  {
-    FmTriad* triad = this->getItsMasterTriad();
-    if (triad && !triad->isRotatable(this))
-      return false;
-  }
+    if (FmTriad* triad = this->getItsMasterTriad(); triad)
+      if (triad && !triad->isRotatable(this))
+        return false;
+
   if (this->isSlaveMovedAlong())
-  {
-    FmTriad* triad = this->getSlaveTriad();
-    if (triad && !triad->isRotatable(this))
-      return false;
-  }
+    if (FmTriad* triad = this->getSlaveTriad(); triad)
+      if (!triad->isRotatable(this))
+        return false;
 
   return true;
 }
@@ -204,8 +195,7 @@ bool FmSMJointBase::isRotatable() const
 
 FaVec3 FmSMJointBase::getTransJointVariables() const
 {
-  FmTriad* triad = this->getSlaveTriad();
-  if (triad)
+  if (FmTriad* triad = this->getSlaveTriad(); triad)
     return this->getGlobalCS().inverse()*triad->getGlobalTranslation();
   else
     return this->getGlobalCS().inverse().translation();
@@ -214,8 +204,7 @@ FaVec3 FmSMJointBase::getTransJointVariables() const
 
 FaVec3 FmSMJointBase::getRotJointVariables() const
 {
-  FmTriad* triad = this->getSlaveTriad();
-  if (triad)
+  if (FmTriad* triad = this->getSlaveTriad(); triad)
     return this->getJointRotations(this->getGlobalCS(),triad->getGlobalCS());
   else
     return this->getJointRotations(this->getGlobalCS(),FaMat34());
@@ -319,8 +308,7 @@ bool FmSMJointBase::cloneLocal(FmBase* obj, int depth)
     return true;
 
   FmSMJointBase* copyObj = static_cast<FmSMJointBase*>(obj);
-  FmTriad* triad = copyObj->getItsMasterTriad();
-  if (triad)
+  if (FmTriad* triad = copyObj->getItsMasterTriad(); triad)
   {
     if (depth == FmBase::DEEP_REPLACE)
       copyObj->removeItsMasterTriad();
