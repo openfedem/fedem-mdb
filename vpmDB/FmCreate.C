@@ -45,33 +45,127 @@
 #include <functional>
 
 
-static FmTriad* getTriadOn(FmBase* obj, const FaVec3& point)
+namespace
 {
-  double posTol = FmDB::getPositionTolerance();
-  FmTriad* retTriad = NULL;
-  if (obj)
+  FmTriad* getTriadOn(FmBase* obj, const FaVec3& point)
   {
-    if (obj->isOfType(FmLink::getClassTypeID()))
-      retTriad = static_cast<FmLink*>(obj)->getTriadAtPoint(point,posTol,true);
-    else if (obj->isOfType(FmTriad::getClassTypeID()))
-      retTriad = static_cast<FmTriad*>(obj);
-    else if (obj->isOfType(FmFreeJoint::getClassTypeID()))
-      retTriad = NULL;
-    else if (obj->isOfType(FmSMJointBase::getClassTypeID()))
-      retTriad = static_cast<FmSMJointBase*>(obj)->getSlaveTriad();
+    double posTol = FmDB::getPositionTolerance();
+    FmTriad* triad = NULL;
+    if (obj)
+    {
+      if (obj->isOfType(FmLink::getClassTypeID()))
+        triad = static_cast<FmLink*>(obj)->getTriadAtPoint(point,posTol,true);
+      else if (obj->isOfType(FmTriad::getClassTypeID()))
+        triad = static_cast<FmTriad*>(obj);
+      else if (obj->isOfType(FmFreeJoint::getClassTypeID()))
+        triad = NULL;
+      else if (obj->isOfType(FmSMJointBase::getClassTypeID()))
+        triad = static_cast<FmSMJointBase*>(obj)->getSlaveTriad();
+    }
+
+    // Compare the specified position with the correct triad position
+    if (!triad || !triad->getGlobalTranslation().equals(point,posTol))
+    {
+      triad = new FmTriad(point); // the positions differ, a new triad is made
+      if (obj && obj->isOfType(FmPart::getClassTypeID()))
+        triad->connect(obj);
+      else
+        triad->connect();
+    }
+
+    return triad;
   }
 
-  // Compare the specified position with the correct triad position
-  if (!retTriad || !retTriad->getGlobalTranslation().equals(point,posTol))
+
+  FaMat33 getCreationMX(const FaVec3& zAxisDir, const FaVec3* yAxisDir = NULL)
   {
-    retTriad = new FmTriad(point); // the positions differ, a new triad is made
-    if (obj && obj->isOfType(FmPart::getClassTypeID()))
-      retTriad->connect(obj);
+    FaVec3 xAxis, yAxis, zAxis;
+
+    // The joint is oriented with the "up" vector closest to
+    // the negative g-vector unless yAxisDir is specified,
+    // and the z-vector in zAxisDir
+
+    if (zAxisDir.length() < FmDB::getPositionTolerance())
+      zAxis.z(1.0);
     else
-      retTriad->connect();
+      zAxis = zAxisDir;
+
+    if (yAxisDir)
+      yAxis = *yAxisDir;
+    else if (FmDB::getGrav().length() < FmDB::getPositionTolerance())
+      yAxis.y(-1.0);
+    else
+      yAxis = -FmDB::getGrav();
+
+    xAxis = yAxis^zAxis;
+    if (xAxis.length() < FmDB::getPositionTolerance())
+    {
+      // The yAxis is either parallel to the zAxis or not given (zero).
+      // Choose the closest global axis instead.
+      double z1 = zAxis.x();
+      double z2 = zAxis.y();
+      double z3 = zAxis.z();
+      if (fabs(z1) < fabs(z2) && fabs(z1) < fabs(z3))
+        xAxis = FaVec3(0.0,-z3,z2); // = [1,0,0]x(Z-axis)
+      else if (fabs(z2) < fabs(z1) && fabs(z2) < fabs(z3))
+        xAxis = FaVec3(z3,0.0,-z1); // = [0,1,0]x(Z-axis)
+      else
+        xAxis = FaVec3(-z2,z1,0.0); // = [0,0,1]x(Z-axis)
+    }
+
+    zAxis.normalize();
+    xAxis.normalize();
+    yAxis = zAxis^xAxis;
+
+    return FaMat33(xAxis,yAxis,zAxis);
   }
 
-  return retTriad;
+
+  void createSMJoint(FmSMJointBase* joint,
+                     const FaVec3& createPoint, const FaVec3* zAxisDir = NULL)
+  {
+    ListUI <<"Creating "<< joint->getUITypeName() <<".\n";
+
+    FmSticker* sticker = new FmSticker(createPoint);
+    FmTriad* triad1 = new FmTriad();
+    FmTriad* triad2 = new FmTriad();
+
+    if (zAxisDir)
+      triad1->setLocalCS(FaMat34(getCreationMX(*zAxisDir),createPoint));
+    else
+      triad1->setLocalCS(FaMat34(createPoint));
+    triad2->setLocalCS(triad1->getLocalCS());
+
+    joint->setAsMasterTriad(triad1);
+    joint->setAsSlaveTriad(triad2);
+    joint->updateLocation();
+
+    triad1->addSticker(sticker);
+
+    triad1->connect();
+    triad2->connect();
+    joint->connect();
+
+    triad1->draw();
+    triad2->draw();
+    sticker->draw();
+    joint->draw();
+  }
+
+
+  FmBase* getCommonParent(const std::vector<FmTriad*>& triads)
+  {
+    if (triads.empty())
+      return NULL;
+
+    // Check if the triads belong to the same sub-assmebly
+    FmBase* parent = triads.front()->getParentAssembly();
+    for (FmTriad* triad : triads)
+      if (triad->getParentAssembly() != parent)
+        return NULL;
+
+    return parent;
+  }
 }
 
 
@@ -134,51 +228,6 @@ FmTriad* Fedem::createTriad(const FaVec3& createPos, FmBase* onObject)
   FFaMsg::list("ERROR: Attachment failure. Triad not created.\n");
   triad->erase();
   return NULL;
-}
-
-
-static FaMat33 getCreationMX(const FaVec3& zAxisDir,
-                             const FaVec3* yAxisDir = NULL)
-{
-  FaVec3 xAxis, yAxis, zAxis;
-
-  // The joint is oriented with the "up" vector closest to
-  // the negative g-vector unless yAxisDir is specified,
-  // and the z-vector in zAxisDir
-
-  if (zAxisDir.length() < FmDB::getPositionTolerance())
-    zAxis = FaVec3(0.0,0.0,1.0);
-  else
-    zAxis = zAxisDir;
-
-  if (yAxisDir)
-    yAxis = *yAxisDir;
-  else if (FmDB::getGrav().length() < FmDB::getPositionTolerance())
-    yAxis =  FaVec3(0.0,-1.0,0.0);
-  else
-    yAxis = -FmDB::getGrav();
-
-  xAxis = yAxis^zAxis;
-  if (xAxis.length() < FmDB::getPositionTolerance())
-  {
-    // The yAxis is either parallel to the zAxis or not given (zero).
-    // Choose the closest global axis instead.
-    double z1 = zAxis.x();
-    double z2 = zAxis.y();
-    double z3 = zAxis.z();
-    if (fabs(z1) < fabs(z2) && fabs(z1) < fabs(z3))
-      xAxis = FaVec3(0.0,-z3,z2); // = [1,0,0]x(Z-axis)
-    else if (fabs(z2) < fabs(z1) && fabs(z2) < fabs(z3))
-      xAxis = FaVec3(z3,0.0,-z1); // = [0,1,0]x(Z-axis)
-    else
-      xAxis = FaVec3(-z2,z1,0.0); // = [0,0,1]x(Z-axis)
-  }
-
-  zAxis.normalize();
-  xAxis.normalize();
-  yAxis = zAxis^xAxis;
-
-  return FaMat33(xAxis,yAxis,zAxis);
 }
 
 
@@ -360,7 +409,7 @@ void Fedem::createGear(FmBase* first, FmBase* second)
   if (!inputJoint || !outputJoint)
     FFaMsg::list("ERROR: Both input and output joint must be selected.\n");
   else if (inputJoint == outputJoint)
-    FFaMsg::list("ERROR: Different joints must be selected for input and output.\n");
+    FFaMsg::list("ERROR: The same joint was selected for input and output.\n");
   else if (inputJoint->getHPConnection())
     FFaMsg::list("ERROR: Input joint is already in use by a Gear.\n");
   else if (outputJoint->hasHPConnections())
@@ -464,7 +513,7 @@ FmCamJoint* Fedem::createCamJoint(FmTriad* follower, FmBase* subAssembly)
   else if (follower->isSlaveTriad(true))
   {
     ListUI <<"ERROR: "<< follower->getIdString() <<" is already dependent.\n"
-           <<"       It can therefore not be used as follower in a Cam Joint.\n";
+           <<"       Then it can not be used as follower in a Cam Joint.\n";
     return NULL;
   }
 
@@ -477,39 +526,6 @@ FmCamJoint* Fedem::createCamJoint(FmTriad* follower, FmBase* subAssembly)
   cam->draw();
 
   return cam;
-}
-
-
-static void createSMJoint(FmSMJointBase* joint,
-                          const FaVec3& createPoint,
-                          const FaVec3* zAxisDir = NULL)
-{
-  ListUI <<"Creating "<< joint->getUITypeName() <<".\n";
-
-  FmSticker* sticker = new FmSticker(createPoint);
-  FmTriad* triad1 = new FmTriad();
-  FmTriad* triad2 = new FmTriad();
-
-  if (zAxisDir)
-    triad1->setLocalCS(FaMat34(getCreationMX(*zAxisDir),createPoint));
-  else
-    triad1->setLocalCS(FaMat34(createPoint));
-  triad2->setLocalCS(triad1->getLocalCS());
-
-  joint->setAsMasterTriad(triad1);
-  joint->setAsSlaveTriad(triad2);
-  joint->updateLocation();
-
-  triad1->addSticker(sticker);
-
-  triad1->connect();
-  triad2->connect();
-  joint->connect();
-
-  triad1->draw();
-  triad2->draw();
-  sticker->draw();
-  joint->draw();
 }
 
 
@@ -600,33 +616,40 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
 {
   FmSMJointBase* joint = NULL;
   FmTriad* triad2 = dynamic_cast<FmTriad*>(second);
-  if (!triad2) {
+  if (!triad2)
+  {
     ListUI <<"ERROR: Unspecified dependent triad.\n";
     return joint;
   }
-  else if (triad2->isAttached(FmDB::getEarthLink())) {
+  else if (triad2->isAttached(FmDB::getEarthLink()))
+  {
     ListUI <<"ERROR: The dependent triad can not be attached to ground.\n";
     return joint;
   }
 
   FmTriad* triad1 = NULL;
   FmRefPlane* refPlane = NULL;
-  if (!first) {
+  if (!first)
+  {
     std::vector<FmRefPlane*> refPlanes;
     FmDB::getAllRefPlanes(refPlanes);
-    if (!refPlanes.empty()) refPlane = refPlanes.front();
+    if (!refPlanes.empty())
+      refPlane = refPlanes.front();
   }
   else if (!(triad1 = dynamic_cast<FmTriad*>(first)))
     refPlane = dynamic_cast<FmRefPlane*>(first);
 
-  if (triad1) {
-    if (triad2->isAttached(triad1->getOwnerLink(0))) {
+  if (triad1)
+  {
+    if (triad2->isAttached(triad1->getOwnerLink(0)))
+    {
       ListUI <<"ERROR: The dependent triad can not be on the same part"
              <<" as the independent triad.\n";
       return joint;
     }
   }
-  else if (!refPlane) {
+  else if (!refPlane)
+  {
     ListUI <<"ERROR: No reference planes in the model!\n";
     return joint;
   }
@@ -643,7 +666,8 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* second,
     joint = new FmRevJoint();
   else if (jType == FmRigidJoint::getClassTypeID())
     joint = new FmRigidJoint();
-  else {
+  else
+  {
     ListUI <<"ERROR: Unknown point joint type "<< jType <<".\n";
     return joint;
   }
@@ -676,50 +700,70 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   FmMMJointBase* joint = NULL;
   FmTriad* triad1 = dynamic_cast<FmTriad*>(first);
   FmTriad* triad2 = dynamic_cast<FmTriad*>(last);
-  if (!triad1 || !triad2) {
+  if (!triad1 || !triad2)
+  {
     ListUI <<"ERROR: Unspecified independent joint triad(s).\n";
     return joint;
   }
-  else if (triad1->getOwnerPart(0) != triad2->getOwnerPart(0)) {
+  else if (triad1->getOwnerPart(0) != triad2->getOwnerPart(0))
+  {
     ListUI <<"ERROR: The two triads must be on the same part.\n";
     return joint;
   }
 
-  FmTriad* triad3  = dynamic_cast<FmTriad*>(slider);
-  if (triad3 && triad3->isAttached(triad1->getOwnerPart(0))) {
+  FmTriad* triad3 = dynamic_cast<FmTriad*>(slider);
+  if (triad3 && triad3->isAttached(triad1->getOwnerPart(0)))
+  {
     ListUI <<"ERROR: The dependent triad can not be on the same part"
            <<" as the independent triads of the joint.\n";
     return joint;
   }
 
   // First check if the two triads already are used by other line joints
-  Fm1DMaster* line = NULL;
+  bool newLine = true;
+  FmStraightMaster* line = NULL;
   std::vector<FmModelMemberBase*> allObjs;
   FmDB::getAllOfType(allObjs,FmStraightMaster::getClassTypeID());
   for (FmModelMemberBase* obj : allObjs)
-    if ((line = dynamic_cast<Fm1DMaster*>(obj)))
-    {
+    if ((line = dynamic_cast<FmStraightMaster*>(obj)))
       if (triad1 == line->getFirstTriad() && triad2 == line->getLastTriad())
       {
         std::string msg("The selected triads match the end triads of ");
-        FmMMJointBase* other = NULL;
-        if (line->hasReferringObjs(other))
+        if (FmMMJointBase* other; line->hasReferringObjs(other))
           msg += other->getIdString(true);
         else
           msg += line->getIdString(true);
-        msg += ".\nDo you want the new joint to use the same line object?";
-        if (FFaMsg::dialog(msg,FFaMsg::YES_NO))
-          break;
+        msg += ".\nThe new joint then has to use the same line object.";
+        if (!FFaMsg::dialog(msg,FFaMsg::OK_CANCEL))
+          return joint;
+
+        newLine = false; // Use existing multi-master line
+        break;
       }
-      line = NULL;
+
+  FaMat33 orientation;
+  if (newLine)
+  {
+    // Check that the selected end triads can be re-oriented.
+    // If they already are in another multi-master line, they can not.
+    std::string msg;
+    if (triad1->hasReferringObjs(line,"myTriads"))
+      msg = "The first";
+    else if (triad2->hasReferringObjs(line,"myTriads"))
+      msg = "The second";
+    if (!msg.empty())
+    {
+      msg += " selected triad is already present in ";
+      if (FmMMJointBase* other; line->hasReferringObjs(other))
+        msg += other->getIdString(true);
+      else
+        msg += line->getIdString(true);
+      msg += ".\nThen it can not be used to create another line joint.";
+      FFaMsg::dialog(msg,FFaMsg::ERROR);
+      return joint;
     }
 
-  // Define the joint coordinate system
-  FaMat33 orientation;
-  if (line)
-    orientation = triad1->getOrientation();
-  else
-  {
+    // Define the joint coordinate system
     FaVec3& xAxis = orientation[VX];
     FaVec3& yAxis = orientation[VY];
     FaVec3& zAxis = orientation[VZ];
@@ -781,6 +825,18 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   else
     joint->setParentAssembly(triad1->getCommonAncestor(triad2));
 
+  FmPart* part = NULL;
+  if (newLine)
+  {
+    part = triad1->getOwnerPart(0);
+    orientation = triad1->getOrientation();
+    line = new FmStraightMaster();
+    line->setParentAssembly(joint->getParentAssembly());
+    line->addTriad(triad1);
+    line->addTriad(triad2);
+    line->connect();
+  }
+
   if (!triad3)
   {
     triad3 = new FmTriad(0.5*(triad1->getGlobalTranslation() +
@@ -791,15 +847,6 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   joint->setLocalCS(triad3->getLocalCS());
   joint->setAsSlaveTriad(triad3);
 
-  if (!line)
-  {
-    line = new FmStraightMaster();
-    line->setParentAssembly(joint->getParentAssembly());
-    line->addTriad(triad1);
-    line->addTriad(triad2);
-    line->connect();
-  }
-
   joint->setMaster(line);
   triad3->connect();
   joint->connect();
@@ -809,28 +856,28 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   triad3->draw();
   joint->draw();
 
-  // Check if the part connected to the line have other triads along the line
-  // between the two end triads, and offer to add those as joint triads as well
-  FmPart* part = triad1->getOwnerPart(0);
-  if (!part)
+  // If an existing line was used or the first triad is not attached we are done
+  if (!part || !addBetweens)
     return joint;
 
+  // Check if the part connected to the line have other triads along the line
+  // between the two end triads, and offer to add those as joint triads as well
   FaVec3 fstPos = triad1->getGlobalTranslation();
   FaVec3 linVec = triad2->getGlobalTranslation() - fstPos;
   double parTol = FmDB::getParallelTolerance();
 
-  std::vector<FmTriad*>::iterator it;
   std::vector<FmTriad*> triads;
   part->getTriads(triads);
-  for (it = triads.begin(); it != triads.end();)
+  std::vector<FmTriad*>::iterator it = triads.begin();
+  while (it != triads.end())
     if (*it == triad1 || *it == triad2)
-      triads.erase(it);
+      it = triads.erase(it);
     else if (linVec.isParallell((*it)->getGlobalTranslation() - fstPos, parTol))
       ++it;
     else
-      triads.erase(it);
+      it = triads.erase(it);
 
-  if (triads.empty() || !addBetweens)
+  if (triads.empty())
     return joint;
 
   FFaNumStr msg("There are %d triads on the line between the ",triads.size());
@@ -842,27 +889,11 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
            <<": "<< triad->getGlobalTranslation();
   ListUI <<"\n";
 
-  bool ok = true;
   if (addBetweens == 1 || FFaMsg::dialog(msg,FFaMsg::YES_NO))
     for (FmTriad* triad : triads)
-      ok &= line->addTriadOnPoint(triad->getGlobalTranslation());
+      line->addTriadOnPoint(triad->getGlobalTranslation());
 
-  return ok ? joint : NULL;
-}
-
-
-static FmBase* getCommonParent(const std::vector<FmTriad*>& triads)
-{
-  if (triads.empty())
-    return NULL;
-
-  // Check if the triads belong to the same sub-assmebly
-  FmBase* parent = triads.front()->getParentAssembly();
-  for (FmTriad* triad : triads)
-    if (triad->getParentAssembly() != parent)
-      return NULL;
-
-  return parent;
+  return joint;
 }
 
 

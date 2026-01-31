@@ -59,7 +59,7 @@ public:
   virtual std::string getLinkIDString(bool = false) const { return ""; }
 
   virtual bool isTranslatable() const { return false; }
-  virtual bool isRotatable() const { return false; }
+  virtual char isRotatable() const { return false; }
 
   FmAssemblyBase* getPositionedAssembly() const;
 

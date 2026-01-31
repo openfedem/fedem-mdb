@@ -1251,13 +1251,25 @@ bool FmTriad::hasOnlyFreeJoints() const
 }
 
 
-bool FmTriad::isMultiMaster() const
+bool FmTriad::isMultiMaster(bool includingCam) const
 {
   std::vector<Fm1DMaster*> lines;
   this->getReferringObjs(lines,"myTriads");
-  for (Fm1DMaster* line : lines)
-    if (FmMMJointBase* joint; line->hasReferringObjs(joint,"myMaster"))
-      return true;
+  if (includingCam)
+  {
+    for (Fm1DMaster* line : lines)
+      if (FmMMJointBase* joint; line->hasReferringObjs(joint,"myMaster"))
+        return true;
+  }
+  else
+  {
+    std::vector<FmMMJointBase*> joints;
+    for (Fm1DMaster* line : lines)
+      line->getReferringObjs(joints,"myMaster");
+    for (FmMMJointBase* joint : joints)
+      if (!joint->isOfType(FmCamJoint::getClassTypeID()))
+        return true;
+  }
 
   return false;
 }
@@ -1268,16 +1280,7 @@ bool FmTriad::isInLinJoint() const
   if (FmMMJointBase* joint; this->hasReferringObjs(joint,"itsSlaveTriad"))
     return !joint->isOfType(FmCamJoint::getClassTypeID());
 
-  std::vector<FmMMJointBase*> joints;
-  std::vector<Fm1DMaster*> lines;
-  this->getReferringObjs(lines,"myTriads");
-  for (Fm1DMaster* line : lines)
-    line->getReferringObjs(joints,"myMaster");
-  for (FmMMJointBase* joint : joints)
-    if (!joint->isOfType(FmCamJoint::getClassTypeID()))
-      return true;
-
-  return false;
+  return this->isMultiMaster(false);
 }
 
 
@@ -1407,17 +1410,17 @@ void FmTriad::getTireBinding(std::vector<FmTire*>& tires) const
 
 void FmTriad::getEntities(std::vector<FmSensorChoice>& choicesToFill, int)
 {
-  choicesToFill.clear();
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::POS]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::LOCAL_VEL]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::GLOBAL_VEL]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::LOCAL_ACC]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::GLOBAL_ACC]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::LOCAL_FORCE]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::GLOBAL_FORCE]);
+  choicesToFill = {
+    itsEntityTable[FmIsMeasuredBase::POS],
+    itsEntityTable[FmIsMeasuredBase::LOCAL_VEL],
+    itsEntityTable[FmIsMeasuredBase::GLOBAL_VEL],
+    itsEntityTable[FmIsMeasuredBase::LOCAL_ACC],
+    itsEntityTable[FmIsMeasuredBase::GLOBAL_ACC],
+    itsEntityTable[FmIsMeasuredBase::LOCAL_FORCE],
+    itsEntityTable[FmIsMeasuredBase::GLOBAL_FORCE]
+  };
 
-  if (FmTurbine* turbine = FmDB::getTurbineObject();
-      turbine && this->isPartOf(turbine))
+  if (FmTurbine* wt = FmDB::getTurbineObject(); wt && this->isPartOf(wt))
     choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::WIND_SPEED]);
 
   // Check if we a wave function is used
@@ -1437,13 +1440,14 @@ void FmTriad::getEntities(std::vector<FmSensorChoice>& choicesToFill, int)
 
 void FmTriad::getDofs(std::vector<FmSensorChoice>& choicesToFill)
 {
-  choicesToFill.clear();
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::X_TRANS]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::Y_TRANS]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::Z_TRANS]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::X_ROT]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::Y_ROT]);
-  choicesToFill.push_back(itsDofTable[FmIsMeasuredBase::Z_ROT]);
+  choicesToFill = {
+    itsDofTable[FmIsMeasuredBase::X_TRANS],
+    itsDofTable[FmIsMeasuredBase::Y_TRANS],
+    itsDofTable[FmIsMeasuredBase::Z_TRANS],
+    itsDofTable[FmIsMeasuredBase::X_ROT],
+    itsDofTable[FmIsMeasuredBase::Y_ROT],
+    itsDofTable[FmIsMeasuredBase::Z_ROT]
+  };
 }
 
 
@@ -1631,22 +1635,18 @@ void FmTriad::updateChildrenDisplayTopology()
   std::vector<FmLink*> links;
   this->getElementBinding(links);
   for (FmLink* link : links)
-  {
     // Need to check spesifically for beams
     // to ensure visualization is created with updated triads
-    FmBeam* beam = dynamic_cast<FmBeam*>(link);
-    if (beam)
+    if (FmBeam* beam = dynamic_cast<FmBeam*>(link); beam)
     {
       // Update the other end-triad of the connected beam,
       // which is not this triad
-      FmTriad* other = beam->getOtherTriad(this);
-      if (other)
+      if (FmTriad* other = beam->getOtherTriad(this); other)
         other->updateThisTopologyOnly();
       beam->drawObject();
     }
     else
       link->updateThisTopologyOnly();
-  }
 
   std::vector<FmJointBase*> jnts;
   getJointBinding(jnts);
@@ -2110,7 +2110,7 @@ int FmTriad::printAdditionalMass(FILE* fp)
 
 
 /*!
-  This method is used in the Origin tab and the align CS commands
+  This method is used in the Origin tab and the Align CS commands
   to find out if it is possible to translate the triad.
   If it is attached to an FE part, in a line joint, or in a point
   joint and its movability is connected to an "owning" joint,
@@ -2129,9 +2129,8 @@ bool FmTriad::isTranslatable(const FmJointBase* jointToIgnore) const
   this->getReferringObjs(joints,"itsSlaveTriad");
   this->getReferringObjs(joints,"itsMasterTriad");
 
-  // Check if this triad is not coupled to move along with any of
-  // the joints it is a member of
-
+  // Check if this triad is coupled to move along with any of
+  // the point joints it is a member of
   for (FmSMJointBase* joint : joints)
     if (joint != jointToIgnore)
     {
@@ -2148,26 +2147,47 @@ bool FmTriad::isTranslatable(const FmJointBase* jointToIgnore) const
 /*!
   This method is used in the Origin tab and the Align CS commands
   to find out if it is possible to rotate the triad.
-  If it is either in a line joint, a dependent triad in a point joint,
+  If it is either the dependent triad in a point joint,
   or an independent joint triad and its movability is connected to an
   "owning" joint, then it is not allowed to rotate it.
+  If it is an independent triad of a prismatic or cylindric joint,
+  it is only allowed to rotate about the local Z-axis of the joint.
 */
 
-bool FmTriad::isRotatable(const FmJointBase* jointToIgnore) const
+char FmTriad::isRotatable(const FmJointBase* jointToIgnore) const
 {
-  if (this->isInLinJoint())
+  // Check if this is the dependent triad in a point joint
+  if (FmJointBase* joint = this->getJointWhereSlave(); joint)
+    if (joint->isOfType(FmSMJointBase::getClassTypeID()))
+      if (joint != jointToIgnore) return false;
+
+  // Check if this is an independent triad of a point joint and
+  // is coupled to move along with any of the joints it is a member of
+  std::vector<FmSMJointBase*> joints;
+  this->getReferringObjs(joints,"itsMasterTriad");
+  for (FmSMJointBase* joint : joints)
+    if (joint->isMasterMovedAlong())
+      if (joint != jointToIgnore) return false;
+
+  // Check if this is an independent triad of a prismatic or cylindric joint
+  // with its orientation defined by EulerZYX angles
+  if (!this->isMultiMaster(false))
+    return true;
+  else if (myLocation.getValue().getRotType() != FFa3DLocation::EUL_Z_Y_X)
     return false;
 
-  std::vector<FmSMJointBase*> joints;
-  this->getReferringObjs(joints,"itsSlaveTriad");
-  this->getReferringObjs(joints,"itsMasterTriad");
+  // Check that the object defining the reference coordinate system of the
+  // orientation angles is one of the prismatic/cylindric joints using this
+  std::vector<FmMMJointBase*> jnts;
+  std::vector<Fm1DMaster*> lines;
+  this->getReferringObjs(lines,"myTriads");
+  for (Fm1DMaster* line : lines)
+    line->getReferringObjs(jnts,"myMaster");
+  for (FmMMJointBase* joint : jnts)
+    if (myRotRef.getPointer() == joint)
+      return 3; // can rotate about the local Z-axis of the owning joint
 
-  for (FmSMJointBase* joint : joints)
-    if (joint != jointToIgnore)
-      if (joint->isSlaveTriad(this) || joint->isMasterMovedAlong())
-        return false;
-
-  return true;
+  return false;
 }
 
 
@@ -2249,9 +2269,8 @@ int FmTriad::traverseBeam(FmBase* start, std::vector<FmIsPlottedBase*>& objs)
     // Check if the beamstring is interrupted by point joints.
     // If so, continue the traversal on "the other side" of it,
     // by invoking this method recursively.
-    FmSMJointBase* jnt = NULL;
     triad = static_cast<FmTriad*>(objs.back());
-    if (triad->hasReferringObjs(jnt,"itsMasterTriad"))
+    if (FmSMJointBase* jnt; triad->hasReferringObjs(jnt,"itsMasterTriad"))
       return nBeamElm + traverseBeam(jnt->getSlaveTriad(),objs);
     else if (triad->hasReferringObjs(jnt,"itsSlaveTriad"))
       return nBeamElm + traverseBeam(jnt->getItsMasterTriad(),objs);
