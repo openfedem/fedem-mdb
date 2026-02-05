@@ -2147,7 +2147,7 @@ bool FmTriad::isTranslatable(const FmJointBase* jointToIgnore) const
 /*!
   This method is used in the Origin tab and the Align CS commands
   to find out if it is possible to rotate the triad.
-  If it is either the dependent triad in a point joint,
+  If it is either the dependent triad in a point joint or line joint,
   or an independent joint triad and its movability is connected to an
   "owning" joint, then it is not allowed to rotate it.
   If it is an independent triad of a prismatic or cylindric joint,
@@ -2157,15 +2157,22 @@ bool FmTriad::isTranslatable(const FmJointBase* jointToIgnore) const
 char FmTriad::isRotatable(const FmJointBase* jointToIgnore) const
 {
   // Check if this is the dependent triad in a point joint
-  if (FmJointBase* joint = this->getJointWhereSlave(); joint)
-    if (joint->isOfType(FmSMJointBase::getClassTypeID()))
-      if (joint != jointToIgnore) return false;
+  // or a prismatic or cylindric joint
+  std::vector<FmJointBase*> joints;
+  this->getReferringObjs(joints,"itsSlaveTriad");
+  for (FmJointBase* joint : joints)
+    if (joint->isOfType(FmSMJointBase::getClassTypeID()) &&
+        joint != jointToIgnore && !joint->isGlobalSpringElement())
+      return false;
+    else if (joint->isOfType(FmMMJointBase::getClassTypeID()) &&
+             !joint->isOfType(FmCamJoint::getClassTypeID()))
+      return false;
 
   // Check if this is an independent triad of a point joint and
   // is coupled to move along with any of the joints it is a member of
-  std::vector<FmSMJointBase*> joints;
-  this->getReferringObjs(joints,"itsMasterTriad");
-  for (FmSMJointBase* joint : joints)
+  std::vector<FmSMJointBase*> joints1;
+  this->getReferringObjs(joints1,"itsMasterTriad");
+  for (FmSMJointBase* joint : joints1)
     if (joint->isMasterMovedAlong())
       if (joint != jointToIgnore) return false;
 
@@ -2178,12 +2185,12 @@ char FmTriad::isRotatable(const FmJointBase* jointToIgnore) const
 
   // Check that the object defining the reference coordinate system of the
   // orientation angles is one of the prismatic/cylindric joints using this
-  std::vector<FmMMJointBase*> jnts;
+  std::vector<FmMMJointBase*> joints2;
   std::vector<Fm1DMaster*> lines;
   this->getReferringObjs(lines,"myTriads");
   for (Fm1DMaster* line : lines)
-    line->getReferringObjs(jnts,"myMaster");
-  for (FmMMJointBase* joint : jnts)
+    line->getReferringObjs(joints2,"myMaster");
+  for (FmMMJointBase* joint : joints2)
     if (myRotRef.getPointer() == joint)
       return 3; // can rotate about the local Z-axis of the owning joint
 
