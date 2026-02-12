@@ -63,8 +63,7 @@ void FmIsPositionedBase::setLocalCS(const FaMat34& localMat)
 
 FaMat34 FmIsPositionedBase::getGlobalCS() const
 {
-  FmAssemblyBase* parent = this->getPositionedAssembly();
-  if (parent)
+  if (FmAssemblyBase* parent = this->getPositionedAssembly(); parent)
     return parent->toGlobal(this->getLocalCS());
   else
     return this->getLocalCS();
@@ -73,8 +72,7 @@ FaMat34 FmIsPositionedBase::getGlobalCS() const
 
 void FmIsPositionedBase::setGlobalCS(const FaMat34& globalMat, bool)
 {
-  FmAssemblyBase* parent = this->getPositionedAssembly();
-  if (parent)
+  if (FmAssemblyBase* parent = this->getPositionedAssembly(); parent)
     this->setLocalCS(parent->toLocal(globalMat));
   else
     this->setLocalCS(globalMat);
@@ -221,6 +219,16 @@ bool FmIsPositionedBase::cloneLocal(FmBase* obj, int depth)
   }
 
   return true;
+}
+
+
+std::string FmIsPositionedBase::getLinkIDString(bool objPrefix) const
+{
+  std::string ids = "[" + std::to_string(this->getID()) + "]";
+  if (std::string descr = this->getUserDescription(); !descr.empty())
+    ids += " " + descr;
+
+  return objPrefix ? std::string(this->getUITypeName()) + " " + ids : ids;
 }
 
 
