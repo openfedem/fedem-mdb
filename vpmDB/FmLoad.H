@@ -25,6 +25,7 @@ public:
 	       FmIsPositionedBase* to,   const FaVec3& toPo);
   bool connect(FmBase* parent);
   using FmIsControlledBase::connect;
+
   virtual bool disconnect();
 
   double getInitLoad() const { return itsLoad.getValue(); }
@@ -43,9 +44,6 @@ public:
   void setFromRef(FmIsPositionedBase* p) { this->setRefPoint(p,0); }
   void setToRef(FmIsPositionedBase* p)   { this->setRefPoint(p,1); }
 
-  void moveAttackPointGlobal(const FaVec3& pos, FmLink* link = NULL);
-  void moveAttackPointLocal(const FaVec3& pos, FmLink* link = NULL);
-
   const FaVec3& getLocalFromPoint() const  { return itsPoint[0].getValue(); }
   const FaVec3& getLocalToPoint() const    { return itsPoint[1].getValue(); }
   void setLocalFromPoint(const FaVec3& pt) { this->setLocalPoint(pt,0); }
@@ -56,7 +54,10 @@ public:
   void setGlobalFromPoint(const FaVec3& pt) { this->setGlbPoint(pt,0); }
   void setGlobalToPoint(const FaVec3& pt)   { this->setGlbPoint(pt,1); }
 
-  static void changeAttackPt(FmLink* link, const FaVec3& pt);
+  void moveAttackPoint(const FaVec3& pos, bool global,
+                       FmIsPositionedBase* attackObj = NULL);
+
+  static void changeAttackPt(FmIsPositionedBase* p, const FaVec3& pt);
   static void changeFromPt(FmIsPositionedBase* p, const FaVec3& pt);
   static void changeToPt(FmIsPositionedBase* p, const FaVec3& pt);
 
@@ -75,7 +76,7 @@ private:
   FaVec3 getGlbPoint(int idx) const;
   void   setGlbPoint(const FaVec3& pt, int idx);
 
-  void moveAttackPoint(const FaVec3& localPos, FmLink* link);
+  void changeAttackPoint(const FaVec3& localPos, FmIsPositionedBase* obj);
 
 protected:
   virtual ~FmLoad();
