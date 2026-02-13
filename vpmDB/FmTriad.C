@@ -983,7 +983,7 @@ std::string FmTriad::getLinkIDString(bool objPrefix) const
   if (FmLink* owner = this->getOwnerLink(0); owner)
     return owner->getLinkIDString(objPrefix);
 
-  return std::string("n/a");
+  return this->FmIsPositionedBase::getLinkIDString(objPrefix);
 }
 
 
@@ -1692,25 +1692,25 @@ std::ostream& FmTriad::writeFMF(std::ostream& os)
 }
 
 
-static bool localParse(const char* keyWord, std::istream& is, FmTriad* obj)
-{
-  // To account for spelling error in R4.2 model files
-  if (strcmp(keyWord,"CONNETOR_TYPE") == 0)
-    return FmTriad::parentParse("CONNECTOR_TYPE",is,obj);
-
-  // Conversion of some pre R5.1 keywords
-  if (strcmp(keyWord,"GL_VEL") == 0)
-    return FmTriad::parentParse("INIT_VELOCITY",is,obj);
-  else if (strcmp(keyWord,"GL_ACC") == 0)
-    return FmTriad::parentParse("INIT_ACCELERATION",is,obj);
-
-  return FmTriad::parentParse(keyWord,is,obj);
-}
-
-
 bool FmTriad::readAndConnect(std::istream& is, std::ostream&)
 {
   FmTriad* obj = new FmTriad();
+
+  // Lambda function for converting fields from older model files.
+  auto&& parseField = [obj](const char* keyWord, std::istream& is)
+  {
+    // To account for spelling error in R4.2 model files
+    if (strcmp(keyWord, "CONNETOR_TYPE") == 0)
+      return FmTriad::parentParse("CONNECTOR_TYPE", is, obj);
+
+    // Conversion of some pre R5.1 keywords
+    if (strcmp(keyWord, "GL_VEL") == 0)
+      return FmTriad::parentParse("INIT_VELOCITY", is, obj);
+    else if (strcmp(keyWord, "GL_ACC") == 0)
+      return FmTriad::parentParse("INIT_ACCELERATION", is, obj);
+
+    return FmTriad::parentParse(keyWord, is, obj);
+  };
 
   // Obsolete fields
   FFaObsoleteField<double>  geoTol;
@@ -1723,7 +1723,7 @@ bool FmTriad::readAndConnect(std::istream& is, std::ostream&)
     std::stringstream activeStatement;
     char keyWord[BUFSIZ];
     if (FaParse::parseFMFASCII(keyWord, is, activeStatement, '=', ';'))
-      ::localParse(keyWord, activeStatement, obj);
+      parseField(keyWord, activeStatement);
   }
 
   FFA_OBSOLETE_FIELD_REMOVE("CONNECTOR_GEOMETRY_TOLERANCE", obj);

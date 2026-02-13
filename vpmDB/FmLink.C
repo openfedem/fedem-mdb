@@ -293,10 +293,7 @@ std::string FmLink::getLinkIDString(bool objPrefix) const
 {
   if (this->isEarthLink()) return std::string("Gnd");
 
-  std::string LinkId;
-  if (objPrefix) LinkId = std::string(this->getUITypeName()) + " ";
-  LinkId += FFaNumStr("[%d] ",this->getID()) + this->getUserDescription();
-  return LinkId;
+  return this->FmIsPositionedBase::getLinkIDString(objPrefix);
 }
 
 
