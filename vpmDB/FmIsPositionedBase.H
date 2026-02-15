@@ -56,7 +56,7 @@ public:
 
   virtual void updateChildrenDisplayTopology();
 
-  virtual std::string getLinkIDString(bool = false) const { return ""; }
+  virtual std::string getLinkIDString(bool objPrefix = false) const;
 
   virtual bool isTranslatable() const { return false; }
   virtual char isRotatable() const { return false; }
@@ -82,7 +82,7 @@ protected:
 
   virtual bool cloneLocal(FmBase* obj, int depth);
   static  bool localParse(const char* keyWord, std::istream& activeStatement,
-			  FmIsPositionedBase* obj);
+                          FmIsPositionedBase* obj);
 
   FFaReference<FmIsPositionedBase> myPosRef;
   FFaField<FFaReferenceBase*>      myPosRefField;

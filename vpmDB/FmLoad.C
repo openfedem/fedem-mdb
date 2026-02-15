@@ -68,17 +68,16 @@ bool FmLoad::connect(FmBase* parent)
 {
   bool status = this->mainConnect();
 
-  if (parent)
-    if (parent->isOfType(FmTriad::getClassTypeID()))
-      this->setOwnerTriad(static_cast<FmTriad*>(parent));
+  if (parent && parent->isOfType(FmTriad::getClassTypeID()))
+    this->setOwnerTriad(static_cast<FmTriad*>(parent));
 
   return status;
 }
 
 
 bool FmLoad::connect(FmTriad* tr,
-		     FmIsPositionedBase* l1, const FaVec3& p1,
-		     FmIsPositionedBase* l2, const FaVec3& p2)
+                     FmIsPositionedBase* l1, const FaVec3& p1,
+                     FmIsPositionedBase* l2, const FaVec3& p2)
 {
   bool status = this->mainConnect();
 
@@ -112,47 +111,40 @@ void FmLoad::setRefPoint(FmIsPositionedBase* p, int idx)
 }
 
 
-void FmLoad::moveAttackPointGlobal(const FaVec3& pos, FmLink* link)
+void FmLoad::moveAttackPoint(const FaVec3& pos, bool global,
+                             FmIsPositionedBase* attackObj)
 {
-  FmTriad* ownerTriad = this->getOwnerTriad();
-  FmLink*  attackLink = !link && ownerTriad ? ownerTriad->getOwnerLink() : link;
+  if (!attackObj)
+    if (FmTriad* ownerTriad = this->getOwnerTriad(); ownerTriad)
+      attackObj = ownerTriad->getOwnerLink();
 
-  // convert point from global to local coordinates for the chosen link
-  if (attackLink)
-    this->moveAttackPoint(attackLink->getLocalCS().inverse()*pos, attackLink);
+  if (attackObj && global)
+    // Convert point from global to local coordinates for the attacked object
+    this->changeAttackPoint(attackObj->getLocalCS().inverse()*pos, attackObj);
   else
-    this->moveAttackPoint(pos, attackLink);
+    this->changeAttackPoint(pos, attackObj);
 }
 
 
-void FmLoad::moveAttackPointLocal(const FaVec3& pos, FmLink* link)
+void FmLoad::changeAttackPoint(const FaVec3& localPos, FmIsPositionedBase* obj)
 {
-  FmTriad* ownerTriad = this->getOwnerTriad();
-  FmLink*  attackLink = !link && ownerTriad ? ownerTriad->getOwnerLink() : link;
-
-  this->moveAttackPoint(pos, attackLink);
-}
-
-
-void FmLoad::moveAttackPoint(const FaVec3& localPos, FmLink* link)
-{
+  FmTriad* newTriad = NULL;
   FmTriad* oldTriad = this->getOwnerTriad();
-  if (link)
+  if (FmLink* link  = dynamic_cast<FmLink*>(obj); link)
   {
     FaVec3 loadPos = localPos;
     double tolerance = FmDB::getPositionTolerance();
-    FmPart* part = dynamic_cast<FmPart*>(link);
-    if (part && !part->useGenericProperties.getValue())
+    if (FmPart* part = dynamic_cast<FmPart*>(link);
+        part && !part->useGenericProperties.getValue())
     {
-      // find position of the FE node that is closest to the given point
-      FFlNode* tmpNode = part->getNodeAtPoint(localPos,tolerance);
-      if (tmpNode)
-	loadPos = tmpNode->getPos();
+      // Find position of the FE node that is closest to the given point
+      if (FFlNode* node = part->getNodeAtPoint(localPos,tolerance); node)
+        loadPos = node->getPos();
       else
-	return;
+        return;
     }
 
-    FmTriad* newTriad = link->getTriadAtPoint(loadPos,tolerance);
+    newTriad = link->getTriadAtPoint(loadPos,tolerance);
     if (!newTriad)
     {
       newTriad = new FmTriad(link->getLocalCS() * loadPos);
@@ -160,9 +152,15 @@ void FmLoad::moveAttackPoint(const FaVec3& localPos, FmLink* link)
       newTriad->connect(link);
       newTriad->draw();
     }
+  }
+  else
+    newTriad = dynamic_cast<FmTriad*>(obj);
+
+  if (newTriad)
+  {
     this->setOwnerTriad(newTriad);
 
-    if (!oldTriad->hasReferences())
+    if (oldTriad && !oldTriad->hasReferences())
       oldTriad->erase();
 
     this->updateDisplayTopology();
@@ -204,10 +202,10 @@ void FmLoad::setGlbPoint(const FaVec3& pt, int idx)
 }
 
 
-void FmLoad::changeAttackPt(FmLink* link, const FaVec3& pt)
+void FmLoad::changeAttackPt(FmIsPositionedBase* p, const FaVec3& pt)
 {
   if (editedLoad)
-    editedLoad->moveAttackPointGlobal(pt,link);
+    editedLoad->moveAttackPoint(pt,true,p);
 }
 
 
@@ -245,8 +243,7 @@ bool FmLoad::cloneLocal(FmBase* obj, int depth)
     return true;
 
   FmLoad* copyObj = static_cast<FmLoad*>(obj);
-  FmTriad* owner = copyObj->getOwnerTriad();
-  if (owner)
+  if (FmTriad* owner = copyObj->getOwnerTriad(); owner)
   {
     this->disconnect();
     this->connect(owner);
@@ -283,10 +280,7 @@ bool FmLoad::detach()
 
 const char* FmLoad::getUITypeName() const
 {
-  if (itsLoadType.getValue() == FORCE)
-    return "Force";
-  else
-    return "Torque";
+  return itsLoadType.getValue() == FORCE ? "Force" : "Torque";
 }
 
 
@@ -305,15 +299,6 @@ std::ostream& FmLoad::writeFMF(std::ostream& os)
 }
 
 
-static bool localParse(const char* keyWord, std::istream& is, FmLoad* obj)
-{
-  // Conversion of old keywords
-  if (strcmp(keyWord,"INIT_LOAD") == 0)
-    return FmLoad::parentParse("VALUE",is,obj);
-
-  return FmLoad::parentParse(keyWord,is,obj);
-}
-
 bool FmLoad::readAndConnect(std::istream& is, std::ostream&)
 {
   FmLoad* obj = new FmLoad();
@@ -323,7 +308,13 @@ bool FmLoad::readAndConnect(std::istream& is, std::ostream&)
     std::stringstream activeStatement;
     char keyWord[BUFSIZ];
     if (FaParse::parseFMFASCII(keyWord, is, activeStatement, '=', ';'))
-      ::localParse(keyWord, activeStatement, obj);
+    {
+      // Conversion of old keywords
+      if (strcmp(keyWord,"INIT_LOAD") == 0)
+        FmLoad::parentParse("VALUE", activeStatement, obj);
+      else
+        FmLoad::parentParse(keyWord, activeStatement, obj);
+    }
   }
 
   // If the FROM_OBJECT or the TO_OBJECT was the earth link (ID = -1),
@@ -362,9 +353,6 @@ int FmLoad::printSolverEntry(FILE* fp)
     fprintf(fp,"  updateFlag = %d\n", 1);
 
   // Making the load direction reference points
-  int fromRefLinkNo = 0;
-  int toRefLinkNo   = 0;
-
   FmIsPositionedBase* fromRef = this->getFromRef();
   FmIsPositionedBase* toRef   = this->getToRef();
 
@@ -372,43 +360,55 @@ int FmLoad::printSolverEntry(FILE* fp)
   FaVec3 toPoint   = this->getLocalToPoint();
 
   // the FROM point
+  int refLinkNo = 0, refTriadNo = 0;
   if (!fromRef)
-    ListUI <<" ==> WARNING: No from-object is specified for "<< this->getIdString(true)
-	   <<"\n     Assuming its from-point is referring to the global system.\n";
+    ListUI <<" ==> WARNING: No from-object specified for "<< this->getIdString()
+           <<"\n     Assuming its from-point is referring to global axes.\n";
   else if (fromRef == FmDB::getEarthLink())
     fromPoint = fromRef->getLocalCS()*fromPoint;
   else if (fromRef->isOfType(FmLink::getClassTypeID()))
-    fromRefLinkNo = fromRef->getBaseID();
+    refLinkNo = fromRef->getBaseID();
   else if (fromRef->isOfType(FmTriad::getClassTypeID()))
   {
-    FmLink* fromRefLink = ((FmTriad*)fromRef)->getOwnerLink();
-    if (fromRefLink) fromRefLinkNo = fromRefLink->getBaseID();
+    if (FmLink* fromLink = ((FmTriad*)fromRef)->getOwnerLink(); fromLink)
+      refLinkNo = fromLink->getBaseID();
+    else
+      refTriadNo = fromRef->getBaseID();
   }
-
-  fprintf(fp,"  vec1 = %17.9e %17.9e %17.9e, supEl1Id = %d\n",
-	  fromPoint[0],fromPoint[1],fromPoint[2],fromRefLinkNo);
+  fprintf(fp,"  vec1 = %17.9e %17.9e %17.9e",
+          fromPoint[0],fromPoint[1],fromPoint[2]);
+  if (refLinkNo > 0)
+    fprintf(fp,", supEl1Id = %d",refLinkNo);
+  else if (refTriadNo > 0)
+    fprintf(fp,", triad1Id = %d",refTriadNo);
 
   // the TO point
+  refLinkNo = refTriadNo = 0;
   if (!toRef)
-    ListUI <<" ==> WARNING: No to-object is specified for "<< this->getIdString(true)
-	   <<"\n     Assuming its to-point is referring to the global system.\n";
+    ListUI <<" ==> WARNING: No to-object specified for "<< this->getIdString()
+           <<"\n     Assuming its to-point is referring to global axes.\n";
   else if (toRef == FmDB::getEarthLink())
     toPoint = toRef->getLocalCS()*toPoint;
   else if (toRef->isOfType(FmLink::getClassTypeID()))
-    toRefLinkNo = toRef->getBaseID();
+    refLinkNo = toRef->getBaseID();
   else if (toRef->isOfType(FmTriad::getClassTypeID()))
   {
-    FmLink* toRefLink = ((FmTriad*)toRef)->getOwnerLink();
-    if (toRefLink) toRefLinkNo = toRefLink->getBaseID();
+    if (FmLink* toLink = ((FmTriad*)toRef)->getOwnerLink(); toLink)
+      refLinkNo = toLink->getBaseID();
+    else
+      refTriadNo = toRef->getBaseID();
   }
+  fprintf(fp,"\n  vec2 = %17.9e %17.9e %17.9e",
+          toPoint[0],toPoint[1],toPoint[2]);
+  if (refLinkNo > 0)
+    fprintf(fp,", supEl2Id = %d",refLinkNo);
+  else if (refTriadNo > 0)
+    fprintf(fp,", triad2Id = %d",refTriadNo);
 
-  fprintf(fp,"  vec2 = %17.9e %17.9e %17.9e, supEl2Id = %d\n",
-	  toPoint[0],toPoint[1],toPoint[2],toRefLinkNo);
-
-  if (this->getEngine())
-    fprintf(fp,"  f1 = 1.0, loadEngineId = %d\n", this->getEngine()->getBaseID());
+  if (FmEngine* engine = this->getEngine(); engine)
+    fprintf(fp,"\n  f1 = 1.0, loadEngineId = %d\n", engine->getBaseID());
   else // constant load
-    fprintf(fp,"  f0 = %17.9e\n", this->getInitLoad());
+    fprintf(fp,"\n  f0 = %17.9e\n", this->getInitLoad());
 
   // Variables to be saved:
   // 1 - Global force vector
