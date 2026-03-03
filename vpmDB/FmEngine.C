@@ -125,8 +125,10 @@ std::string FmEngine::getInfoString() const
   if (this->isDriveFile())
     return myFunction->getInfoString();
 
-  if (this->isControlOutEngine())
-    return this->getSensor()->getMeasured()->getInfoString();
+  if (FmSensorBase* sensor = mySensor.getFirstPtr(); sensor)
+    if (mySensor.size() == 1 && sensor->isControlOutput())
+      if (FmIsMeasuredBase* measured = sensor->getMeasured(); measured)
+        return measured->getInfoString();
 
   return this->FmBase::getInfoString();
 }
@@ -158,9 +160,9 @@ bool FmEngine::isActive() const
 
 bool FmEngine::isControlOutEngine() const
 {
-  FmSensorBase* sensor = mySensor.getFirstPtr();
-  if (sensor && mySensor.size() == 1)
-    return sensor->isControlOutput();
+  if (FmSensorBase* sensor = mySensor.getFirstPtr(); sensor)
+    if (mySensor.size() == 1)
+      return sensor->isControlOutput();
 
   return false;
 }
@@ -219,8 +221,7 @@ void FmEngine::setEngineToLinkFunctionFrom(FmEngine* engine)
 
 FmBase* FmEngine::duplicate() const
 {
-  FmVesselMotion* vm = NULL;
-  if (this->hasReferringObjs(vm,"motionEngine"))
+  if (FmVesselMotion* vm; this->hasReferringObjs(vm,"motionEngine"))
     return NULL; // Not allowed to duplicate RAO motion engines directly
 
   FmEngine* newEng = static_cast<FmEngine*>(this->copy(FmBase::SHALLOW));
@@ -286,16 +287,14 @@ bool FmEngine::getUsers(std::vector<FmModelMemberBase*>& toFill,
 
   if (!recursive)
     toFill.insert(toFill.end(),engines.begin(),engines.end());
-  else for (FmModelMemberBase* engine : engines)
-  {
-    FmEngine* e = static_cast<FmEngine*>(engine);
-    if (!e->getUsers(toFill,true))
-      // This engine has no direct users, but add the engine itself instead if
-      // it is an output sensor or specified through a beta feature command
-      if (e->myOutput.getValue() ||
-          betaFeatureEngines.find(e->getBaseID()) != betaFeatureEngines.end())
-        toFill.push_back(engine);
-  }
+  else
+    for (FmModelMemberBase* obj : engines)
+      if (FmEngine* e = static_cast<FmEngine*>(obj); !e->getUsers(toFill,true))
+        // This engine has no direct users, but add the engine itself instead if
+        // it is an output sensor or specified through a beta feature command
+        if (e->myOutput.getValue() ||
+            betaFeatureEngines.find(e->getBaseID()) != betaFeatureEngines.end())
+          toFill.push_back(obj);
 
   return toFill.size() > n;
 }
@@ -312,25 +311,21 @@ FmSensorBase* FmEngine::getUniqueSensor() const
       ++first;
 
   for (size_t i = first; i < nArg; i++)
-  {
-    FmSensorBase* s = this->getSensor(i);
-    if (!s) continue;
-
-    FmEngine* e = dynamic_cast<FmEngine*>(s->getMeasured());
-    if (e)
+    if (FmSensorBase* s = this->getSensor(i); s)
     {
-      FmSensorBase* us = e->getUniqueSensor();
-      if (us != sensor)
+      if (FmEngine* e = dynamic_cast<FmEngine*>(s->getMeasured()); e)
       {
-	if (i == first && us)
-	  sensor = us;
-	else
-	  return NULL;
+        if (FmSensorBase* us = e->getUniqueSensor(); us != sensor)
+        {
+          if (i == first && us)
+            sensor = us;
+          else
+            return NULL;
+        }
       }
+      else if (s != sensor)
+        return NULL;
     }
-    else if (s != sensor)
-      return NULL;
-  }
 
   return sensor;
 }
@@ -346,17 +341,14 @@ bool FmEngine::initGetValue() const
     retVal = myFunction->initGetValue();
 
   size_t nArg = this->getNoArgs();
-  if (nArg == 1 || !retVal) return retVal;
+  if (nArg == 1 || !retVal)
+    return retVal;
 
   for (size_t i = 0; i < nArg; i++)
-  {
-    FmSensorBase* s = this->getSensor(i);
-    if (!s) continue;
-
-    FmEngine* e = dynamic_cast<FmEngine*>(s->getMeasured());
-    if (e && !e->initGetValue())
-      return false;
-  }
+    if (FmSensorBase* s = this->getSensor(i); s)
+      if (FmEngine* eng = dynamic_cast<FmEngine*>(s->getMeasured()); eng)
+        if (!eng->initGetValue())
+          return false;
 
   return true;
 }
@@ -375,12 +367,10 @@ bool FmEngine::getValue(double x, double& y) const
   DoubleVec args(nArg,0.0);
   args.front() = x;
   for (size_t i = 0; i < nArg; i++)
-  {
-    FmSensorBase* s = this->getSensor(i);
-    FmEngine* e = s ? dynamic_cast<FmEngine*>(s->getMeasured()) : NULL;
-    if (e && !e->getValue(x,args[i]))
-      return false;
-  }
+    if (FmSensorBase* s = this->getSensor(i); s)
+      if (FmEngine* eng = dynamic_cast<FmEngine*>(s->getMeasured()); eng)
+        if (!eng->getValue(x,args[i]))
+          return false;
 
   y = myFunction->getValue(args,ierr);
   return ierr == 0;
@@ -464,9 +454,9 @@ void FmEngine::setFunction(FmMathFuncBase* func)
 const std::string& FmEngine::getEntityName(size_t i) const
 {
   if (i < myEntityNames.getValue().size())
-    if (this->getSensor(i))
-      if (this->getSensor(i)->hasEntityChoice())
-	return myEntityNames.getValue()[i];
+    if (FmSensorBase* sensor = this->getSensor(i); sensor)
+      if (sensor->hasEntityChoice())
+        return myEntityNames.getValue()[i];
 
   static const std::string empty;
   return empty;
@@ -476,9 +466,9 @@ const std::string& FmEngine::getEntityName(size_t i) const
 int FmEngine::getEntity(size_t i) const
 {
   if (i < myEntities.getValue().size())
-    if (this->getSensor(i))
-      if (this->getSensor(i)->hasEntityChoice())
-	return myEntities.getValue()[i];
+    if (FmSensorBase* sensor = this->getSensor(i); sensor)
+      if (sensor->hasEntityChoice())
+        return myEntities.getValue()[i];
 
   return -1;
 }
@@ -487,9 +477,9 @@ int FmEngine::getEntity(size_t i) const
 int FmEngine::getDof(size_t i) const
 {
   if (i < myDofs.getValue().size())
-    if (this->getSensor(i))
-      if (this->getSensor(i)->hasDofChoice())
-	return myDofs.getValue()[i];
+    if (FmSensorBase* sensor = this->getSensor(i); sensor)
+      if (sensor->hasEntityChoice())
+        return myDofs.getValue()[i];
 
   return -1;
 }
@@ -583,11 +573,8 @@ bool FmEngine::cloneLocal(FmBase* obj, int depth)
   FmEngine* copyObj = static_cast<FmEngine*>(obj);
 
   if (depth == FmBase::SHALLOW || depth >= FmBase::DEEP_APPEND)
-  {
-    size_t nArg = copyObj->mySensor.size();
-    for (size_t i = 0; i < nArg; i++)
+    for (size_t i = 0; i < copyObj->mySensor.size(); i++)
       this->setSensor(copyObj->getSensor(i),-i);
-  }
 
   if (depth >= FmBase::DEEP_APPEND)
   {
@@ -613,24 +600,15 @@ void FmEngine::initAfterResolve()
     this->setSensor(mySensor[i],i);
     if (dynamic_cast<FmStrainRosette*>(mySensor[i]->getMeasured()))
       if (FmDB::getModelFileVer() < FFaVersionNumber(7,3,2,10) && i < myDofs.getValue().size())
-      {
         // Increment the strain rosette sensor DOF for older model files
         // which only had the GAGE_[123] choices available
-        int iDof = myDofs.getValue()[i];
-        if (iDof < FmIsMeasuredBase::NUM_DOF-4)
+        if (int iDof = myDofs.getValue()[i]; iDof < FmIsMeasuredBase::NUM_DOF-4)
           this->setDof(iDof+4,i);
-      }
   }
-
-  FFaString eDesc(this->getUserDescription());
-  if (eDesc.hasSubString("#TimeStepEngine") && FmDB::getActiveAnalysis()->myTimeIncEngine.isNull())
-    ListUI <<"\n---> WARNING: Ignoring #TimeStepEngine"
-           <<" in the description field for "<< this->getIdString()
-           <<".\n     Select a General Function in the \"Time increment\" field"
-           <<" in the Solver Setup dialog box instead.\n";
 
   // Conversion from older model files: Wave spectrum beta feature
   int nWave, spectrum;
+  const FFaString eDesc = this->getUserDescription();
   if ((nWave = eDesc.getIntAfter("#PiersonMoskowitz")))
     spectrum = FmfWaveSpectrum::PiersonMoskowitz;
   else if ((nWave = eDesc.getIntAfter("#JONSWAP")))
@@ -651,8 +629,8 @@ void FmEngine::initAfterResolve()
   newFunc->nComp.setValue(nWave < 0 ? -nWave : nWave);
 
   // Move preview curve if old function has one
-  FmCurveSet* curve = oldFunc->getPreviewCurve();
-  if (curve) curve->setFunctionRef(newFunc);
+  if (FmCurveSet* curve = oldFunc->getPreviewCurve(); curve)
+    curve->setFunctionRef(newFunc);
 
   // Transfer the function parameters
   newFunc->myHs.setValue(oldFunc->getAmplitude());
@@ -755,8 +733,7 @@ int FmEngine::printSolverEntry(FILE* fp)
   if (!myFunction.isNull()) // A function is optional
     fprintf(fp,"  functionId = %d\n", myFunction->getBaseID());
 
-  size_t nArg = this->getNoArgs();
-  if (nArg > 0)
+  if (size_t nArg = this->getNoArgs(); nArg > 0)
   {
     fprintf(fp,"  nArg = %u, argSensorId =", (unsigned int)nArg);
     for (size_t i = 0; i < nArg; i++)
