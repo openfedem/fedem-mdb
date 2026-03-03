@@ -11,8 +11,6 @@
 #include "vpmDB/FmSimulationModelBase.H"
 #include "FFaLib/FFaString/FFaEnum.H"
 
-typedef std::pair<double,double> FmRange;
-
 
 class FmFppOptions : public FmSimulationModelBase
 {
@@ -22,8 +20,6 @@ public:
   FmFppOptions();
 
   virtual const char* getUITypeName() const { return "FppOptions"; }
-
-  bool useNCode() const;
 
   virtual bool clone(FmBase* obj, int depth);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -61,8 +57,10 @@ public:
   FFaField<double> pvxGate;
   FFaField<double> biaxGate;
 
-  FFaField<int>     histNBins;
+  using FmRange = std::pair<double,double>;
+
   FFaField<FmRange> histRange;
+  FFaField<int>     histNBins;
 
   FFaField<std::string> addOptions;
 };

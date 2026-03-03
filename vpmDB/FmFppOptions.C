@@ -8,7 +8,6 @@
 #include "FFaLib/FFaString/FFaParse.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
-#include "vpmDB/FmDB.H"
 #include "vpmDB/FmFppOptions.H"
 
 
@@ -37,12 +36,6 @@ FmFppOptions::FmFppOptions()
 FmFppOptions::~FmFppOptions()
 {
   this->disconnect();
-}
-
-
-bool FmFppOptions::useNCode() const
-{
-  return addOptions.getValue().find("#useNCode") < std::string::npos;
 }
 
 
@@ -108,7 +101,7 @@ bool FmFppOptions::readAndConnect(std::istream& is, std::ostream&)
 	 <<"\n     in the \"Model Preferences\" dialog.\n";
 
   if (histMaxX.wasOnFile() && histMinX.wasOnFile())
-    obj->histRange.setValue(std::make_pair(histMinX.getValue(),histMaxX.getValue()));
+    obj->histRange.setValue({histMinX.getValue(),histMaxX.getValue()});
 
   if (histStressType.wasOnFile() && histStrainType.wasOnFile())
   {
