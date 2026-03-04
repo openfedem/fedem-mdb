@@ -19,6 +19,11 @@ FmGenericDBObject::FmGenericDBObject()
 {
   Fmd_CONSTRUCTOR_INIT(FmGenericDBObject);
 
+  // Add the base ID to the list of fields to be saved in the model file,
+  // as this object may be referred by other Generic DB objects in the model.
+  // It should therefore preserve the same base ID from session to session.
+  FFA_FIELD_INIT(myBaseID, -1, "BASE_ID");
+
   FFA_FIELD_DEFAULT_INIT(objectType,"OBJECT_TYPE");
   FFA_FIELD_DEFAULT_INIT(objectDefinition,"OBJECT_DEFINITION");
 }
@@ -70,10 +75,18 @@ bool FmGenericDBObject::readAndConnect(std::istream& is, std::ostream&)
 
 int FmGenericDBObject::printSolverEntry(FILE* fp)
 {
+  std::string definition = objectDefinition.getValue();
+  // Remove trailing newlines, if any
+  while (definition.back() == '\n')
+    definition.pop_back();
+  // Insert two spaces in front of each line
+  for (size_t i = definition.size(); i > 0; i--)
+    if (definition[i] == '\n')
+      definition.insert(i+1,2,' ');
+
   fprintf(fp, "'Generic DB-object\n");
   fprintf(fp, "&%s\n", objectType.getValue().c_str());
   this->printID(fp);
-  fprintf(fp, "%s\n", objectDefinition.getValue().c_str());
-  fprintf(fp, "/\n\n");
+  fprintf(fp, "  %s\n/\n\n", definition.c_str());
   return 0;
 }
