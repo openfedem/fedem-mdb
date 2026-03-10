@@ -12,7 +12,7 @@
 #include "vpmDB/FmGenericDBObject.H"
 
 
-Fmd_DB_SOURCE_INIT(FcGENERIC_DB_OBJECT, FmGenericDBObject, FmSimulationModelBase);
+Fmd_DB_SOURCE_INIT(FcGENERIC_DB_OBJECT, FmGenericDBObject, FmStructPropertyBase);
 
 
 FmGenericDBObject::FmGenericDBObject()

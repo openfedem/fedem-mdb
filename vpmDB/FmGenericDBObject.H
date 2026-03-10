@@ -11,14 +11,12 @@
 #include "vpmDB/FmSimulationModelBase.H"
 
 
-class FmGenericDBObject : public FmSimulationModelBase
+class FmGenericDBObject : public FmStructPropertyBase
 {
   Fmd_DB_HEADER_INIT();
 
 public:
   FmGenericDBObject();
-
-  virtual bool isListable() const { return true; }
 
   virtual const char* getUITypeName() const { return "Generic object"; }
 
