@@ -95,21 +95,17 @@ bool FmSolverParser::preSimuleCheck()
   std::vector<FmSensorBase*> allSensors;
   FmDB::getAllSensors(allSensors);
   for (FmSensorBase* sens : allSensors)
-  {
-    FmStrainRosette* ros = dynamic_cast<FmStrainRosette*>(sens->getMeasured());
-    if (ros)
+    if (FmStrainRosette* ros = dynamic_cast<FmStrainRosette*>(sens->getMeasured()); ros)
     {
       std::vector<FmEngine*> engines;
       sens->getEngines(engines);
       for (FmEngine* eng : engines)
-        if (eng->isActive())
-          if (ros->rosetteLink->enforceStrainRosetteRecovery())
-            ListUI <<"  -> Activating strain rosette recovery during dynamics"
-                   <<" simulation\n     for "<< ros->rosetteLink->getIdString()
-                   <<" since it is used as argument in "<< eng->getIdString()
-                   <<"\n";
+        if (eng->isActive() && ros->rosetteLink->enforceStrainRosetteRecovery())
+          ListUI <<"  -> Activating strain rosette recovery during dynamics"
+                 <<" simulation\n     for "<< ros->rosetteLink->getIdString()
+                 <<", since it is used as argument in "<< eng->getIdString()
+                 <<".\n";
     }
-  }
 
   FmfSpline::setAllSplineICODE();
   return true;
@@ -172,9 +168,21 @@ int FmSolverParser::writeFullFile()
 
 int FmSolverParser::writeHeading()
 {
+  FmMechanism* mech = FmDB::getMechanismObject();
+  FFaString mDesc = mech->getUserDescription();
+  if (mDesc.hasSubString("#UseEngines"))
+  {
+    // Beta feature: Flag usage of engines not referred by other objects.
+    // For instance, if a Generic DB object is defined referring to an engine
+    // object otherwise not used, it needs to be listed by #UseEngines
+    // to ensure that it is written to the solver input file.
+    int engineIds[100];
+    if (int nEng = mDesc.getIntsAfter("#UseEngines",100,engineIds); nEng > 0)
+      FmEngine::betaFeatureEngines.insert(engineIds,engineIds+nEng);
+  }
+
   fprintf(myFile,"&HEADING\n");
-  fprintf(myFile,"  modelFile = '%s'\n",
-	  FmDB::getMechanismObject()->getModelFileName().c_str());
+  fprintf(myFile,"  modelFile = '%s'\n",mech->getModelFileName().c_str());
   fprintf(myFile,"  version = 3.0\n");
   fprintf(myFile,"/\n\n");
   return 0;
@@ -191,16 +199,7 @@ int FmSolverParser::writeEnvironment()
   fprintf(myFile,"  gravity  =%17.9e %17.9e %17.9e\n",grav[0],grav[1],grav[2]);
   if (seastate)
   {
-    FFaString mDesc = FmDB::getMechanismObject()->getUserDescription();
     fprintf(myFile,"  rhoWater =%17.9e\n",seastate->waterDensity.getValue());
-    if (mDesc.hasSubString("#MudDensity"))
-      ListUI <<"\n---> WARNING: Ignoring #MudDensity in the"
-	     <<" Model description field of the Model Preferences dialog box."
-	     <<"\n     Set this in the Riser property view instead.\n";
-    if (mDesc.hasSubString("#MarineGrowth"))
-      ListUI <<"\n---> WARNING: Ignoring #MarineGrowth in the"
-	     <<" Model description field of the Model Preferences dialog box."
-	     <<"\n     Set this in the Sea Environment dialog box instead.\n";
     double rhoMG = seastate->growthDensity.getValue();
     double thickMG = seastate->growthThickness.getValue();
     const std::pair<double,double>& limMG = seastate->growthLimit.getValue();
@@ -225,8 +224,10 @@ int FmSolverParser::writeEnvironment()
     }
 
     // Beta feature: Wave theory option
-    if (mDesc.hasSubString("#waveTheory"))
-      fprintf(myFile,"  waveTheory = %d\n",mDesc.getIntAfter("waveTheory"));
+    FFaString mDesc = FmDB::getMechanismObject()->getUserDescription();
+    if (int waveTheory = mDesc.getIntAfter("#waveTheory"); waveTheory > 0)
+      fprintf(myFile,"  waveTheory = %d\n",waveTheory);
+
     FmMathFuncBase* wFunc = seastate->waveFunction.getPointer();
     if (wFunc) fprintf(myFile,"  waveFunction = %d\n",wFunc->getBaseID());
     FmMathFuncBase* cFunc = seastate->currFunction.getPointer();
@@ -304,17 +305,6 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
       // Beta feature: Specify element groups for stress recovery
       std::string elmGroups = lDesc.getTextAfter("#recover-stress","#");
 
-      if (recover%2 < 1 && lDesc.hasSubString("#recover-stress"))
-        ListUI <<"\n---> WARNING: Ignoring #recover-stress"
-               <<" in the description field for "<< activePart->getIdString()
-               <<".\n     Set this in the \"Advanced\" tab"
-               <<" of the part property panel instead.\n";
-      if (recover < 2 && lDesc.hasSubString("#recover-gage"))
-        ListUI <<"\n---> WARNING: Ignoring #recover-gage"
-               <<" in the description field for "<< activePart->getIdString()
-               <<".\n     Set this in the \"Advanced\" tab"
-               <<" of the part property panel instead.\n";
-
       std::vector<std::string> fmxFiles;
       fmxFiles.reserve(7);
 
@@ -369,8 +359,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
         fprintf(myFile,"\n");
       }
 
-      int ngen = activePart->nGenModes.getValue();
-      if (ngen > 0)
+      if (int ngen = activePart->nGenModes.getValue(); ngen > 0)
         fprintf(myFile,"  numGenDOFs = %d\n",ngen);
 
       if (activePart->hasLoads())
@@ -528,12 +517,6 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
       }
     fprintf(myFile,"  shadowPosAlg = %d\n", shadowPosAlg);
 
-    if (lDesc.hasSubString("#ShadowPosAlg"))
-      ListUI <<"\n---> WARNING: Ignoring #ShadowPosAlg <num>"
-	     <<" in the description field for "<< activePart->getIdString()
-	     <<".\n     Set this in the \"Advanced\" tab"
-	     <<" of the part property window instead.\n";
-
     if (shadowPosAlg == 1)
     {
       // Corotated coordinate system reference triads
@@ -558,8 +541,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
       fprintf(myFile,"  stressStiffFlag = 0\n");
 
     // Beta feature: Projection of internal forces
-    int projFlag = lDesc.getIntAfter("#Projection");
-    if (projFlag > 0)
+    if (int projFlag = lDesc.getIntAfter("#Projection"); projFlag > 0)
       fprintf(myFile,"  projDefFlag = %d\n",projFlag);
 
     // Centripetal force correction
@@ -575,22 +557,6 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
 	break;
       }
 
-    if (lDesc.hasSubString("#MassCorrection"))
-      ListUI <<"\n---> WARNING: Ignoring #MassCorrection"
-	     <<" in the description field for "<< activePart->getIdString()
-	     <<".\n     Set this in the \"Advanced\" tab"
-	     <<" of the part property window instead.\n";
-    if (lDesc.hasSubString("#NoMassCorrection"))
-      ListUI <<"\n---> WARNING: Ignoring #NoMassCorrection"
-	     <<" in the description field for "<< activePart->getIdString()
-	     <<".\n     Set this in the \"Advanced\" tab"
-	     <<" of the part property window instead.\n";
-    if (lDesc.hasSubString("#MassCorrFlag"))
-      ListUI <<"\n---> WARNING: Ignoring #MassCorrFlag <num>"
-	     <<" in the description field for "<< activePart->getIdString()
-	     <<".\n     Set this in the \"Advanced\" tab"
-	     <<" of the part property window instead.\n";
-
     // Scaling of dynamic properties
     double stiffScale = activePart->stiffnessScale.getValue();
     fprintf(myFile,"  stiffScale =%17.9e\n",stiffScale);
@@ -598,25 +564,22 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
     fprintf(myFile,"  massScale  =%17.9e\n",massScale);
 
     // Beta feature: Time-dependent stiffness scaling
-    int stifSclEngine = lDesc.getIntAfter("#StiffScaleEngine");
-    if (stifSclEngine > 0) {
-      fprintf(myFile,"  stiffEngineId = %d\n", stifSclEngine);
-      FmEngine::betaFeatureEngines.insert(stifSclEngine);
+    if (int engineId = lDesc.getIntAfter("#StiffScaleEngine"); engineId > 0) {
+      fprintf(myFile,"  stiffEngineId = %d\n", engineId);
+      FmEngine::betaFeatureEngines.insert(engineId);
     }
 
     // Beta feature: Time-dependent mass scaling
-    int massSclEngine = lDesc.getIntAfter("#MassScaleEngine");
-    if (massSclEngine > 0) {
-      fprintf(myFile,"  massEngineId = %d\n", massSclEngine);
-      FmEngine::betaFeatureEngines.insert(massSclEngine);
+    if (int engineId = lDesc.getIntAfter("#MassScaleEngine"); engineId > 0) {
+      fprintf(myFile,"  massEngineId = %d\n", engineId);
+      FmEngine::betaFeatureEngines.insert(engineId);
     }
 
     // Structural damping coefficients
     fprintf(myFile,"  alpha1 =%17.9e," ,activePart->alpha1.getValue());
     fprintf(myFile,"  alpha2 =%17.9e\n",activePart->alpha2.getValue());
 
-    DoubleVec alpha3, alpha4;
-    if (activePart->getCompModesAlpha(alpha3,1))
+    if (DoubleVec alpha3; activePart->getCompModesAlpha(alpha3,1))
     {
       fprintf(myFile,"  alpha3 =%17.9e",alpha3.front());
       for (j = 1; j < alpha3.size(); j++) {
@@ -625,7 +588,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
       }
       fprintf(myFile,"\n");
     }
-    if (activePart->getCompModesAlpha(alpha4,2))
+    if (DoubleVec alpha4; activePart->getCompModesAlpha(alpha4,2))
     {
       fprintf(myFile,"  alpha4 =%17.9e",alpha4.front());
       for (j = 1; j < alpha4.size(); j++) {
@@ -636,9 +599,8 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
     }
 
     // Possibly time-dependent structural damping
-    int structDmpEngine = activePart->getStructDmpEngineId();
-    if (structDmpEngine > 0)
-      fprintf(myFile,"  strDmpEngineId = %d\n", structDmpEngine);
+    if (int engineId = activePart->getStructDmpEngineId(); engineId > 0)
+      fprintf(myFile,"  strDmpEngineId = %d\n", engineId);
 
     // Part position
     FaMat34 lCS = activePart->getGlobalCS();
@@ -663,8 +625,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
 
     if (cgTriadId > 0)
     {
-      FmModelMemberBase* cgTriad = FmDB::findObject(cgTriadId);
-      if (cgTriad)
+      if (FmModelMemberBase* cgTriad = FmDB::findObject(cgTriadId); cgTriad)
         ListUI <<"  -> Detected center of gravity at "<< cgTriad->getIdString()
 	       <<" for "<< activePart->getIdString() <<"\n";
     }
@@ -860,8 +821,7 @@ int FmSolverParser::writeJoints()
       if (activeJoint->isOfType(FmCamJoint::getClassTypeID()))
       {
 	urSlave = activeJoint->getSlaveTriad()->getGlobalCS();
-	Fm1DMaster* master = ((FmMMJointBase*)activeJoint)->getMaster();
-	if (master)
+	if (Fm1DMaster* master = ((FmMMJointBase*)activeJoint)->getMaster(); master)
 	{
 	  slideValue = master->getSliderPosition(urSlider,urSlave.translation());
 	  ur = urSlider;
@@ -887,19 +847,6 @@ int FmSolverParser::writeJoints()
       fprintf(myFile,"                   %17.9e %17.9e %17.9e %17.9e\n",
 	      ur[0][2],ur[1][2],ur[2][2],ur[3][2]);
 
-      std::string ignored;
-      if (jDesc.hasSubString("#InitTXvel")) ignored.append(" #InitTXvel");
-      if (jDesc.hasSubString("#InitTYvel")) ignored.append(" #InitTYvel");
-      if (jDesc.hasSubString("#InitTZvel")) ignored.append(" #InitTZvel");
-      if (jDesc.hasSubString("#InitRXvel")) ignored.append(" #InitRXvel");
-      if (jDesc.hasSubString("#InitRYvel")) ignored.append(" #InitRYvel");
-      if (jDesc.hasSubString("#InitRZvel")) ignored.append(" #InitRZvel");
-      if (!ignored.empty())
-	ListUI <<"\n---> WARNING: Ignoring"<< ignored
-	       <<" in the description field for "<< activeJoint->getIdString()
-	       <<".\n     Use the \"Initial velocity\" field in the"
-	       <<" joint property window instead.\n";
-
       FmCylJoint* screwJoint = NULL;
       int CVJointID = 0;
       int nJVar = 0;
@@ -916,11 +863,6 @@ int FmSolverParser::writeJoints()
 	// *** REVOLUTE JOINT ***
 
 	fprintf(myFile,"  type         = 1\n");
-	if (jDesc.hasSubString("#FreeZ"))
-	  ListUI <<"\n---> WARNING: Ignoring #FreeZ"
-		 <<" in the description field for "<< activeJoint->getIdString()
-		 <<".\n     Use the \"Z translation DOF\" toggle"
-		 <<" in the joint property window instead.\n";
 
 	iDof.push_back(5);
 	if (activeJoint->isLegalDOF(2))
@@ -1287,11 +1229,6 @@ int FmSolverParser::writeJoints()
 	// *** CAM JOINT ***
 
 	fprintf(myFile,"  type         = 7\n");
-	if (jDesc.hasSubString("#SpringActiveRadius"))
-	  ListUI <<"\n---> WARNING: Ignoring #SpringActiveRadius"
-		 <<" in the description field for "<< activeJoint->getIdString()
-		 <<".\n     Use the \"Thickness\" field"
-		 <<" in the joint property window instead.\n";
 	fprintf(myFile,"  camThickness = %17.9e\n",
 		((FmCamJoint*)activeJoint)->getThickness());
 
@@ -1425,18 +1362,11 @@ int FmSolverParser::writeJoints()
 	fprintf(myFile,"  coeff          = %17.9e\n", screwJoint->getScrewRatio());
 	fprintf(myFile,"/\n\n");
       }
-
-      if (jDesc.find("#JointLoadEngine") != std::string::npos)
-	ListUI <<"\n---> WARNING: Ignoring #JointLoadEngine"
-	       <<" in the description field for "<< activeJoint->getIdString()
-	       <<".\n     Use the \"Load magnitude\" field in the"
-	       <<" joint property window instead.\n";
     }
 
     // Write base springs and yield for all frictions that have stiffness
-    FmFrictionBase* activeFriction = activeJoint->getFriction();
-    if (activeFriction)
-      if (activeFriction->getStickStiffness() > 0.0)
+    if (FmFrictionBase* friction = activeJoint->getFriction(); friction)
+      if (friction->getStickStiffness() > 0.0)
       {
 	fprintf(myFile,"! Friction limit used by joint friction spring\n");
 	fprintf(myFile,"&SPRING_YIELD\n");
@@ -1446,7 +1376,7 @@ int FmSolverParser::writeJoints()
 	fprintf(myFile,"! Friction spring for joint or contact element\n");
 	fprintf(myFile,"&SPRING_BASE\n");
 	activeJoint->printID(myFile);
-	fprintf(myFile,"  s0 = %17.9e\n", activeFriction->getStickStiffness());
+	fprintf(myFile,"  s0 = %17.9e\n", friction->getStickStiffness());
 	fprintf(myFile,"  springYieldId = %d\n", activeJoint->getBaseID());
 	fprintf(myFile,"/\n\n");
       }
@@ -1470,12 +1400,6 @@ int FmSolverParser::writeRotationJointVars(const char* jointVarDefs,
     case FmJointBase::rZXY: iDof[0]=5; iDof[1]=3; iDof[2]=4; break;
     default: return 1;
     }
-
-  if (aJoint->getUserDescription().find("#RotAxisParam") != std::string::npos)
-    ListUI <<"\n---> WARNING: Ignoring #RotAxisParam"
-	   <<" in the description field for "<< aJoint->getIdString()
-	   <<".\n     Use the \"Rotation formulation\" menu in the"
-	   <<" \"Advanced\" tab of the joint property window instead.\n";
 
   int iMat[3];
   switch (aJoint->rotFormulation.getValue())
@@ -1505,13 +1429,7 @@ int FmSolverParser::writeContactElement(FmCamJoint* activeJoint)
   fprintf(myFile,"&CONTACT_ELEMENT\n");
   activeJoint->printID(myFile);
 
-  // Thickness and width of contact surface
-  if (activeJoint->getUserDescription().find("#Width") != std::string::npos)
-    ListUI <<"\n---> WARNING: Ignoring #Width <w>"
-	   <<" in the description field for "<< activeJoint->getIdString()
-	   <<".\n     Use the \"Width\" field"
-	   <<" in the joint property window instead.\n";
-
+  // Thickness/radius and width of contact surface
   if (activeJoint->isUsingRadialContact())
     fprintf(myFile,"  radius =%17.9e\n", activeJoint->getThickness());
   else
@@ -1584,7 +1502,6 @@ int FmSolverParser::writeFriction(FmJointBase* aJoint, const IntVec& iDof)
   // Beta feature: Hydro-, Skin- and Radial friction for pipes (DrillSim)
   FFaString fDesc = aFriction->getUserDescription();
   if (fDesc.hasSubString("#PipeRadius")) {
-    FFaString fDesc = aFriction->getUserDescription();
     double pipeRadius = fDesc.getDoubleAfter("#PipeRadius");
     double outerPipeRadius = fDesc.getDoubleAfter("#OuterPipeRadius");
     double hydroFric = fDesc.getDoubleAfter("#HydroFric");
@@ -1599,14 +1516,13 @@ int FmSolverParser::writeFriction(FmJointBase* aJoint, const IntVec& iDof)
 
   // Beta feature: User-defined normal force via an engine
   FFaString jDesc = aJoint->getUserDescription();
-  int fricFEngine = jDesc.getIntAfter("#FrictionForceEngine");
-  if (fricFEngine > 0) {
+  if (int engineId = jDesc.getIntAfter("#FrictionForceEngine"); engineId > 0) {
     for (i = 0; i < nDof; i++)
-      if (fId[i]) fId[i] = fricFEngine;
+      if (fId[i]) fId[i] = engineId;
     fprintf(myFile,"  frictionEngineId =");
     for (i = 0; i < nDof; i++)
       fprintf(myFile," %d", fId[i]);
-    FmEngine::betaFeatureEngines.insert(fricFEngine);
+    FmEngine::betaFeatureEngines.insert(engineId);
   }
 
   return true;
@@ -1680,21 +1596,17 @@ int FmSolverParser::writeSensors()
       int lerr = err;
       size_t nArgs = engine->getNoArgs();
       for (size_t j = 0; j < nArgs; j++)
-      {
-        // Avoid writing any sensors more than once.
-        // set<int>::insert() returns a pair<iterator,bool> where the bool
-        // tells whether the element was actually inserted or already present.
-        int sensorId = engine->getSensorId(j);
-        if (sensorId > 0 && writtenSensors.insert(sensorId).second)
-        {
-          FmSensorBase* sensor = engine->getSensor(j);
-          fprintf(myFile,"&SENSOR\n");
-          fprintf(myFile,"  id = %d\n",sensorId);
-          sensor->printID(myFile,false);
-          err += sensor->printSolverData(myFile,engine,j);
-          fprintf(myFile,"/\n\n");
-        }
-      }
+        if (int sensorId = engine->getSensorId(j); sensorId > 0)
+          // Avoid writing any sensors more than once
+          if (writtenSensors.insert(sensorId).second)
+          {
+            FmSensorBase* sensor = engine->getSensor(j);
+            fprintf(myFile,"&SENSOR\n");
+            fprintf(myFile,"  id = %d\n",sensorId);
+            sensor->printID(myFile,false);
+            err += sensor->printSolverData(myFile,engine,j);
+            fprintf(myFile,"/\n\n");
+          }
       if (err > lerr)
         ListUI <<"---> ERROR: "<< engine->getIdString(true) <<" is inconsistent\n";
     }

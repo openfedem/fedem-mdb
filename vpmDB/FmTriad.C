@@ -419,7 +419,8 @@ bool FmTriad::setStatusForDOF(int dof, DOFStatus status)
 
 bool FmTriad::setDOFStatus(int DOF, DOFStatus status)
 {
-  if (!this->setStatusForDOF(DOF,status)) return false;
+  if (!this->setStatusForDOF(DOF,status))
+    return false;
 
   this->updateDisplayDetails();
   return true;
@@ -1044,12 +1045,9 @@ bool FmTriad::showDirections()
 bool FmTriad::importantDirections()
 {
   if (hasJointBinding())
-  {
-    if (isSlaveTriad(true))
+    if (isMasterTriad(true) || isSlaveTriad(true))
       return true;
-    else if (isMasterTriad(true))
-      return true;
-  }
+
   if (getSimpleSensor()) return true;
   if (hasConstraints())  return true;
 
@@ -1131,9 +1129,8 @@ FmJointBase* FmTriad::getJointWhereSlave() const
   this->getReferringObjs(joints,"itsSlaveTriad");
 
   for (FmJointBase* joint : joints)
-    if (!joint->isContactElement())
-      if (!joint->isGlobalSpringElement())
-        return joint;
+    if (!joint->isContactElement() && !joint->isGlobalSpringElement())
+      return joint;
 
   return NULL;
 }
@@ -1207,9 +1204,8 @@ bool FmTriad::isSlaveTriad(bool realSlavesOnly) const
   for (FmJointBase* joint : joints)
     if (!realSlavesOnly)
       return true;
-    else if (!joint->isContactElement())
-      if (!joint->isGlobalSpringElement())
-        return true;
+    else if (!joint->isContactElement() && !joint->isGlobalSpringElement())
+      return true;
 
   return false;
 }
@@ -1227,9 +1223,8 @@ bool FmTriad::isMasterTriad(bool realMastersOnly) const
   for (FmJointBase* joint : joints)
     if (!realMastersOnly)
       return true;
-    else if (!joint->isContactElement())
-      if (!joint->isGlobalSpringElement())
-        return true;
+    else if (!joint->isContactElement() && !joint->isGlobalSpringElement())
+      return true;
 
   return false;
 }
@@ -1478,9 +1473,12 @@ FaMat34 FmTriad::getGlobalCS() const
 
 FaMat34 FmTriad::getRelativeCS(const FmLink* link) const
 {
-  const FmPart* part = dynamic_cast<const FmPart*>(link);
-  if (!link || (part && part == this->getOwnerPart(0)))
+  if (!link)
     return this->getLocalCS();
+
+  if (const FmPart* part = dynamic_cast<const FmPart*>(link); part)
+    if (part == this->getOwnerPart(0))
+      return this->getLocalCS();
 
   return link->getGlobalCS().inverse() * this->getGlobalCS();
 }
@@ -1713,9 +1711,13 @@ bool FmTriad::readAndConnect(std::istream& is, std::ostream&)
   };
 
   // Obsolete fields
-  FFaObsoleteField<double>  geoTol;
-  FFaObsoleteField<BoolVec> oldBndC;
+
+#ifdef FT_USE_CONNECTORS
+  FFaObsoleteField<double> geoTol;
   FFA_OBSOLETE_FIELD_INIT(geoTol, 0.0, "CONNECTOR_GEOMETRY_TOLERANCE", obj);
+#endif
+
+  FFaObsoleteField<BoolVec> oldBndC;
   FFA_OBSOLETE_FIELD_DEFAULT_INIT(oldBndC, "ADD_BND", obj);
 
   while (is.good())
@@ -1729,20 +1731,18 @@ bool FmTriad::readAndConnect(std::istream& is, std::ostream&)
   FFA_OBSOLETE_FIELD_REMOVE("CONNECTOR_GEOMETRY_TOLERANCE", obj);
   FFA_OBSOLETE_FIELD_REMOVE("ADD_BND", obj);
 
-#ifdef FT_USE_CONNECTORS
   // Update from old model file
+
+#ifdef FT_USE_CONNECTORS
   if (geoTol.wasOnFile())
     obj->itsConnectorGeometry.getValue().setTolerance(geoTol.getValue());
 #endif
 
-  FFaString tDesc = obj->getUserDescription();
   if (oldBndC.wasOnFile())
-  {
-    DOFStatus newDS = tDesc.hasSubString("#DynBC") ? FIXED : FREE_DYNAMICS;
     for (size_t dof = 0; dof < oldBndC.getValue().size(); dof++)
-      if (oldBndC.getValue()[dof]) obj->setStatusForDOF(dof,newDS);
-  }
+      if (oldBndC.getValue()[dof]) obj->setStatusForDOF(dof,FREE_DYNAMICS);
 
+  const FFaString tDesc = obj->getUserDescription();
   if (tDesc.hasSubString("#SysDir"))
     obj->itsLocalDir.setValue((LocalDirection)tDesc.getIntAfter("#SysDir"));
 
@@ -1915,22 +1915,20 @@ int FmTriad::printSolverEntry(FILE* fp)
     else
     {
       const double* v0 = NULL;
+
+      // Global initial velocity that should apply to all triads
+      // that don't have their own initial velocity
+      if (const FaVec3& glbVel = FmDB::getMechanismObject()->initVel.getValue();
+          !glbVel.isZero())
+        v0 = glbVel.getPt();
+
       double linkVel[3];
       if (FmLink* triadOwner = this->getOwnerLink(); triadOwner)
-      {
         // Beta feature: Initial translational velocity on link level
-        FFaString lDesc = triadOwner->getUserDescription();
-        if (lDesc.getDoublesAfter("#InitTransVel",3,linkVel) > 0)
+        if (const FFaString lDesc = triadOwner->getUserDescription();
+            lDesc.getDoublesAfter("#InitTransVel",3,linkVel) > 0)
           v0 = linkVel;
-      }
-      if (!v0)
-      {
-        // Global initial velocity that should apply to all triads
-        // that don't have their own initial velocity
-        const FaVec3& globVel = FmDB::getMechanismObject()->initVel.getValue();
-        if (!globVel.isZero())
-          v0 = globVel.getPt();
-      }
+
       if (v0)
       {
         // Initial velocity on link or global level
@@ -1950,7 +1948,7 @@ int FmTriad::printSolverEntry(FILE* fp)
     }
 
     // Beta feature: Parameters for distributed drag calculations
-    FFaString tDesc = this->getUserDescription();
+    const FFaString tDesc = this->getUserDescription();
     double dragParams[9];
     if (tDesc.getDoublesAfter("#DragTX",3,dragParams)   |
         tDesc.getDoublesAfter("#DragTY",3,dragParams+3) |
@@ -2031,7 +2029,7 @@ int FmTriad::printAdditionalMass(FILE* fp)
   fprintf(fp,"  triadId = %d",this->getBaseID());
 
   // Beta feature: Added mass and direction-dependent mass
-  FFaString tDesc = this->getUserDescription();
+  const FFaString tDesc = this->getUserDescription();
   FaVec3 mass(this->getAddMass(),0.0,0.0);
   int mDof = 0;
   if (tDesc.hasSubString("#AddedMass"))
@@ -2173,8 +2171,8 @@ char FmTriad::isRotatable(const FmJointBase* jointToIgnore) const
   std::vector<FmSMJointBase*> joints1;
   this->getReferringObjs(joints1,"itsMasterTriad");
   for (FmSMJointBase* joint : joints1)
-    if (joint->isMasterMovedAlong())
-      if (joint != jointToIgnore) return false;
+    if (joint->isMasterMovedAlong() && joint != jointToIgnore)
+      return false;
 
   // Check if this is an independent triad of a prismatic or cylindric joint
   // with its orientation defined by EulerZYX angles
@@ -2297,9 +2295,10 @@ FmTriad* FmTriad::createAtNode(FFlNode* node, FmBase* parent,
 {
   if (!node) return NULL;
 
-  FmBase* triad = FmDB::findID(FmTriad::getClassTypeID(),
-                               IDoffset+node->getID(), {parent->getID()});
-  if (triad) return static_cast<FmTriad*>(triad);
+  if (FmBase* oldTriad = FmDB::findID(FmTriad::getClassTypeID(),
+                                      IDoffset+node->getID(),
+                                      {parent->getID()}); oldTriad)
+    return static_cast<FmTriad*>(oldTriad);
 
   FmTriad* newTriad = new FmTriad(node->getPos());
   newTriad->setParentAssembly(parent);
