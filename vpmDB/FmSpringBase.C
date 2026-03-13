@@ -34,8 +34,7 @@ FmSpringBase::FmSpringBase()
 
 bool FmSpringBase::isForceFunc() const
 {
-  FmMathFuncBase* sfunc = this->getStiffFunction();
-  if (sfunc)
+  if (FmMathFuncBase* sfunc = this->getStiffFunction(); sfunc)
     switch (sfunc->getFunctionUse()) {
     case FmMathFuncBase::SPR_TRA_FORCE:
     case FmMathFuncBase::SPR_ROT_TORQUE:
@@ -58,9 +57,9 @@ bool FmSpringBase::isForceFunc() const
 std::pair<bool,bool> FmSpringBase::isForceFuncFromFile() const
 {
   if (isForceFunction.wasOnFile())
-    return std::make_pair(true,isForceFunction.getValue());
+    return { true, isForceFunction.getValue() };
   else
-    return std::make_pair(false,false);
+    return { false, false };
 }
 
 
@@ -137,8 +136,8 @@ void FmSpringBase::setInitLengthOrDefl(double lenOrDefl, bool isDeflection)
 }
 
 
-bool FmSpringBase::localParse(const char* keyWord, std::istream& activeStatement,
-			      FmSpringBase* obj)
+bool FmSpringBase::localParse(const char* keyWord,
+                              std::istream& activeStatement, FmSpringBase* obj)
 {
   // Conversion of old keywords
   if (strcmp(keyWord,"INIT_STIFFNESS") == 0)
@@ -184,8 +183,7 @@ int FmSpringBase::printSolverEntry(FILE* fp)
   // Stiffness function part
   double s0 = 0.0;
   int springFuncId = 0;
-  FmMathFuncBase* sfunc = this->getStiffFunction();
-  if (sfunc)
+  if (FmMathFuncBase* sfunc = this->getStiffFunction(); sfunc)
   {
     springFuncId = sfunc->getBaseID();
     // Stiffness function is used, rule out constant stiffness
@@ -204,26 +202,23 @@ int FmSpringBase::printSolverEntry(FILE* fp)
     fprintf(fp, " s1 = 1.0, %sFuncId = %d\n",
             this->isForceFunc() ? "force" : "stiff", springFuncId);
 
-  // Beta feature: Possible engine-scaling of the stiffness function
-  int scalePosId = sDesc.getIntAfter("#PosStiffScaleEngine");
-  if (scalePosId > 0) FmEngine::betaFeatureEngines.insert(scalePosId);
-  int scaleNegId = sDesc.getIntAfter("#NegStiffScaleEngine");
-  if (scaleNegId > 0) FmEngine::betaFeatureEngines.insert(scaleNegId);
-
   if (!scaleEngine.isNull())
+    fprintf(fp,"  stiffScaleEngineId = %d\n", scaleEngine->getBaseID());
+
+  // Beta feature: Engine-scaling of stiffness for tension only
+  if (int engineId = sDesc.getIntAfter("#PosStiffScaleEngine"); engineId > 0)
   {
-    if (scalePosId <= 0) scalePosId = scaleEngine->getBaseID();
-    if (scaleNegId <= 0) scaleNegId = scaleEngine->getBaseID();
+    fprintf(fp,"  stiffScaleEnginePosId = %d\n", engineId);
+    FmEngine::betaFeatureEngines.insert(engineId);
+  }
+  // Beta feature: Engine-scaling of stiffness for compression only
+  if (int engineId = sDesc.getIntAfter("#NegStiffScaleEngine"); engineId > 0)
+  {
+    fprintf(fp,"  stiffScaleEngineNegId = %d\n", engineId);
+    FmEngine::betaFeatureEngines.insert(engineId);
   }
 
-  if (scalePosId > 0 || scaleNegId > 0)
-  {
-    fprintf(fp,"  stiffScaleEnginePosId = %d\n", scalePosId);
-    fprintf(fp,"  stiffScaleEngineNegId = %d\n", scaleNegId);
-  }
-
-  FmSpringChar* sprChar = mySpringChar.getPointer();
-  if (sprChar)
+  if (FmSpringChar* sprChar = mySpringChar.getPointer(); sprChar)
   {
     if (sprChar->hasFailure())
       fprintf(fp,"  springFailureId = %d\n", sprChar->getBaseID());
