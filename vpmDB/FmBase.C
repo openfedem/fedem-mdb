@@ -147,9 +147,11 @@ void FmBase::getResolvedAssemblyID(std::vector<int>& assID) const
 FmBase* FmBase::getCommonAncestor(const FmBase* other) const
 {
   // Find the common parent
-  FmBase* p2 = NULL;
   FmBase* parent = myParentAssembly.getPointer();
-  for (; parent != p2; parent = parent->getParentAssembly())
+  if (other == this || !other)
+    return parent;
+
+  for (FmBase* p2 = NULL; parent != p2; parent = parent->getParentAssembly())
     for (p2 = other->getParentAssembly(); p2; p2 = p2->getParentAssembly())
       if (p2 == parent)
         return p2;
@@ -194,28 +196,24 @@ bool FmBase::cloneOrConnect()
 
   // If we are importing a regular model as a sub-assembly,
   // this object should be ignored
-  if (FmSubAssembly::old2newAssID.second == 0)
-  {
-    if (this->mainConnect())
-      return true;
-
-    // The object already exists.
-    // This should only happen on the top level, so no need to
-    // check for sub-assemly ID here when cloning the object read.
-    FmBase* cloneToObj = FmDB::findID(this->getTypeID(),this->getID());
-    if (cloneToObj)
-    {
-      // Clone the new information into the existing object
-      cloneToObj->clone(this,FmBase::DEEP_REPLACE);
-      if (this->isOfType(FmModelMemberBase::getClassTypeID()))
-        static_cast<FmModelMemberBase*>(cloneToObj)->sendSignal(FmModelMemberBase::MODEL_MEMBER_CHANGED);
-    }
-    else // This should normally not happen
-      std::cerr <<"ERROR: "<< this->getIdString() <<" already exists,"
-                <<" ignoring the last item read from file."<< std::endl;
-  }
-  else
+  if (FmSubAssembly::old2newAssID.second > 0)
     ListUI <<"  -> Ignoring "<< this->getIdString(true) <<"\n";
+  else if (this->mainConnect())
+    return true; // this is a new object
+
+  // The object already exists.
+  // This should only happen on the top level, so no need to
+  // check for sub-assemly ID here when cloning the object read.
+  else if (FmBase* obj = FmDB::findID(this->getTypeID(),this->getID()); obj)
+  {
+    // Clone the new information into the existing object
+    obj->clone(this,FmBase::DEEP_REPLACE);
+    if (this->isOfType(FmModelMemberBase::getClassTypeID()))
+      static_cast<FmModelMemberBase*>(obj)->sendSignal(FmModelMemberBase::MODEL_MEMBER_CHANGED);
+  }
+  else // This should normally not happen
+    std::cerr <<"ERROR: "<< this->getIdString() <<" already exists,"
+              <<" ignoring the last item read from file."<< std::endl;
 
   return this->erase();
 }
@@ -409,10 +407,10 @@ const char* FmBase::getUITypeName() const
 {
   // Should never arrive here, unless...
   std::cerr <<"WARNING: Requesting GUI type name during destruction of an object.\n"
-	    <<"         This may indicate some logic programming error, previously\n"
-	    <<"         resulting in \"pure virtual function call\" runtime error.\n"
-	    <<"         Set a break point in FmBase::getUITypeName() to trace this."
-	    << std::endl;
+            <<"         This may indicate some logic programming error, previously\n"
+            <<"         resulting in \"pure virtual function call\" runtime error.\n"
+            <<"         Set a break point in FmBase::getUITypeName() to trace this."
+            << std::endl;
   return "FmBase";
 }
 
