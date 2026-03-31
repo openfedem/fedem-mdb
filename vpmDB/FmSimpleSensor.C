@@ -69,10 +69,10 @@ std::string FmSimpleSensor::getInfoString() const
 
 bool FmSimpleSensor::isExternalCtrlSys() const
 {
-#ifdef FT_HAS_EXTCTRL
   if (itsMeasuredPt.isNull())
     return false;
 
+#ifdef FT_HAS_EXTCTRL
   return itsMeasuredPt->isOfType(FmExternalCtrlSys::getClassTypeID());
 #else
   return false;
@@ -142,20 +142,21 @@ bool FmSimpleSensor::hasDofChoice() const
 }
 
 
-void FmSimpleSensor::getSensorEntities(std::vector<FmSensorChoice>& choicesToFill,
-				       int dof)
+void FmSimpleSensor::getSensorEntities(FmSensorChoices& choices, int dof)
 {
-  choicesToFill.clear();
-  if (!itsMeasuredPt.isNull())
-    itsMeasuredPt->getEntities(choicesToFill,dof);
+  if (itsMeasuredPt.isNull())
+    choices.clear();
+  else
+    itsMeasuredPt->getEntities(choices,dof);
 }
 
 
-void FmSimpleSensor::getSensorDofs(std::vector<FmSensorChoice>& choicesToFill)
+void FmSimpleSensor::getSensorDofs(FmSensorChoices& choices)
 {
-  choicesToFill.clear();
-  if (!itsMeasuredPt.isNull())
-    itsMeasuredPt->getDofs(choicesToFill);
+  if (itsMeasuredPt.isNull())
+    choices.clear();
+  else
+    itsMeasuredPt->getDofs(choices);
 }
 
 
@@ -165,11 +166,12 @@ FmIsMeasuredBase* FmSimpleSensor::getMeasured(int) const
 }
 
 
-void FmSimpleSensor::getMeasured(std::vector<FmIsMeasuredBase*>& vectorToFill) const
+void FmSimpleSensor::getMeasured(std::vector<FmIsMeasuredBase*>& objs) const
 {
-  vectorToFill.clear();
-  if (!itsMeasuredPt.isNull())
-    vectorToFill = { itsMeasuredPt.getPointer() };
+  if (itsMeasuredPt.isNull())
+    objs.clear();
+  else
+    objs = { itsMeasuredPt.getPointer() };
 }
 
 
@@ -182,7 +184,7 @@ void FmSimpleSensor::setMeasured(FmIsMeasuredBase* newPt)
     if (oldPt->isOfType(FmTriad::getClassTypeID()))
       static_cast<FmTriad*>(oldPt)->updateDisplayDetails();
 
-  if (newPt)
+  if (newPt && newPt != oldPt)
     if (newPt->isOfType(FmTriad::getClassTypeID()))
       static_cast<FmTriad*>(newPt)->updateDisplayDetails();
 }
@@ -296,7 +298,7 @@ int FmSimpleSensor::printSolverData(FILE* fp, FmEngine* engine, int iarg) const
       dof += 3; // dof=4,5,6: Free wind
 
     fprintf(fp,"  type = 'TRIAD'\n");
-    fprintf(fp,"  triad1Id  = %d\n",itsMeasuredPt->getBaseID());
+    fprintf(fp,"  triadId   = %d\n",itsMeasuredPt->getBaseID());
     fprintf(fp,"  dof       = %d\n",dof);
 
     switch (engine->getEntity(iarg))

@@ -28,13 +28,13 @@ public:
   virtual bool hasEntityChoice() const;
   virtual bool hasDofChoice() const;
 
-  virtual void getSensorEntities(std::vector<FmSensorChoice>& ents, int dof = -1);
-  virtual void getSensorDofs(std::vector<FmSensorChoice>& dofs);
+  virtual void getSensorEntities(FmSensorChoices& choices, int dof = -1);
+  virtual void getSensorDofs(FmSensorChoices& choices);
 
   void setMeasured(FmIsMeasuredBase* newPt);
 
   virtual FmIsMeasuredBase* getMeasured(int = 1) const;
-  virtual void getMeasured(std::vector<FmIsMeasuredBase*>& measured) const;
+  virtual void getMeasured(std::vector<FmIsMeasuredBase*>& objs) const;
   virtual void removeMeasured();
 
   static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);

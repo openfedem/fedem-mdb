@@ -30,7 +30,7 @@
 #include "vpmDB/FmAxialDamper.H"
 #include "vpmDB/FmTire.H"
 #include "vpmDB/FmLoad.H"
-#include "vpmDB/FmSensorBase.H"
+#include "vpmDB/FmRelativeSensor.H"
 #include "vpmDB/FmSticker.H"
 #include "vpmDB/FmDB.H"
 #include "vpmDB/FmGlobalViewSettings.H"
@@ -395,7 +395,8 @@ void Fedem::createSticker(const FaVec3& createPoint, FmBase* onObject)
   if (onObject->isOfType(FmFreeJoint::getClassTypeID()))
     createSticker(onObject,createPoint);
   else if (onObject->isOfType(FmSMJointBase::getClassTypeID()))
-    createSticker(static_cast<FmSMJointBase*>(onObject)->getSlaveTriad(),createPoint);
+    createSticker(static_cast<FmSMJointBase*>(onObject)->getSlaveTriad(),
+                  createPoint);
   else if (onObject->isOfType(FmIsPositionedBase::getClassTypeID()))
     createSticker(onObject,createPoint);
 }
@@ -467,24 +468,62 @@ FmSensorBase* Fedem::createSensor(FmIsMeasuredBase* object)
 
 
 FmSensorBase* Fedem::createSensor(FmIsMeasuredBase* first,
-                                  FmIsMeasuredBase* second)
+                                  FmIsMeasuredBase* second,
+                                  FmIsMeasuredBase* third,
+                                  FmIsMeasuredBase* fourth)
 {
-  if (!first || !second)
+  if (!first || !second || (third && !fourth) || (!third && fourth))
   {
     ListUI <<"ERROR: Unspecified measured object(s).\n";
     return NULL;
   }
-  else if (first == second)
+  else if ((first == second && third == fourth) ||
+           (first == third || second == fourth))
   {
     ListUI <<"ERROR: Relative sensors should be used on different objects.\n"
            <<"       Could not create relative sensor.\n";
     return NULL;
   }
 
-  FmSensorBase* sens = first->getRelativeSensor(second,true);
-  ListUI <<"Creating "<< sens->getUserDescription() <<".\n";
+  std::vector<FmRelativeSensor*> sensors;
+  first->getReferringObjs(sensors);
+  for (FmRelativeSensor* sensor : sensors)
+    if (sensor->getMeasured(1) == first &&
+        sensor->getMeasured(2) == second &&
+        sensor->getMeasured(3) == third &&
+        sensor->getMeasured(4) == fourth)
+      return sensor;
 
-  return sens;
+  FmRelativeSensor* sensor = new FmRelativeSensor();
+  if (third && fourth)
+  {
+    sensor->setUserDescription("Angle sensor between "+
+                               first->getIdString() +"-"+ third->getIdPath() +
+                               " and "+
+                               second->getIdString() +"-"+ fourth->getIdPath());
+    FmBase* parent1 = first->getCommonAncestor(second);
+    FmBase* parent2 = third->getCommonAncestor(fourth);
+    if (parent1 == parent2)
+      sensor->setParentAssembly(parent1);
+    else if (parent1)
+      sensor->setParentAssembly(parent1->getCommonAncestor(parent2));
+    else
+      sensor->setParentAssembly(parent2);
+    sensor->connect(first,second,third,fourth);
+  }
+  else
+  {
+    sensor->setUserDescription("Relative sensor between "+
+                               first->getIdString() +" and "+
+                               second->getIdString());
+    sensor->setParentAssembly(first->getCommonAncestor(second));
+    sensor->connect(first,second);
+  }
+  sensor->draw();
+
+  ListUI <<"Creating "<< sensor->getUserDescription() <<".\n";
+
+  return sensor;
 }
 
 

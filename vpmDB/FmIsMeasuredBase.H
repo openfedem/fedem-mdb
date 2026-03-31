@@ -11,8 +11,8 @@
 #include "vpmDB/FmSimulationModelBase.H"
 
 class FmSensorBase;
-
-typedef std::pair<unsigned short int,std::string> FmSensorChoice;
+using FmSensorChoice  = std::pair<unsigned short int,std::string>;
+using FmSensorChoices = std::vector<FmSensorChoice>;
 
 
 class FmIsMeasuredBase : public FmSimulationModelBase
@@ -21,19 +21,17 @@ class FmIsMeasuredBase : public FmSimulationModelBase
 
 public:
   FmSensorBase* getSimpleSensor(bool createIfNone = false);
-  FmSensorBase* getRelativeSensor(FmIsMeasuredBase* that,
-                                  bool createIfNone = false);
 
   bool hasSensors() const;
 
   virtual void updateChildrenDisplayTopology();
 
-  virtual void getEntities(std::vector<FmSensorChoice>& toFill, int = -1);
-  virtual void getDofs(std::vector<FmSensorChoice>& toFill);
+  virtual void getEntities(FmSensorChoices& ents, int = -1) { ents.clear(); }
+  virtual void getDofs(FmSensorChoices& dofs) { dofs.clear(); }
 
-  // For instance joint springs can be measured without having sensors since the
-  // joint itself has the sensor, thus the method isMeasured to remedy this
-  virtual bool isMeasured() const;
+  // Joint springs/dampers can be measured without having sensors when the joint
+  // itself has the sensor, thus the virtual method isMeasured() to remedy this
+  virtual bool isMeasured() const { return this->hasSensors(); }
 
   enum SensorDOF {
     X_TRANS = 0,
@@ -56,7 +54,11 @@ public:
     GAGE_1 = 17,
     GAGE_2 = 18,
     GAGE_3 = 19,
-    NUM_DOF = 20
+    UNSIGNED = 20,
+    ANGLE_YZ = 21,
+    ANGLE_ZX = 22,
+    ANGLE_XY = 23,
+    NUM_DOF = 24
   };
 
   enum SensorEntity {
@@ -68,25 +70,26 @@ public:
     DISTANCE = 5, // relative sensor
     VEL = 6,
     ACCEL = 7,
-    REL_POS = 8, // joint variable
-    JSPR_ANG = 9,
-    JSPR_DEFL = 10,
-    JSPR_FORCE = 11,
-    JDAMP_ANG = 12,
-    JDAMP_VEL = 13,
-    JDAMP_FORCE = 14,
-    LENGTH = 15, // axial spring and damper
-    DEFL = 16,
-    FORCE = 17,
-    LOCAL_FORCE = 18,
-    GLOBAL_FORCE = 19,
-    WIND_SPEED = 20,
-    FLUID_VEL = 21,
-    FLUID_ACC = 22,
-    DYN_PRESS = 23,
-    STRAIN = 24,
-    STRESS = 25,
-    NUM_ENTITY = 26
+    ANGLE = 8, // relative sensor
+    REL_POS = 9, // joint variable
+    JSPR_ANG = 10,
+    JSPR_DEFL = 11,
+    JSPR_FORCE = 12,
+    JDAMP_ANG = 13,
+    JDAMP_VEL = 14,
+    JDAMP_FORCE = 15,
+    LENGTH = 16, // axial spring and damper
+    DEFL = 17,
+    FORCE = 18,
+    LOCAL_FORCE = 19,
+    GLOBAL_FORCE = 20,
+    WIND_SPEED = 21,
+    FLUID_VEL = 22,
+    FLUID_ACC = 23,
+    DYN_PRESS = 24,
+    STRAIN = 25,
+    STRESS = 26,
+    NUM_ENTITY = 27
   };
 
 protected:
