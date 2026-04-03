@@ -44,12 +44,13 @@ FmAxialSpring::~FmAxialSpring()
 }
 
 
-void FmAxialSpring::getEntities(std::vector<FmSensorChoice>& choicesToFill, int)
+void FmAxialSpring::getEntities(FmSensorChoices& choices, int)
 {
-  choicesToFill.clear();
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::LENGTH]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::DEFL]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::FORCE]);
+  choices = {
+    itsEntityTable[FmIsMeasuredBase::LENGTH],
+    itsEntityTable[FmIsMeasuredBase::DEFL],
+    itsEntityTable[FmIsMeasuredBase::FORCE]
+  };
 }
 
 
@@ -129,33 +130,27 @@ FmTriad* FmAxialSpring::getSecondTriad() const
 }
 
 
-void FmAxialSpring::getTriads(std::vector<FmTriad*>& toFill) const
+void FmAxialSpring::getTriads(std::vector<FmTriad*>& triads) const
 {
-  toFill.clear();
-  toFill.reserve(2);
-  toFill.push_back(itsTriads[0]);
-  toFill.push_back(itsTriads[1]);
+  triads = { this->getFirstTriad(), this->getSecondTriad() };
 
   // Beta feature: Pulley element with arbitrary number of triads (max 10)
   int extraTriads[8];
   int nTriads = FFaString(this->getUserDescription()).getIntsAfter("#addTriads",8,extraTriads);
   for (int j = 0; j < nTriads; j++)
-    toFill.push_back(static_cast<FmTriad*>(FmDB::findObject(extraTriads[j])));
+    triads.push_back(static_cast<FmTriad*>(FmDB::findObject(extraTriads[j])));
 }
 
 
 void FmAxialSpring::removeOwnerTriads()
 {
-  std::vector<FmTriad*> v(2,static_cast<FmTriad*>(NULL));
-  itsTriads.setPtrs(v);
+  itsTriads.setPtrs({ NULL, NULL });
 }
 
 
 void FmAxialSpring::setOwnerTriads(FmTriad* tr1, FmTriad* tr2)
 {
-  std::vector<FmTriad*> v(2);
-  v[0] = tr1; v[1] = tr2;
-  itsTriads.setPtrs(v);
+  itsTriads.setPtrs({ tr1, tr2 });
 }
 
 
@@ -220,13 +215,12 @@ int FmAxialSpring::checkAxialSprings()
   int errCount = 0;
   std::vector<FmAxialSpring*> allSprings;
   FmDB::getAllAxialSprings(allSprings);
-
-  for (size_t i = 0; i < allSprings.size(); i++)
-    if (!allSprings[i]->getFirstTriad() || !allSprings[i]->getSecondTriad())
+  for (FmAxialSpring* spring : allSprings)
+    if (!spring->getFirstTriad() || !spring->getSecondTriad())
     {
       errCount++;
-      ListUI <<"ERROR: "<< allSprings[i]->getIdString()
-	     <<" is not attached to any triads.\n";
+      ListUI <<"ERROR: "<< spring->getIdString()
+             <<" is not attached to any triads.\n";
     }
 
   return errCount;
@@ -246,8 +240,8 @@ int FmAxialSpring::printSolverEntry(FILE* fp)
   fprintf(fp,"  triadIDs =");
   std::vector<FmTriad*> triads;
   this->getTriads(triads);
-  for (size_t i = 0; i < triads.size(); i++)
-    fprintf(fp," %d", triads[i] ? triads[i]->getBaseID() : 0);
+  for (FmTriad* triad : triads)
+    fprintf(fp," %d", triad ? triad->getBaseID() : 0);
   fprintf(fp,"\n/\n\n");
   return 0;
 }

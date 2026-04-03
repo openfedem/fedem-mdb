@@ -20,15 +20,15 @@ class FmAxialSpring : public FmSpringBase
 public:
   FmAxialSpring();
 
-  bool connect(FmTriad* tr1, FmTriad* tr2);
   using FmSpringBase::connect;
+  bool connect(FmTriad* tr1, FmTriad* tr2);
 
   void setOwnerTriads(FmTriad* tr1, FmTriad* tr2);
   void removeOwnerTriads();
 
   FmTriad* getFirstTriad() const;
   FmTriad* getSecondTriad() const;
-  void getTriads(std::vector<FmTriad*>& toFill) const;
+  void getTriads(std::vector<FmTriad*>& triads) const;
 
   static int checkAxialSprings();
 
@@ -43,7 +43,7 @@ public:
   virtual bool clone(FmBase* obj, int depth);
   virtual void initAfterResolve();
 
-  virtual void getEntities(std::vector<FmSensorChoice>& choicesToFill, int dof = -1);
+  virtual void getEntities(FmSensorChoices& choices, int);
 
   virtual const char* getUITypeName() const { return "Axial spring"; }
 

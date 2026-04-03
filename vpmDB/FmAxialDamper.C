@@ -43,12 +43,13 @@ FmAxialDamper::~FmAxialDamper()
 }
 
 
-void FmAxialDamper::getEntities(std::vector<FmSensorChoice>& choicesToFill, int)
+void FmAxialDamper::getEntities(FmSensorChoices& choices, int)
 {
-  choicesToFill.clear();
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::LENGTH]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::VEL]);
-  choicesToFill.push_back(itsEntityTable[FmIsMeasuredBase::FORCE]);
+  choices = {
+    itsEntityTable[FmIsMeasuredBase::LENGTH],
+    itsEntityTable[FmIsMeasuredBase::VEL],
+    itsEntityTable[FmIsMeasuredBase::FORCE]
+  };
 }
 
 
@@ -114,15 +115,21 @@ FmTriad* FmAxialDamper::getSecondTriad() const
 }
 
 
+void FmAxialDamper::getTriads(std::vector<FmTriad*>& triads) const
+{
+  triads = { this->getFirstTriad(), this->getSecondTriad() };
+}
+
+
 void FmAxialDamper::removeOwnerTriads()
 {
-  itsTriads.setPtrs({NULL, NULL});
+  itsTriads.setPtrs({ NULL, NULL });
 }
 
 
 void FmAxialDamper::setOwnerTriads(FmTriad* tr1, FmTriad* tr2)
 {
-  itsTriads.setPtrs({tr1, tr2});
+  itsTriads.setPtrs({ tr1, tr2 });
 }
 
 
