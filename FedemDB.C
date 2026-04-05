@@ -1031,6 +1031,8 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
     jnt = Fedem::createJoint(classType(jType), triad1, triad2,
                              FaVec3(), follower, NULL, nr_t2==2);
   }
+  else
+    nr_t2 = 0;
   if (!jnt) return -jType;
 
   if (description)
@@ -1050,10 +1052,14 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
 
   bool ok = true;
   if (FmMMJointBase* mjoint = dynamic_cast<FmMMJointBase*>(jnt); mjoint)
+  {
     // Additional glider triads for prismatic/cylindric joint
     for (int i = 2; i < nr_t2; i++)
       if (FmTriad* triad; FmFind(t2[i],triad))
         ok &= mjoint->addAsMasterTriad(triad);
+      else
+        ok = false;
+  }
 
   return ok ? jnt->getBaseID() : 0;
 }
@@ -1325,8 +1331,8 @@ namespace
       func->setFunctionUse(FmMathFuncBase::GENERAL);
       func->connect();
       engine->setFunction(func);
-      engine->setSensor(e1->getSimpleSensor(true),0);
-      engine->setSensor(e2->getSimpleSensor(true),1);
+      engine->setSensor(Fedem::createSensor(e1),0);
+      engine->setSensor(Fedem::createSensor(e2),1);
       return true;
     }
 
@@ -1560,8 +1566,9 @@ DLLexport(bool) FmAddMass (int id, int nMass, const double* mass, int fid = 0)
   // Check if a mass scaling function is specified.
   // Notice that a positive fid value is assumed to be the FmEngine user ID
   // whereas a negative value is interpreted as the base ID.
-  if (FmEngine* engine; FmFind(fid,engine,true))
-    triad->setMassEngine(engine);
+  if (fid != 0)
+    if (FmEngine* engine; FmFind(fid,engine,true))
+      triad->setMassEngine(engine);
 
   return true;
 }

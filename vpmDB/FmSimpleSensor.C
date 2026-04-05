@@ -175,6 +175,14 @@ void FmSimpleSensor::getMeasured(std::vector<FmIsMeasuredBase*>& objs) const
 }
 
 
+bool FmSimpleSensor::connect(FmIsMeasuredBase* obj)
+{
+  bool status = this->mainConnect();
+  this->setMeasured(obj);
+  return status;
+}
+
+
 void FmSimpleSensor::setMeasured(FmIsMeasuredBase* newPt)
 {
   FmIsMeasuredBase* oldPt = itsMeasuredPt.getPointer();

@@ -20,7 +20,7 @@ class FmIsMeasuredBase : public FmSimulationModelBase
   Fmd_DB_HEADER_INIT();
 
 public:
-  FmSensorBase* getSimpleSensor(bool createIfNone = false);
+  FmSensorBase* getSimpleSensor() const;
 
   bool hasSensors() const;
 

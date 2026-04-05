@@ -9,8 +9,8 @@
 #include "vpmDB/FmTurbine.H"
 #include "vpmDB/FmRevJoint.H"
 #include "vpmDB/FmfUserDefined.H"
-#include "vpmDB/FmSimpleSensor.H"
 #include "vpmDB/FmEngine.H"
+#include "vpmDB/FmCreate.H"
 #include "vpmDB/FmDB.H"
 
 
@@ -81,7 +81,7 @@ bool FWP::createRegulationSystem(FmTurbine* turbine, FmRotor* rotor,
   filter->setUserDescription("Filtered velocity");
   filter->connect();
   filter->setFunction(f);
-  filter->setSensor(generator->getSimpleSensor(true),0);
+  filter->setSensor(Fedem::createSensor(generator),0);
   filter->setEntity(FmIsMeasuredBase::VEL,0);
   filter->setDof(FmIsMeasuredBase::Z_ROT,0);
   filter->setSensor(FmDB::getTimeSensor(),1);
@@ -113,10 +113,10 @@ bool FWP::createRegulationSystem(FmTurbine* turbine, FmRotor* rotor,
   pctrl->setUserDescription("Pitch controller");
   pctrl->connect();
   pctrl->setFunction(f);
-  pctrl->setSensor(pitch.front()->getSimpleSensor(true),0);
+  pctrl->setSensor(Fedem::createSensor(pitch.front()),0);
   pctrl->setEntity(FmIsMeasuredBase::REL_POS,0);
   pctrl->setDof(FmIsMeasuredBase::Z_ROT,0);
-  pctrl->setSensor(filter->getSimpleSensor(true),1);
+  pctrl->setSensor(Fedem::createSensor(filter),1);
   pctrl->setSensor(FmDB::getTimeSensor(),2);
 
   // Create the Torque Controller
@@ -148,8 +148,8 @@ bool FWP::createRegulationSystem(FmTurbine* turbine, FmRotor* rotor,
   tctrl->setUserDescription("Torque controller");
   tctrl->connect();
   tctrl->setFunction(f);
-  tctrl->setSensor(pctrl->getSimpleSensor(true),0);
-  tctrl->setSensor(filter->getSimpleSensor(true),1);
+  tctrl->setSensor(Fedem::createSensor(pctrl),0);
+  tctrl->setSensor(Fedem::createSensor(filter),1);
   tctrl->setSensor(FmDB::getTimeSensor(),2);
 
   // Insert the Torque and Pitch controllers into the Turbine

@@ -42,19 +42,10 @@ void FmIsMeasuredBase::updateChildrenDisplayTopology()
 }
 
 
-FmSensorBase* FmIsMeasuredBase::getSimpleSensor(bool createIfNone)
+FmSensorBase* FmIsMeasuredBase::getSimpleSensor() const
 {
   FmSimpleSensor* sensor = NULL;
-  if (this->hasReferringObjs(sensor,"itsMeasuredPt") || !createIfNone)
-    return sensor;
-
-  sensor = new FmSimpleSensor();
-  sensor->setUserDescription("Sensor on " + this->getIdString());
-  sensor->setParentAssembly(this->getParentAssembly());
-  sensor->setMeasured(this);
-  sensor->connect();
-  sensor->draw();
-
+  this->hasReferringObjs(sensor,"itsMeasuredPt");
   return sensor;
 }
 

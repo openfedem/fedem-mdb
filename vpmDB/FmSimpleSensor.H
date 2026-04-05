@@ -20,6 +20,9 @@ class FmSimpleSensor : public FmSensorBase
 public:
   FmSimpleSensor();
 
+  using FmSensorBase::connect;
+  bool connect(FmIsMeasuredBase* obj);
+
   virtual bool isExternalCtrlSys() const;
   virtual bool isControlOutput() const;
   virtual bool isDrawable() const;

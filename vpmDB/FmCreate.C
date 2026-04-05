@@ -31,6 +31,7 @@
 #include "vpmDB/FmTire.H"
 #include "vpmDB/FmLoad.H"
 #include "vpmDB/FmRelativeSensor.H"
+#include "vpmDB/FmSimpleSensor.H"
 #include "vpmDB/FmSticker.H"
 #include "vpmDB/FmDB.H"
 #include "vpmDB/FmGlobalViewSettings.H"
@@ -460,10 +461,19 @@ FmSensorBase* Fedem::createSensor(FmIsMeasuredBase* object)
     return NULL;
   }
 
-  FmSensorBase* sens = object->getSimpleSensor(true);
-  ListUI <<"Creating "<< sens->getUserDescription() <<".\n";
+  FmSimpleSensor* sensor = NULL;
+  if (object->hasReferringObjs(sensor,"itsMeasuredPt"))
+    return sensor;
 
-  return sens;
+  sensor = new FmSimpleSensor();
+  sensor->setUserDescription("Sensor on " + object->getIdString());
+  sensor->setParentAssembly(object->getParentAssembly());
+  sensor->connect(object);
+  sensor->draw();
+
+  ListUI <<"Creating "<< sensor->getUserDescription() <<".\n";
+
+  return sensor;
 }
 
 
