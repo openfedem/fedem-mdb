@@ -41,9 +41,10 @@ public:
   bool getUsers(std::vector<FmModelMemberBase*>& toFill,
                 bool recursive = false) const;
 
-  FmMathFuncBase* getFunction() const;
-  FmSensorBase*   getSensor(size_t i = 0) const;
-  int             getSensorId(size_t i = 0) const;
+  FmMathFuncBase*   getFunction() const;
+  FmSensorBase*     getSensor(size_t i = 0) const;
+  FmIsMeasuredBase* getMeasured(size_t i = 0) const;
+  int               getSensorId(size_t i = 0) const;
 
   const std::string& getEntityName(size_t i = 0) const;
   int                getEntity(size_t i = 0) const;

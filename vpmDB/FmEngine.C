@@ -345,10 +345,9 @@ bool FmEngine::initGetValue() const
     return retVal;
 
   for (size_t i = 0; i < nArg; i++)
-    if (FmSensorBase* s = this->getSensor(i); s)
-      if (FmEngine* eng = dynamic_cast<FmEngine*>(s->getMeasured()); eng)
-        if (!eng->initGetValue())
-          return false;
+    if (FmEngine* eng = dynamic_cast<FmEngine*>(this->getMeasured(i)); eng)
+      if (!eng->initGetValue())
+        return false;
 
   return true;
 }
@@ -367,10 +366,9 @@ bool FmEngine::getValue(double x, double& y) const
   DoubleVec args(nArg,0.0);
   args.front() = x;
   for (size_t i = 0; i < nArg; i++)
-    if (FmSensorBase* s = this->getSensor(i); s)
-      if (FmEngine* eng = dynamic_cast<FmEngine*>(s->getMeasured()); eng)
-        if (!eng->getValue(x,args[i]))
-          return false;
+    if (FmEngine* eng = dynamic_cast<FmEngine*>(this->getMeasured(i)); eng)
+      if (!eng->getValue(x,args[i]))
+        return false;
 
   y = myFunction->getValue(args,ierr);
   return ierr == 0;
@@ -416,6 +414,15 @@ void FmEngine::setSensor(FmSensorBase* sensor, int argIdx)
     if (!entChoices.empty())
       this->setEntity(entChoices.front().first,i);
   }
+}
+
+
+FmIsMeasuredBase* FmEngine::getMeasured(size_t i) const
+{
+  if (FmSensorBase* sensor = mySensor.getPtr(i); sensor)
+    return sensor->getMeasured();
+
+  return NULL;
 }
 
 
@@ -545,7 +552,7 @@ bool FmEngine::readAndConnect(std::istream& is, std::ostream&)
     std::stringstream activeStatement;
     char keyWord[BUFSIZ];
     if (FaParse::parseFMFASCII(keyWord, is, activeStatement, '=', ';'))
-      parentParse(keyWord, activeStatement, obj);
+      FmEngine::parentParse(keyWord, activeStatement, obj);
   }
 
   // The time sensor is not (any longer) stored on the model file,
@@ -596,15 +603,23 @@ void FmEngine::initAfterResolve()
   this->FmIsPlottedBase::initAfterResolve();
 
   for (size_t i = 0; i < mySensor.size(); i++)
-  {
     this->setSensor(mySensor[i],i);
-    if (dynamic_cast<FmStrainRosette*>(mySensor[i]->getMeasured()))
-      if (FmDB::getModelFileVer() < FFaVersionNumber(7,3,2,10) && i < myDofs.getValue().size())
+
+  if (FmDB::getModelFileVer() < FFaVersionNumber(7,3,2,10))
+  {
+    size_t i = 0;
+    for (int& dof : myDofs.getValue())
+      if (dynamic_cast<FmStrainRosette*>(this->getMeasured(i++)))
         // Increment the strain rosette sensor DOF for older model files
         // which only had the GAGE_[123] choices available
-        if (int iDof = myDofs.getValue()[i]; iDof < FmIsMeasuredBase::NUM_DOF-4)
-          this->setDof(iDof+4,i);
+        if (dof < FmIsMeasuredBase::NUM_DOF-4)
+          dof += 4;
   }
+
+  // Issue #47: Increment sensor entity enum values stored for older model files
+  if (FmDB::getModelFileVer() < FFaVersionNumber(8,1,6))
+    for (int& entity : myEntities.getValue())
+      if (entity > 7) ++entity;
 
   // Conversion from older model files: Wave spectrum beta feature
   int nWave, spectrum;
