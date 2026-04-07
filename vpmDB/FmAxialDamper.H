@@ -20,27 +20,28 @@ class FmAxialDamper : public FmDamperBase
 public:
   FmAxialDamper();
 
-  bool connect(FmTriad* tr1, FmTriad* tr2);
   using FmDamperBase::connect;
+  bool connect(FmTriad* tr1, FmTriad* tr2);
 
   void setOwnerTriads(FmTriad* tr1, FmTriad* tr2);
   void removeOwnerTriads();
 
   FmTriad* getFirstTriad() const;
   FmTriad* getSecondTriad() const;
+  void getTriads(std::vector<FmTriad*>& triads) const;
 
   static int checkAxialDampers();
 
   virtual bool detach();
 
-  static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
-  virtual std::ostream& writeFMF(std::ostream& os = std::cout);
   virtual int printSolverEntry(FILE* fp);
 
+  static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
+  virtual std::ostream& writeFMF(std::ostream& os = std::cout);
   virtual bool clone(FmBase* obj, int depth);
   virtual void initAfterResolve();
 
-  virtual void getEntities(std::vector<FmSensorChoice>& choicesToFill, int dof = -1);
+  virtual void getEntities(FmSensorChoices& choices, int);
 
   virtual const char* getUITypeName() const { return "Axial damper"; }
 

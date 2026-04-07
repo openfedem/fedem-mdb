@@ -153,10 +153,14 @@ namespace Fedem //! Fedem model database utilities
   //! \brief Creates a simple sensor on an object.
   //! \param[in] object The object to measure
   FmSensorBase* createSensor(FmIsMeasuredBase* object);
-  //! \brief Creates a relative sensor between two objects.
+  //! \brief Creates a relative sensor between two or four objects.
   //! \param[in] first The first object to measure between
   //! \param[in] second The second object to measure between
-  FmSensorBase* createSensor(FmIsMeasuredBase* first, FmIsMeasuredBase* second);
+  //! \param[in] third The third object to measure between
+  //! \param[in] fourth The dourth object to measure between
+  FmSensorBase* createSensor(FmIsMeasuredBase* first, FmIsMeasuredBase* second,
+                             FmIsMeasuredBase* third = NULL,
+                             FmIsMeasuredBase* fourth = NULL);
 
   //! \brief Creates a tire object.
   //! \param[in] joint The revolute joint representing the wheel bearing

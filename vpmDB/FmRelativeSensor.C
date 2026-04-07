@@ -51,55 +51,76 @@ FmRelativeSensor::~FmRelativeSensor()
 
 std::string FmRelativeSensor::getInfoString() const
 {
-  if (!this->isConnected())
+  switch (this->isConnected()) {
+  case 2:
+    return itsMeasure[1]->getInfoString() + " relative to "
+      +    itsMeasure[0]->getInfoString();
+  case 4:
+    return "Angle between Triads " + itsMeasure[0]->getIdPath()
+      + "-" + itsMeasure[2]->getIdPath()
+      + " and Triads " + itsMeasure[1]->getIdPath()
+      + "-" + itsMeasure[3]->getIdPath();
+  default:
     return this->FmSensorBase::getInfoString();
-
-  return itsMeasure[1]->getInfoString() + " relative to "
-    +    itsMeasure[0]->getInfoString();
-}
-
-
-bool FmRelativeSensor::isConnected() const
-{
-  if (itsMeasure.size() < 2) return false;
-
-  if (itsMeasure[0].getPointer() && itsMeasure[1].getPointer())
-    if (itsMeasure[0]->isOfType(FmTriad::getClassTypeID()))
-      if (itsMeasure[1]->isOfType(FmTriad::getClassTypeID()))
-	return true;
-
-  return false;
-}
-
-
-void FmRelativeSensor::getSensorEntities(std::vector<FmSensorChoice>& choices, int)
-{
-  choices.clear();
-
-  if (this->isConnected())
-  {
-    choices.reserve(3);
-    choices.push_back(itsEntityTable[FmIsMeasuredBase::DISTANCE]);
-    choices.push_back(itsEntityTable[FmIsMeasuredBase::VEL]);
-    choices.push_back(itsEntityTable[FmIsMeasuredBase::ACCEL]);
   }
 }
 
 
-void FmRelativeSensor::getSensorDofs(std::vector<FmSensorChoice>& choices)
+int FmRelativeSensor::isConnected() const
 {
-  choices.clear();
+  int connected = 0;
+  for (size_t i = 0; i < itsMeasure.size(); i++)
+    if (itsMeasure[i].getPointer())
+      if (itsMeasure[i]->isOfType(FmTriad::getClassTypeID()))
+        connected++;
 
-  if (this->isConnected())
-  {
-    choices.reserve(7);
-    choices.push_back(itsDofTable[FmIsMeasuredBase::REL]);
-    choices.push_back(itsDofTable[FmIsMeasuredBase::REL_X]);
-    choices.push_back(itsDofTable[FmIsMeasuredBase::REL_Y]);
-    choices.push_back(itsDofTable[FmIsMeasuredBase::REL_Z]);
-    choices.push_back(itsDofTable[FmIsMeasuredBase::REL_RX]);
-    choices.push_back(itsDofTable[FmIsMeasuredBase::REL_RY]);
-    choices.push_back(itsDofTable[FmIsMeasuredBase::REL_RZ]);
+  return connected == 2 || connected == 4 ? connected : 0;
+}
+
+
+void FmRelativeSensor::getSensorEntities(FmSensorChoices& choices, int)
+{
+  switch (this->isConnected()) {
+  case 2:
+    choices = {
+      itsEntityTable[FmIsMeasuredBase::DISTANCE],
+      itsEntityTable[FmIsMeasuredBase::VEL],
+      itsEntityTable[FmIsMeasuredBase::ACCEL]
+    };
+    break;
+  case 4:
+    choices = { itsEntityTable[FmIsMeasuredBase::ANGLE] };
+    break;
+  default:
+    choices.clear();
+  }
+}
+
+
+void FmRelativeSensor::getSensorDofs(FmSensorChoices& choices)
+{
+  switch (this->isConnected()) {
+  case 2:
+    choices = {
+      itsDofTable[FmIsMeasuredBase::REL],
+      itsDofTable[FmIsMeasuredBase::REL_X],
+      itsDofTable[FmIsMeasuredBase::REL_Y],
+      itsDofTable[FmIsMeasuredBase::REL_Z],
+      itsDofTable[FmIsMeasuredBase::REL_RX],
+      itsDofTable[FmIsMeasuredBase::REL_RY],
+      itsDofTable[FmIsMeasuredBase::REL_RZ]
+    };
+    break;
+  case 4:
+    choices = {
+      itsDofTable[FmIsMeasuredBase::UNSIGNED],
+      itsDofTable[FmIsMeasuredBase::ANGLE_YZ],
+      itsDofTable[FmIsMeasuredBase::ANGLE_ZX],
+      itsDofTable[FmIsMeasuredBase::ANGLE_XY]
+    };
+    break;
+  default:
+    choices.clear();
   }
 }
 
@@ -107,34 +128,40 @@ void FmRelativeSensor::getSensorDofs(std::vector<FmSensorChoice>& choices)
 bool FmRelativeSensor::connect(FmIsMeasuredBase* mb1, FmIsMeasuredBase* mb2)
 {
   bool status = this->mainConnect();
-  this->setMeasured(mb1,mb2);
+  itsMeasure.setPtrs({mb1,mb2});
+  return status;
+}
+
+
+bool FmRelativeSensor::connect(FmIsMeasuredBase* mb1, FmIsMeasuredBase* mb2,
+                               FmIsMeasuredBase* mb3, FmIsMeasuredBase* mb4)
+{
+  bool status = this->mainConnect();
+  itsMeasure.setPtrs({mb1,mb2,mb3,mb4});
   return status;
 }
 
 
 FmIsMeasuredBase* FmRelativeSensor::getMeasured(int ind) const
 {
-  if (ind < 1 || (size_t)ind > itsMeasure.size()) return NULL;
+  if (ind < 1 || ind > static_cast<int>(itsMeasure.size())) return NULL;
 
   return itsMeasure[ind-1].getPointer();
 }
 
 
-void FmRelativeSensor::getMeasured(std::vector<FmIsMeasuredBase*>& measured) const
+void FmRelativeSensor::getMeasured(std::vector<FmIsMeasuredBase*>& objs) const
 {
-  itsMeasure.getPtrs(measured);
+  itsMeasure.getPtrs(objs);
 }
 
 
 void FmRelativeSensor::removeMeasured()
 {
-  itsMeasure.setPtrs({NULL,NULL});
-}
-
-
-void FmRelativeSensor::setMeasured(FmIsMeasuredBase* m1, FmIsMeasuredBase* m2)
-{
-  itsMeasure.setPtrs({m1,m2});
+  size_t nRef = itsMeasure.size();
+  itsMeasure.clear();
+  for (size_t i = 0; i < nRef; i++)
+    itsMeasure.push_back(NULL);
 }
 
 
@@ -147,11 +174,11 @@ bool FmRelativeSensor::cloneLocal(FmBase* obj, int depth)
 
   FmRelativeSensor* copyObj = static_cast<FmRelativeSensor*>(obj);
 
-  std::vector<FmIsMeasuredBase*> cplMes;
-  copyObj->getMeasured(cplMes);
+  std::vector<FmIsMeasuredBase*> objs;
+  copyObj->getMeasured(objs);
   if (depth == FmBase::DEEP_REPLACE)
     copyObj->removeMeasured();
-  itsMeasure.setPtrs(cplMes);
+  itsMeasure.setPtrs(objs);
 
   return true;
 }
@@ -175,7 +202,7 @@ bool FmRelativeSensor::readAndConnect(std::istream& is, std::ostream&)
     std::stringstream activeStatement;
     char keyWord[BUFSIZ];
     if (FaParse::parseFMFASCII(keyWord, is, activeStatement, '=', ';'))
-      parentParse(keyWord, activeStatement, obj);
+      FmRelativeSensor::parentParse(keyWord, activeStatement, obj);
   }
 
   obj->connect();
@@ -193,20 +220,21 @@ void FmRelativeSensor::initAfterResolve()
 {
   this->FmSensorBase::initAfterResolve();
 
-  this->setMeasured(itsMeasure[0].getPointer(),itsMeasure[1].getPointer());
+  std::vector<FmIsMeasuredBase*> objs;
+  itsMeasure.getPtrs(objs,true);
+  itsMeasure.setPtrs(objs);
 }
 
 
-int FmRelativeSensor::printSolverData(FILE* fp, FmEngine* engine, int iarg) const
+int FmRelativeSensor::printSolverData(FILE* fp, FmEngine* engine, int arg) const
 {
   int err = 0;
-  fprintf(fp,"  type = 'RELATIVE_TRIAD'\n");
-  FmIsMeasuredBase* triad = NULL;
-  for (int indx = 1; indx <= 2; indx++)
-    if (!(triad = this->getMeasured(indx)))
+  fprintf(fp,"  type = 'RELATIVE_TRIAD'\n  triadId   =");
+  for (size_t indx = 1; indx <= itsMeasure.size(); indx++)
+    if (FmIsMeasuredBase* triad = this->getMeasured(indx); !triad)
       return indx;
     else if (triad->isOfType(FmTriad::getClassTypeID()))
-      fprintf(fp,"  triad%dId  = %d\n", indx, triad->getBaseID());
+      fprintf(fp," %d", triad->getBaseID());
     else
     {
       ++err;
@@ -214,17 +242,31 @@ int FmRelativeSensor::printSolverData(FILE* fp, FmEngine* engine, int iarg) cons
              <<") for "<< this->getIdString(true)
              <<", only Triad is allowed.\n";
     }
+  fprintf(fp,"\n");
 
-  int dof = engine->getDof(iarg) - FmIsMeasuredBase::REL;
-  int ent = engine->getEntity(iarg);
-  // Beta feature: Sensor measuring rotation in terms of Rodrigues
-  if (ent == FmIsMeasuredBase::DISTANCE && dof >= 4 && dof <= 6 &&
-      this->getUserDescription().find("#Rodrig") != std::string::npos)
-    dof += 3;
-  fprintf(fp,"  dof       = %d\n", dof);
+  int entity  = engine->getEntity(arg);
+  if (int dof = engine->getDof(arg) - FmIsMeasuredBase::REL; dof > 0)
+  {
+    // Beta feature: Sensor measuring rotation in terms of Rodrigues
+    if (entity == FmIsMeasuredBase::DISTANCE && dof >= 4 && dof <= 6 &&
+        this->getUserDescription().find("#Rodrig") != std::string::npos)
+      dof += 3;
+    else if (entity == FmIsMeasuredBase::ANGLE && dof >= 14)
+      dof -= 4;
+    fprintf(fp,"  dof       = %d\n", dof);
+  }
 
-  switch (ent)
-    {
+  int lerr = err;
+  if (itsMeasure.size() == 4)
+    switch (entity) {
+    case FmIsMeasuredBase::ANGLE:
+      fprintf(fp,"  dofEntity = 'ANGLE'\n");
+      break;
+    default:
+      ++err;
+    }
+  else
+    switch (entity) {
     case FmIsMeasuredBase::DISTANCE:
       fprintf(fp,"  dofEntity = 'REL_POS'\n");
       break;
@@ -235,10 +277,12 @@ int FmRelativeSensor::printSolverData(FILE* fp, FmEngine* engine, int iarg) cons
       fprintf(fp,"  dofEntity = 'ACC'\n");
       break;
     default:
-      ListUI <<" --> Error: Invalid entity "<< ent
-             <<" for "<< this->getIdString(true) <<"\n";
       ++err;
     }
+
+  if (err > lerr)
+    ListUI <<" --> Error: Invalid entity "<< entity
+           <<" for "<< this->getIdString(true) <<"\n";
 
   fprintf(fp,"  dofSystem = 'GLOBAL'\n");
   return err;

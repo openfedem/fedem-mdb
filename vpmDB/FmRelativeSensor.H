@@ -20,22 +20,22 @@ class FmRelativeSensor : public FmSensorBase
 public:
   FmRelativeSensor();
 
-  bool connect(FmIsMeasuredBase* mb1, FmIsMeasuredBase* mb2);
   using FmSensorBase::connect;
+  bool connect(FmIsMeasuredBase* mb1, FmIsMeasuredBase* mb2);
+  bool connect(FmIsMeasuredBase* mb1, FmIsMeasuredBase* mb2,
+               FmIsMeasuredBase* mb3, FmIsMeasuredBase* mb4);
 
   virtual bool isDrawable() const { return this->isConnected(); }
 
   virtual bool hasEntityChoice() const { return this->isConnected(); }
   virtual bool hasDofChoice() const { return this->isConnected(); }
 
-  virtual void getSensorEntities(std::vector<FmSensorChoice>& choices, int dof=-1);
-  virtual void getSensorDofs(std::vector<FmSensorChoice>& choices);
+  virtual void getSensorEntities(FmSensorChoices& choices, int dof = -1);
+  virtual void getSensorDofs(FmSensorChoices& choices);
 
   virtual FmIsMeasuredBase* getMeasured(int ind = 1) const;
-  virtual void getMeasured(std::vector<FmIsMeasuredBase*>& measured) const;
+  virtual void getMeasured(std::vector<FmIsMeasuredBase*>& objs) const;
   virtual void removeMeasured();
-
-  void setMeasured(FmIsMeasuredBase* mb1, FmIsMeasuredBase* mb2);
 
   static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -45,14 +45,14 @@ public:
   virtual const char* getUITypeName() const { return "Relative sensor"; }
   virtual std::string getInfoString() const;
 
-  virtual int printSolverData(FILE* fp, FmEngine* engine, int iarg) const;
+  virtual int printSolverData(FILE* fp, FmEngine* engine, int arg) const;
 
 protected:
   virtual ~FmRelativeSensor();
 
   virtual bool cloneLocal(FmBase* obj, int depth);
 
-  bool isConnected() const;
+  int isConnected() const;
 
 private:
   FFaReferenceList<FmIsMeasuredBase> itsMeasure;

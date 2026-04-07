@@ -8,6 +8,7 @@
 #include "vpmDB/FmcOutput.H"
 #include "vpmDB/FmCtrlLine.H"
 #include "vpmDB/FmEngine.H"
+#include "vpmDB/FmCreate.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaString/FFaParse.H"
 #include "vpmDB/Icons/FmIconPixmaps.H"
@@ -68,7 +69,7 @@ void FmcOutput::initAfterResolve()
 {
   this->FmCtrlElementBase::initAfterResolve();
 
-  FmSensorBase* sensor = this->getSimpleSensor(true);
+  FmSensorBase* sensor = Fedem::createSensor(this);
 
   std::vector<FmEngine*> engines;
   sensor->getEngines(engines);

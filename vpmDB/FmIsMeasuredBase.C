@@ -7,7 +7,6 @@
 
 #include "vpmDB/FmIsMeasuredBase.H"
 #include "vpmDB/FmSimpleSensor.H"
-#include "vpmDB/FmRelativeSensor.H"
 
 Fmd_DB_SOURCE_INIT(FcIS_MEASURED_BASE, FmIsMeasuredBase, FmSimulationModelBase);
 
@@ -43,43 +42,10 @@ void FmIsMeasuredBase::updateChildrenDisplayTopology()
 }
 
 
-FmSensorBase* FmIsMeasuredBase::getSimpleSensor(bool createIfNone)
+FmSensorBase* FmIsMeasuredBase::getSimpleSensor() const
 {
   FmSimpleSensor* sensor = NULL;
-  if (this->hasReferringObjs(sensor,"itsMeasuredPt") || !createIfNone)
-    return sensor;
-
-  sensor = new FmSimpleSensor();
-  sensor->setUserDescription("Sensor on " + this->getIdString());
-  sensor->setParentAssembly(this->getParentAssembly());
-  sensor->setMeasured(this);
-  sensor->connect();
-  sensor->draw();
-
-  return sensor;
-}
-
-
-FmSensorBase* FmIsMeasuredBase::getRelativeSensor(FmIsMeasuredBase* that,
-                                                  bool createIfNone)
-{
-  std::vector<FmRelativeSensor*> sensors;
-  this->getReferringObjs(sensors);
-  for (FmRelativeSensor* sensor : sensors)
-    if (sensor->getMeasured(1) == this &&
-        sensor->getMeasured(2) == this)
-      return sensor;
-
-  if (!createIfNone)
-    return NULL;
-
-  FmRelativeSensor* sensor = new FmRelativeSensor();
-  sensor->setUserDescription("Relative sensor between "+
-                             this->getIdString() +" and "+ that->getIdString());
-  sensor->setParentAssembly(this->getCommonAncestor(that));
-  sensor->connect(this,that);
-  sensor->draw();
-
+  this->hasReferringObjs(sensor,"itsMeasuredPt");
   return sensor;
 }
 
@@ -88,24 +54,6 @@ bool FmIsMeasuredBase::hasSensors() const
 {
   FmSensorBase* sensor = NULL;
   return this->hasReferringObjs(sensor);
-}
-
-
-bool FmIsMeasuredBase::isMeasured() const
-{
-  return this->hasSensors();
-}
-
-
-void FmIsMeasuredBase::getEntities(std::vector<FmSensorChoice>& toFill, int)
-{
-  toFill.clear();
-}
-
-
-void FmIsMeasuredBase::getDofs(std::vector<FmSensorChoice>& toFill)
-{
-  toFill.clear();
 }
 
 
@@ -144,7 +92,11 @@ FmSensorChoice FmIsMeasuredBase::itsDofTable[] = {
   FmSensorChoice(FmIsMeasuredBase::VMISES,"von Mises"),
   FmSensorChoice(FmIsMeasuredBase::GAGE_1,"Gage 1"),
   FmSensorChoice(FmIsMeasuredBase::GAGE_2,"Gage 2"),
-  FmSensorChoice(FmIsMeasuredBase::GAGE_3,"Gage 3")
+  FmSensorChoice(FmIsMeasuredBase::GAGE_3,"Gage 3"),
+  FmSensorChoice(FmIsMeasuredBase::UNSIGNED,"Unsigned angle"),
+  FmSensorChoice(FmIsMeasuredBase::ANGLE_YZ,"Angle in global YZ-plane"),
+  FmSensorChoice(FmIsMeasuredBase::ANGLE_ZX,"Angle in global ZX-plane"),
+  FmSensorChoice(FmIsMeasuredBase::ANGLE_XY,"Angle in global XY-plane")
 };
 
 
@@ -157,14 +109,15 @@ FmSensorChoice FmIsMeasuredBase::itsEntityTable[] = {
   FmSensorChoice(FmIsMeasuredBase::DISTANCE,"Distance"),
   FmSensorChoice(FmIsMeasuredBase::VEL,"Velocity"),
   FmSensorChoice(FmIsMeasuredBase::ACCEL,"Acceleration"),
-  FmSensorChoice(FmIsMeasuredBase::REL_POS,"Length/angle"), // joint variable
+  FmSensorChoice(FmIsMeasuredBase::ANGLE,"Angle"),
+  FmSensorChoice(FmIsMeasuredBase::REL_POS,"Length/angle"),
   FmSensorChoice(FmIsMeasuredBase::JSPR_ANG,"Spring length/angle"),
   FmSensorChoice(FmIsMeasuredBase::JSPR_DEFL,"Spring deflection"),
   FmSensorChoice(FmIsMeasuredBase::JSPR_FORCE,"Spring force"),
   FmSensorChoice(FmIsMeasuredBase::JDAMP_ANG,"Damper length/angle"),
   FmSensorChoice(FmIsMeasuredBase::JDAMP_VEL,"Damper velocity"),
   FmSensorChoice(FmIsMeasuredBase::JDAMP_FORCE,"Damper force"),
-  FmSensorChoice(FmIsMeasuredBase::LENGTH,"Length"), // axial spring and damper
+  FmSensorChoice(FmIsMeasuredBase::LENGTH,"Length"),
   FmSensorChoice(FmIsMeasuredBase::DEFL,"Deflection"),
   FmSensorChoice(FmIsMeasuredBase::FORCE,"Force"),
   FmSensorChoice(FmIsMeasuredBase::LOCAL_FORCE, "Force, local coordinates"),

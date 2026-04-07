@@ -79,7 +79,7 @@ jobs:
         with:
           repository: openfedem/fedem-solvers
           fileName: 'fedempy-*.tar.gz'
-          tag: fedempy-8.1.2
+          latest: true
 
       - name: Configure pFUnit-3
         run: >

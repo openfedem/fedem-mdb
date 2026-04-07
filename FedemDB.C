@@ -1031,6 +1031,8 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
     jnt = Fedem::createJoint(classType(jType), triad1, triad2,
                              FaVec3(), follower, NULL, nr_t2==2);
   }
+  else
+    nr_t2 = 0;
   if (!jnt) return -jType;
 
   if (description)
@@ -1050,10 +1052,14 @@ DLLexport(int) FmCreateJoint (const char* description, int jType,
 
   bool ok = true;
   if (FmMMJointBase* mjoint = dynamic_cast<FmMMJointBase*>(jnt); mjoint)
+  {
     // Additional glider triads for prismatic/cylindric joint
     for (int i = 2; i < nr_t2; i++)
       if (FmTriad* triad; FmFind(t2[i],triad))
         ok &= mjoint->addAsMasterTriad(triad);
+      else
+        ok = false;
+  }
 
   return ok ? jnt->getBaseID() : 0;
 }
@@ -1240,50 +1246,65 @@ namespace
 {
   /*!
     \brief Helper that changes the argument of a general function object.
+    \details This function applies for simple sensor function arguments only.
   */
-  bool setArgument (FmEngine* engine, int id1, int id2, int var, int dof)
+  bool setArgument (FmEngine* engine, FmIsMeasuredBase* obj, int var, int dof)
   {
-    FmIsMeasuredBase* object[2] = { NULL, NULL };
-
-    FmFind(id1,object[0]);
-    if (id2 > 0 && !FmFind(id2,object[1]))
+    if (!engine)
       return false;
 
-    if (!engine || !object[0])
-      return false;
-
-    if (!object[1])
+    if (obj && obj->isOfType(FmTriad::getClassTypeID()))
     {
-      // Simple sensor
-      engine->setSensor(Fedem::createSensor(object[0]));
-      if (object[0]->isOfType(FmTriad::getClassTypeID()))
-      {
-        // Translate possible relative-sensor DOF identifiers
-        // to the corresponding simple-sensor equivalents
-        if (var == FmIsMeasuredBase::DISTANCE)
-          var = FmIsMeasuredBase::POS;
-        else if (var == FmIsMeasuredBase::VEL)
-          var = FmIsMeasuredBase::GLOBAL_VEL;
-        else if (var == FmIsMeasuredBase::ACCEL)
-          var = FmIsMeasuredBase::GLOBAL_ACC;
-      }
-      else if (object[0]->isOfType(FmJointBase::getClassTypeID()))
-      {
-        // Translate possible triad DOF identifiers
-        // to the corresponding joint DOF equivalents
-        if (var <= FmIsMeasuredBase::POS || var == FmIsMeasuredBase::DISTANCE)
-          var = FmIsMeasuredBase::REL_POS;
-        else if (var <= FmIsMeasuredBase::GLOBAL_VEL)
-          var = FmIsMeasuredBase::VEL;
-        else if (var <= FmIsMeasuredBase::GLOBAL_ACC)
-          var = FmIsMeasuredBase::ACCEL;
-      }
+      // Translate possible relative-sensor DOF identifiers
+      // to the corresponding simple-sensor equivalents
+      if (var == FmIsMeasuredBase::DISTANCE)
+        var = FmIsMeasuredBase::POS;
+      else if (var == FmIsMeasuredBase::VEL)
+        var = FmIsMeasuredBase::GLOBAL_VEL;
+      else if (var == FmIsMeasuredBase::ACCEL)
+        var = FmIsMeasuredBase::GLOBAL_ACC;
     }
-    else if (object[0]->isOfType(FmTriad::getClassTypeID()) &&
-             object[1]->isOfType(FmTriad::getClassTypeID()))
+    else if (obj && obj->isOfType(FmJointBase::getClassTypeID()))
     {
-      // Relative sensor between triads
-      engine->setSensor(Fedem::createSensor(object[0],object[1]));
+      // Translate possible triad DOF identifiers
+      // to the corresponding joint DOF equivalents
+      if (var <= FmIsMeasuredBase::POS || var == FmIsMeasuredBase::DISTANCE)
+        var = FmIsMeasuredBase::REL_POS;
+      else if (var <= FmIsMeasuredBase::GLOBAL_VEL)
+        var = FmIsMeasuredBase::VEL;
+      else if (var <= FmIsMeasuredBase::GLOBAL_ACC)
+        var = FmIsMeasuredBase::ACCEL;
+    }
+
+    engine->setSensor(Fedem::createSensor(obj));
+    engine->setEntity(var);
+    engine->setDof(dof);
+
+    if (engine->isDriveFile())
+      engine->getFunction()->setFunctionUse(FmMathFuncBase::GENERAL);
+
+    return engine->getSensor() != NULL;
+  }
+
+
+  /*!
+    \brief Helper that changes the argument of a general function object.
+    \details This function applies both for relative sensor function arguments
+    where \a id1 and id2 need to be the base Id of two triads, or a generalized
+    relative sensor btween two objects of any type. In the latter case, a math
+    expression function is used to define the relation between two variables.
+  */
+  bool setArgument2 (FmEngine* engine, int id1, int id2, int var, int dof)
+  {
+    if (!engine)
+      return false;
+
+    FmIsMeasuredBase* obj1 = FmFind(id1,obj1);
+    FmIsMeasuredBase* obj2 = FmFind(id2,obj2);
+
+    if (obj1 && obj1->isOfType(FmTriad::getClassTypeID()) &&
+        obj2 && obj2->isOfType(FmTriad::getClassTypeID()))
+    {
       // Translate possible simple-sensor DOF and variable identifiers
       // to corresponding relative-sensor equivalents
       if (dof < FmIsMeasuredBase::REL)
@@ -1294,6 +1315,8 @@ namespace
         var = FmIsMeasuredBase::VEL;
       else if (var <= FmIsMeasuredBase::GLOBAL_ACC)
         var = FmIsMeasuredBase::ACCEL;
+      // Relative sensor between triads
+      engine->setSensor(Fedem::createSensor(obj1,obj2));
     }
     else
     {
@@ -1302,21 +1325,21 @@ namespace
       if (var < 0) var = -var;
 
       FmEngine* e1 = new FmEngine(false);
-      if (!setArgument(e1,id1,0,var,dof))
+      if (!setArgument(e1,obj1,var,dof))
       {
         e1->erase();
         return false;
       }
-      e1->setParentAssembly(e1->getSensor()->getParentAssembly());
+      e1->setParentAssembly(obj1->getParentAssembly());
       e1->connect();
 
       FmEngine* e2 = new FmEngine(false);
-      if (!setArgument(e2,id2,0,var,dof))
+      if (!setArgument(e2,obj2,var,dof))
       {
         e2->erase();
         return false;
       }
-      e2->setParentAssembly(e2->getSensor()->getParentAssembly());
+      e2->setParentAssembly(obj2->getParentAssembly());
       e2->connect();
 
       ListUI <<"Creating Math expression function \""<< oper <<"\".\n";
@@ -1325,8 +1348,8 @@ namespace
       func->setFunctionUse(FmMathFuncBase::GENERAL);
       func->connect();
       engine->setFunction(func);
-      engine->setSensor(e1->getSimpleSensor(true),0);
-      engine->setSensor(e2->getSimpleSensor(true),1);
+      engine->setSensor(Fedem::createSensor(e1),0);
+      engine->setSensor(Fedem::createSensor(e2),1);
       return true;
     }
 
@@ -1338,22 +1361,69 @@ namespace
 
     return engine->getSensor() != NULL;
   }
+
+
+  /*!
+    \brief Helper that changes the argument of a general function object.
+    \details This function applies for angle sensors where \a id1, \a id2,
+    \a id3 and \a id4 all need to be the base Id of triad objects.
+  */
+  bool setArgument4 (FmEngine* engine, int i1, int i2, int i3, int i4, int dof)
+  {
+    if (!engine)
+      return false;
+
+    FmIsMeasuredBase* obj1 = FmFind(i1,obj1);
+    FmIsMeasuredBase* obj2 = FmFind(i2,obj2);
+    FmIsMeasuredBase* obj3 = FmFind(i3,obj3);
+    FmIsMeasuredBase* obj4 = FmFind(i4,obj4);
+
+    // Translate DOF variable identifiers to angle-sensor equivalents
+    if (dof >= 0 && dof <= 3)
+      dof += FmIsMeasuredBase::UNSIGNED;
+
+    // Angle sensor defined by four triads
+    engine->setSensor(Fedem::createSensor(obj1,obj2,obj3,obj4));
+    engine->setEntity(FmIsMeasuredBase::ANGLE);
+    engine->setDof(dof);
+
+    if (engine->isDriveFile())
+      engine->getFunction()->setFunctionUse(FmMathFuncBase::GENERAL);
+
+    return engine->getSensor() != NULL;
+  }
 }
 
 
-DLLexport(bool) FmSetFunctionArg (int id, int var, int dof, int i1, int i2 = 0)
+DLLexport(bool) FmSetFunctionArg (int id, int var, int dof,
+                                  int i1, int i2 = 0, int i3 = 0, int i4 = 0)
 {
   FmEngine* engine = FmFind(id,engine,true);
-  return setArgument(engine,i1,i2,var,dof);
+  if (i3 > 0 && i4 > 0)
+    return setArgument4(engine,i1,i2,i3,i4,dof);
+  else if (i2 > 0)
+    return setArgument2(engine,i1,i2,var,dof);
+  else if (FmIsMeasuredBase* obj = FmFind(i1,obj); obj)
+    return setArgument(engine,obj,var,dof);
+  else
+    return false;
 }
 
 
 DLLexport(int) FmCreateSensor (const char* description, const char* tag,
-                               int var, int dof, int id1, int id2 = 0)
+                               int var, int dof, int id1, int id2 = 0,
+                               int id3 = 0, int id4 = 0)
 {
   // Create a 1:1 function of the specified argument
   FmEngine* e = new FmEngine(false);
-  if (!setArgument(e,id1,id2,var,dof))
+  bool sensOk = false;
+  if (id3 > 0 && id4 > 0)
+    sensOk = setArgument4(e,id1,id2,id3,id4,dof);
+  else if (id2 > 0)
+    sensOk = setArgument2(e,id1,id2,var,dof);
+  else if (FmIsMeasuredBase* obj = FmFind(id1,obj); obj)
+    sensOk = setArgument(e,obj,var,dof);
+  if (!sensOk)
   {
     e->erase();
     return -id1;
@@ -1560,8 +1630,9 @@ DLLexport(bool) FmAddMass (int id, int nMass, const double* mass, int fid = 0)
   // Check if a mass scaling function is specified.
   // Notice that a positive fid value is assumed to be the FmEngine user ID
   // whereas a negative value is interpreted as the base ID.
-  if (FmEngine* engine; FmFind(fid,engine,true))
-    triad->setMassEngine(engine);
+  if (fid != 0)
+    if (FmEngine* engine; FmFind(fid,engine,true))
+      triad->setMassEngine(engine);
 
   return true;
 }

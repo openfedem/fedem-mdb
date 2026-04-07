@@ -8,7 +8,7 @@
 #include "vpmDB/FmControlAdmin.H"
 #include "vpmDB/FmAllControlHeaders.H"
 #include "vpmDB/FmEngine.H"
-#include "vpmDB/FmSimpleSensor.H"
+#include "vpmDB/FmCreate.H"
 #include "vpmDB/FmDB.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
@@ -84,7 +84,7 @@ FmCtrlElementBase* FmControlAdmin::createElement(int type, float x, float y)
   if (retElem->isOfType(FmcOutput::getClassTypeID()))
   {
     FmEngine* e = new FmEngine();
-    e->setSensor(retElem->getSimpleSensor(true));
+    e->setSensor(Fedem::createSensor(retElem));
     e->setUserDescription(retElem->getUITypeName() + FFaNumStr(" [%d]",retElem->getID()));
     e->connect();
   }

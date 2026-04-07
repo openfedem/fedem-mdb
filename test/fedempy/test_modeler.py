@@ -16,6 +16,7 @@ from fedempy.modeler import FedemModeler
 from fedempy.enums import FmDof, FmDofStat, FmLoadType, FmType, FmVar
 from os import environ
 
+################################################################################
 # Create a new, empty model
 fmmfile = "jalla.fmm"
 myModel = FedemModeler(fmmfile, True)
@@ -178,6 +179,7 @@ if "FEDEM_SOLVER" in environ:
         print(" *** Solver failed", mySolver.ierr.value)
         exit(mySolver.ierr.value)
 
+################################################################################
 # Create a new simple model consisting of just a free-falling Triad.
 # This is the simplest solvable model one can have in Fedem.
 fmmfile = "triad.fmm"
@@ -189,3 +191,75 @@ if "FEDEM_SOLVER" in environ:
     ierr = mySolver.solve_all(fmmfile)
     if ierr < 0:
         exit(-ierr)
+
+################################################################################
+# Create a new, empty model
+fmmfile = "sensortest.fmm"
+myModel = FedemModeler(fmmfile, True)
+
+# Create some triads
+t1 = myModel.make_triad("T1", (0, 0, 0))
+t2 = myModel.make_triad("T2", (2, 0, 0))
+t3 = myModel.make_triad("T3", (3, 0, 0))
+t4 = myModel.make_triad("T4", (3, 1, 0))
+print("Created triads", [t1, t2, t3, t4])
+if t1 <= 0 or t2 <= 0 or t3 <= 0 or t4 <= 0:
+    error_exit(1)
+
+# Create a material property               Rho   E       nu
+mat = myModel.make_beam_material("Steel", (7850, 2.1e11, 0.3))
+print("Created material property", mat)
+if mat <= 0:
+    error_exit(2)
+
+# Create a Pipe cross section                  Do   Di
+pipe = myModel.make_beam_section("Pipe", mat, (0.5, 0.45))
+print("Created beam property", pipe)
+if pipe <= 0:
+    error_exit(3)
+
+# Create two beam elements
+beams = myModel.make_beam("Bjelken", (t4, t1, t2), pipe)
+print("Created beams", beams)
+if beams is None:
+    error_exit(4)
+
+# Create a generic part
+p1 = myModel.make_generic_part("Trekant", (t2, t3, t4))
+print("Created generic part", p1)
+if p1 <= 0:
+    error_exit(5)
+
+# Constrain the first triad
+if not myModel.edit_triad(t1,
+                          constraints={
+                              "Tx" : FmDofStat.FIXED,
+                              "Ty" : FmDofStat.FIXED,
+                              "Tz" : FmDofStat.FIXED,
+                           }):
+    error_exit(6)
+
+# Make an angle sensor
+s1 = myModel.make_sensor("Vinkel", (t1, t1, t2, t4), FmVar.POS)
+if s1 <= 0:
+    error_exit(7)
+
+# Save the model with its given name and clean up
+if not myModel.close(True):
+    print("     Please check the log-file", fmmfile.replace(".fmm", ".log"))
+    exit(99)
+
+if "FEDEM_SOLVER" in environ:
+    # Try to solve it
+    print("\n### Running dynamics solver on", fmmfile)
+    mySolver = FmmSolver(fmmfile)
+    while mySolver.solve_next():
+        print(f"     d({mySolver.get_current_time()}) =", mySolver.get_functions([s1]))
+
+    if mySolver.solver_done() == 0 and mySolver.ierr.value == 0:
+        print("Time step loop OK, solver closed")
+        mySolver.close_model(True)
+    else:
+        mySolver.close_model(False)
+        print(" *** Solver failed", mySolver.ierr.value)
+        exit(mySolver.ierr.value)
