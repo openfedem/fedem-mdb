@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <functional>
 #include <fstream>
-#include <ctime>
 
 #include "vpmDB/FmDB.H"
 #include "vpmDB/FmQuery.H"
@@ -1521,13 +1520,11 @@ bool FmDB::reportAll(std::ostream& os, bool writeMetaData,
 
   // Writing the model file
   os <<"FEDEMMODELFILE {" << FedemAdmin::getVersion() <<" ASCII}\n";
-  os <<"!Module version: "<< FedemAdmin::getVersion() <<" "<< FedemAdmin::getBuildDate() <<"\n";
+  os <<"!Module version: "<< FFaAppInfo::getVersion() <<"\n";
   os <<"!Model file name: "<< FmDB::getMechanismObject()->getModelFileName() <<"\n";
   if (writeMetaData)
-  {
-    const time_t currentTime = time(NULL);
-    os <<"!Last saved: #"<< ++ourSaveNr <<", "<< ctime(&currentTime);
-  }
+    os << "!Last saved: #"<< ++ourSaveNr <<", "
+       << FFaAppInfo::getUser() <<", "<< FFaAppInfo::getDate() <<"\n";
   if (metaData)
     os << metaData <<"\n";
   os <<"\n";
