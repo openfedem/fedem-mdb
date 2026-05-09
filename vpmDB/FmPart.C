@@ -1985,13 +1985,12 @@ bool FmPart::exportPart(const std::string& ftlFile, bool extNodeInfo,
   if (noMetaData)
     return fedemwriter.write(ftlFile,extNodeInfo,withCheckSum);
 
-  FFaAppInfo current;
   return fedemwriter.write(ftlFile,extNodeInfo,withCheckSum,{
-      "Fedem version: " + current.version,
+      "Fedem version: " + FFaAppInfo::getVersion(),
       "Original FE data: " + originalFEFile.getValue(),
       "This file: " + ftlFile,
       "Model file: " + FmDB::getMechanismObject()->getModelFileName(),
-      "Written by: " + current.user + ", " + current.date});
+      "Written by: " + FFaAppInfo::getUser() + ", " + FFaAppInfo::getDate() });
 }
 
 
