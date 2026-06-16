@@ -1848,11 +1848,11 @@ int FmTriad::checkTriads()
 	     <<" coupled to it.\n";
     }
     else if (ownerLink->isEarthLink())
-      if (activeTriad->hasSensors())
+      if (activeTriad->getSimpleSensor())
       {
 	errCount++;
 	ListUI <<"ERROR: "<< activeTriad->getIdString()
-	       <<" is attached to ground, but has sensors coupled to it.\n";
+	       <<" is attached to ground, but has a sensor coupled to it.\n";
       }
   }
 
