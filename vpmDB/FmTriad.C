@@ -634,9 +634,20 @@ bool FmTriad::connect(FmBase* parent)
   // Do it only when connecting to the first part.
   FmPart* owner = this->getOwnerPart();
   if (parent && owner)
-    this->setLocalCS(owner->getGlobalCS().inverse() *
-                     this->FmIsPositionedBase::getGlobalCS());
-
+  {
+    FaMat34 glbCS = this->FmIsPositionedBase::getGlobalCS();
+    FaMat34 newCS = owner->getGlobalCS().inverse() * glbCS;
+#ifdef FM_DEBUG
+    std::cout <<"FmTriad::connect() "<< this->getIdString()
+              <<"\n\tCurrent local position:"<< this->getLocalCS()
+              <<"\n\tCurrent global position:"<< glbCS;
+#endif
+    this->setLocalCS(newCS);
+#ifdef FM_DEBUG
+    std::cout <<"\n\tNew local position:"<< newCS
+              <<"\n\tNew global position:"<< this->getGlobalCS() << std::endl;
+#endif
+  }
   this->updateFENodeAndDofs(owner);
   return status;
 }
@@ -722,10 +733,11 @@ void FmTriad::initAfterResolve()
       // If this was the first beam this triad is connected to,
       // its coordinate system was local to the beam/part coordinate system.
       // We must therefore transform it to global system here.
+      const FaMat34& beamCS = beam->FmIsPositionedBase::getLocalCS();
       if (FmAssemblyBase* parent = beam->getPositionedAssembly(); parent)
-        globCS = parent->toGlobal(beam->myCS.getValue())*this->getLocalCS();
+        globCS = parent->toGlobal(beamCS)*this->getLocalCS();
       else
-        globCS = beam->myCS.getValue()*this->getLocalCS();
+        globCS = beamCS*this->getLocalCS();
     }
   }
   if (nBeams > 0)
@@ -905,7 +917,16 @@ bool FmTriad::disconnect()
   // This has to be done _after_ disconnecting the owner part (TT #2990).
   if (owner)
   {
+#ifdef FM_DEBUG
+    std::cout <<"FmTriad::disconnect() "<< this->getIdString()
+              <<"\n\tCurrent local position:"<< this->getLocalCS()
+              <<"\n\tCurrent global position:"<< this->getGlobalCS();
+#endif
     this->setGlobalCS(owner->getGlobalCS() * this->getLocalCS());
+#ifdef FM_DEBUG
+    std::cout <<"\n\tNew local position:"<< this->getLocalCS()
+              <<"\n\tNew global position:"<< this->getGlobalCS() << std::endl;
+#endif
     // Redraw generic part spider (if any) after removal of this triad
     owner->updateGPVisualization();
   }
@@ -1565,7 +1586,7 @@ int FmTriad::getNDOFs(bool checkForSuppressedOwner) const
 bool FmTriad::setNDOFs(int nDOFs)
 {
 #ifdef FM_DEBUG
-  std::cout <<"FmTriad::setNDOFs: "<< this->getIdString()
+  std::cout <<"FmTriad::setNDOFs(): "<< this->getIdString()
             <<" nDOFS = "<< nDOFs << std::endl;
 #endif
   if (nDOFs != 0 && nDOFs != 3 && nDOFs != 6)
