@@ -588,8 +588,6 @@ FmMechanism* FmDB::newMechanism()
   FmMechanism* mech = new FmMechanism();
   mech->connect();
 
-  itsEarthLink->setLocalCS(FaMat34());
-
   FmRefPlane* refPlane = new FmRefPlane();
   refPlane->connect();
   refPlane->draw();
@@ -1640,8 +1638,6 @@ bool FmDB::eraseAll(bool showProgress)
     head.second->eraseRingMembers(showProgress);
 
   ourHeadMap[FmElementGroupProxy::getClassTypeID()]->printHeader(false);
-
-  itsEarthLink->setLocalCS(FaMat34());
 
   ourBaseIDMap.clear();
   return true;

@@ -75,7 +75,7 @@ public:
   virtual void updateLocation(bool updateReferringObjs = true);
 
 protected:
-  FmIsPositionedBase();
+  FmIsPositionedBase(bool noFields = false);
   virtual ~FmIsPositionedBase();
 
   void getLocalStickers(std::vector<FmSticker*>& stickers) const;
@@ -92,7 +92,6 @@ protected:
 
   FFaField<FFa3DLocation> myLocation;
 
-public: // To allow the earth link CS field be added to the FmMechanism object
   FFaField<FaMat34> myCS;
 
 private:

@@ -83,7 +83,7 @@ FmLink::FmLink(const FaVec3& globalPos)
   Constructor for the earth link (no field initialization)
 */
 
-FmLink::FmLink(bool)
+FmLink::FmLink(bool) : FmIsPositionedBase(true)
 {
   Fmd_CONSTRUCTOR_INIT(FmLink);
 
