@@ -76,7 +76,6 @@ void FmIsPositionedBase::setGlobalCS(const FaMat34& globalMat, bool)
     this->setLocalCS(parent->toLocal(globalMat));
   else
     this->setLocalCS(globalMat);
-  this->updateLocation();
 }
 
 
@@ -310,4 +309,9 @@ void FmIsPositionedBase::updateLocation(bool updateReferringObjs)
   myLocation.getValue().set(myLocation.getValue().getPosType(), posRefCS,
                             myLocation.getValue().getRotType(), rotRefCS,
                             this->getGlobalCS());
+#ifdef FM_DEBUG
+  std::cout <<"\nFmIsPositionedBase::updateLocation(): "<< this->getIdString();
+  myLocation.getValue().print(std::cout,true) << std::endl;
+#endif
+
 }
