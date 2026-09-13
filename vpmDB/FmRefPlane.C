@@ -229,8 +229,8 @@ bool FmRefPlane::attachTriad(FmTriad* attachTr, bool updateViz)
 {
   // Search for an existing triad at this location
   FmLink*  earth = FmDB::getEarthLink();
-  FaVec3   point = earth->getGlobalCS().inverse() * attachTr->getGlobalTranslation();
-  FmTriad* oldTr = earth->getTriadAtPoint(point,FmDB::getPositionTolerance());
+  FmTriad* oldTr = earth->getTriadAtPoint(attachTr->getGlobalTranslation(),
+                                          FmDB::getPositionTolerance(),true);
 
   if (oldTr) // We have an existing triad at this location
   {

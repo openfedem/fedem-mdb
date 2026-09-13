@@ -211,15 +211,10 @@ FmPart::FmPart(const char* EarthName) : FmLink(true)
 {
   Fmd_CONSTRUCTOR_INIT(FmPart);
 
-  FFA_REFERENCE_INIT(myCGPosRef);
-  FFA_REFERENCE_INIT(myCGRotRef);
-  FFA_REFERENCELIST_INIT(myLoadEngines);
-
   myFEData = NULL;
 
   this->setUserDescription(EarthName);
-  this->setCGPosRef(this);
-  this->setCGRotRef(this);
+
   isCGedited = false;
   fileVersion = 0;
 }
@@ -261,6 +256,13 @@ FmPart::~FmPart()
 
 void FmPart::setLocalCS(const FaMat34& localCS)
 {
+  if (this->isEarthLink())
+  {
+    std::cerr <<" *** FmPart::setLocalCS(): The earth link should not"
+              <<" change location (ignored)."<< std::endl;
+    return;
+  }
+
   FaMat34 oldCS = this->getGlobalCS();
   this->FmLink::setLocalCS(localCS);
   FaMat34 TrMat = this->getGlobalCS() * oldCS.inverse();

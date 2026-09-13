@@ -42,8 +42,6 @@ FmMechanism::FmMechanism()
   FFA_FIELD_INIT(positionTolerance, 1.0e-4, "POSITION_TOLERANCE");
   FFA_FIELD_INIT(gravity, FaVec3(0.0,0.0,-9.81), "GRAVITY");
   FFA_FIELD_DEFAULT_INIT(initVel, "GLOBAL_INITIAL_VELOCITY");
-
-  FFA_FIELD_DEFAULT_INIT(FmDB::getEarthLink()->myCS, "EARTH_COORDINATE_SYSTEM");
 }
 
 
@@ -362,11 +360,6 @@ void FmMechanism::initAfterResolve()
 
   if (FmDB::getMechanismObject(false) != this)
     return;
-
-  // Update the earth link coordinate system
-  FmLink* earth = FmDB::getEarthLink();
-  earth->setLocalCS(earth->myCS.getValue());
-  earth->updateDisplayCS();
 
   // Update from old model file
   if (maxConcurrentProcesses.wasOnFile())

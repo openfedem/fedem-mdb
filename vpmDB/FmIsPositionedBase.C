@@ -14,15 +14,18 @@
 Fmd_DB_SOURCE_INIT(FcIS_POSITIONED_BASE, FmIsPositionedBase, FmIsPlottedBase);
 
 
-FmIsPositionedBase::FmIsPositionedBase()
+FmIsPositionedBase::FmIsPositionedBase(bool noFields)
 {
   Fmd_CONSTRUCTOR_INIT(FmIsPositionedBase);
 
-  FFA_FIELD_DEFAULT_INIT(myCS, "COORDINATE_SYSTEM");
-  FFA_FIELD_DEFAULT_INIT(myLocation, "LOCATION3D_DATA");
+  if (!noFields)
+  {
+    FFA_FIELD_DEFAULT_INIT(myCS, "COORDINATE_SYSTEM");
+    FFA_FIELD_DEFAULT_INIT(myLocation, "LOCATION3D_DATA");
 
-  FFA_REFERENCE_FIELD_INIT(myPosRefField, myPosRef, "LOCATION3D_POS_VIEW_REF");
-  FFA_REFERENCE_FIELD_INIT(myRotRefField, myRotRef, "LOCATION3D_ROT_VIEW_REF");
+    FFA_REFERENCE_FIELD_INIT(myPosRefField, myPosRef, "LOCATION3D_POS_VIEW_REF");
+    FFA_REFERENCE_FIELD_INIT(myRotRefField, myRotRef, "LOCATION3D_ROT_VIEW_REF");
+  }
 
   // To minimize the model file size (most positions have global reference)
   myPosRef.setPrintIfZero(false);
@@ -76,7 +79,6 @@ void FmIsPositionedBase::setGlobalCS(const FaMat34& globalMat, bool)
     this->setLocalCS(parent->toLocal(globalMat));
   else
     this->setLocalCS(globalMat);
-  this->updateLocation();
 }
 
 
@@ -310,4 +312,9 @@ void FmIsPositionedBase::updateLocation(bool updateReferringObjs)
   myLocation.getValue().set(myLocation.getValue().getPosType(), posRefCS,
                             myLocation.getValue().getRotType(), rotRefCS,
                             this->getGlobalCS());
+#ifdef FM_DEBUG
+  std::cout <<"\nFmIsPositionedBase::updateLocation(): "<< this->getIdString();
+  myLocation.getValue().print(std::cout,true) << std::endl;
+#endif
+
 }
