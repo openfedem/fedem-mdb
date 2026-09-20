@@ -88,6 +88,7 @@ void FmTriad::init()
 
   this->completeInitDOFs();
 
+  itsNode = NULL;
 #ifdef USE_INVENTOR
   itsDisplayPt = new FdTriad(this);
 #endif
@@ -661,6 +662,7 @@ bool FmTriad::connect(FmBase* parent)
 
 bool FmTriad::updateFENodeAndDofs(FmPart* ownerPart)
 {
+  itsNode = NULL;
   if (!ownerPart)
     return false;
 
@@ -678,13 +680,13 @@ bool FmTriad::updateFENodeAndDofs(FmPart* ownerPart)
 #else
   FFlConnectorItems* ci = NULL;
 #endif
-  FFlNode* tmpNode = ownerPart->getNodeAtPoint(this->getLocalCS().translation(),
-                                               FmDB::getPositionTolerance(),ci);
+  itsNode = ownerPart->getNodeAtPoint(this->getLocalCS().translation(),
+                                      FmDB::getPositionTolerance(),ci);
 
   // If no node => the FE data is most likely not loaded, don't touch anything.
-  if (!tmpNode) return false;
+  if (!itsNode) return false;
 
-  if (tmpNode->isSlaveNode())
+  if (itsNode->isSlaveNode())
   {
     // This should normally not happen, only if the part is locked such that
     // an attachable node could not be created over the dependent node
@@ -695,11 +697,11 @@ bool FmTriad::updateFENodeAndDofs(FmPart* ownerPart)
     return false;
   }
 
-  FENodeNo.setValue(tmpNode->getID());
-  if (tmpNode->setExternal(true))
+  FENodeNo.setValue(itsNode->getID());
+  if (itsNode->setExternal(true))
     ownerPart->delayedCheckSumUpdate();
 
-  return this->setNDOFs(tmpNode->getMaxDOFs());
+  return this->setNDOFs(itsNode->getMaxDOFs());
 }
 
 
@@ -812,22 +814,22 @@ int FmTriad::syncOnFEmodel(bool useDialog)
 #endif
 
   // Find an FE node at the triad's location
-  FFlNode* node = owner->getNodeAtPoint(this->getLocalTranslation(),
-                                        FmDB::getPositionTolerance(),items);
+  itsNode = owner->getNodeAtPoint(this->getLocalTranslation(),
+                                  FmDB::getPositionTolerance(),items);
 
   // If it was a dependent node, consider as no node
-  if (node && node->isSlaveNode())
-    node = NULL;
+  if (itsNode && itsNode->isSlaveNode())
+    itsNode = NULL;
 
 #ifdef FT_USE_CONNECTORS
   // Unless the same as the connector used, we need to recreate the connector
   // or remove it if the user prefers that option instead
   // (the latter is now enforced if useDialog is false)
-  if (node && haveGeometry && FENodeNo.getValue() != node->getID())
+  if (itsNode && haveGeometry && FENodeNo.getValue() != itsNode->getID())
   {
     std::string msg = this->getIdString() + " was connected to FE node " +
       std::to_string(FENodeNo.getValue()) + "\nbut now matches node " +
-      std::to_string(node->getID()) + " in the new FE model.";
+      std::to_string(itsNode->getID()) + " in the new FE model.";
 
     if (!useDialog)
     {
@@ -843,7 +845,7 @@ int FmTriad::syncOnFEmodel(bool useDialog)
       haveGeometry = false;
 
     if (haveGeometry)
-      node = NULL;
+      itsNode = NULL;
     else
     {
       itsConnectorType.setValue(NONE);
@@ -851,24 +853,24 @@ int FmTriad::syncOnFEmodel(bool useDialog)
     }
   }
 
-  if (!node && haveGeometry)
+  if (!itsNode && haveGeometry)
   {
     // Recreate connector
     if (this->updateConnector(itsConnectorType.getValue(),owner))
       owner->delayedCheckSumUpdate();
 
-    node = owner->getNodeAtPoint(this->getLocalTranslation(),
-                                 FmDB::getPositionTolerance(),items);
+    itsNode = owner->getNodeAtPoint(this->getLocalTranslation(),
+                                    FmDB::getPositionTolerance(),items);
   }
 #endif
 
   // Set triads FE node status
   int nodeNo = -1;
-  if (node)
+  if (itsNode)
   {
-    node->setExternal(true);
-    nodeNo = node->getID();
-    if (!this->setNDOFs(node->getMaxDOFs()) &&
+    itsNode->setExternal(true);
+    nodeNo = itsNode->getID();
+    if (!this->setNDOFs(itsNode->getMaxDOFs()) &&
         FENodeNo.getValue() == nodeNo)
       return nodeNo;
   }
@@ -907,6 +909,7 @@ bool FmTriad::disconnect()
       if (tmpNode->setExternal(false))
         owner->delayedCheckSumUpdate();
 
+    itsNode = NULL;
     FENodeNo.setValue(-1);
   }
 
