@@ -94,6 +94,8 @@ public:
   int  getNDOFs(bool checkForSuppressedOwner = false) const;
   bool setNDOFs(int NDOFs);
 
+  FFlNode* getFENode() const { return itsNode; }
+
   virtual bool      setStatusForDOF(int dof, DOFStatus status);
   virtual DOFStatus getStatusOfDOF(int dof) const;
   virtual bool      isLegalDOF(int dof) const;
@@ -236,6 +238,8 @@ private:
   FFaField<DOFStatusVec> itsBndC;
   FFaField<DoubleVec>    itsMass;
   FFaField<int>          itsNDOFs; // 0, 3 or 6
+
+  FFlNode* itsNode;
 };
 
 
