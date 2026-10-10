@@ -213,7 +213,7 @@ public:
   std::string getBaseFTLFile(bool createDir = false) const;
   std::string getBaseFTLName(bool includExt = false) const;
 
-  const std::string& setValidBaseFTLFile(unsigned int myCS = 0);
+  const std::string& setValidBaseFTLFile(unsigned int cs = 0);
 
   static int checkParts();
 
