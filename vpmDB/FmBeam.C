@@ -183,7 +183,7 @@ void FmBeam::setTranslation(const FaVec3&)
 }
 
 
-void FmBeam::setOrientation(const FaMat33&)
+void FmBeam::setOrientation(const FaMat33&, bool)
 {
   std::cerr <<"FmBeam::setOrientation: Cannot set orientation of beam directly."
             << std::endl;

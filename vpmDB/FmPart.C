@@ -652,7 +652,7 @@ void FmPart::getStickers(std::vector<FmSticker*>& stickers) const
   this->getTriads(triads);
   this->getFreeJointEnds(triads);
 
-  this->getLocalStickers(stickers);
+  this->getMyStickers(stickers);
   for (FmTriad* triad : triads)
     triad->getStickers(stickers);
 }
