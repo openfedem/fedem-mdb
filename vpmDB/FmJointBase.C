@@ -139,7 +139,8 @@ FmJointBase::~FmJointBase()
 
   std::vector<FmHPBase*> hps;
   this->getReferringObjs(hps);
-  for (FmHPBase* hp : hps) hp->erase();
+  for (FmHPBase* hp : hps)
+    hp->erase();
 }
 
 
@@ -168,7 +169,8 @@ void FmJointBase::updateChildrenDisplayTopology()
 {
   std::vector<FmHPBase*> hps;
   this->getReferringObjs(hps);
-  for (FmHPBase* hp : hps) hp->updateTopologyInViewer();
+  for (FmHPBase* hp : hps)
+    hp->updateTopologyInViewer();
 
   this->FmHasDOFsBase::updateChildrenDisplayTopology();
 }
@@ -194,8 +196,7 @@ bool FmJointBase::isAxialJoint(bool useLocalDofsOnly) const
 bool FmJointBase::isGlobalSpringElement() const
 {
   if (this->isOfType(FmFreeJoint::getClassTypeID()))
-    if (FFaString(this->getUserDescription()).hasSubString("#GlobalSpring"))
-      return true;
+    return FFaString(this->getUserDescription()).hasSubString("#GlobalSpring");
 
   return false;
 }
@@ -204,8 +205,7 @@ bool FmJointBase::isGlobalSpringElement() const
 bool FmJointBase::isContactElement() const
 {
   if (this->isOfType(FmCamJoint::getClassTypeID()))
-    if (!FFaString(this->getUserDescription()).hasSubString("#MasterSlaveCam"))
-      return true;
+    return !FFaString(this->getUserDescription()).hasSubString("#MasterSlaveCam");
 
   return false;
 }
@@ -259,11 +259,10 @@ FmLink* FmJointBase::getOtherLink(const FmTriad* jointTriad) const
 
 bool FmJointBase::isSuppressed() const
 {
-  FmLink* link = this->getSlaveLink();
-  if (link)
-    if (link->isSuppressed())
-      if ((link = this->getMasterLink()))
-	return link->isSuppressed() || link->isEarthLink();
+  if (FmLink* slave = this->getSlaveLink(); slave)
+    if (slave->isSuppressed())
+      if (FmLink* master = this->getMasterLink(); master)
+        return master->isSuppressed() || master->isEarthLink();
 
   return false;
 }
@@ -271,10 +270,8 @@ bool FmJointBase::isSuppressed() const
 
 bool FmJointBase::isSlaveAttachedToLink(bool allowMultipleLinks) const
 {
-  FmTriad* slaveTriad = this->getSlaveTriad();
-  if (slaveTriad)
-    if (slaveTriad->isAttached(false,allowMultipleLinks))
-      return true;
+  if (FmTriad* slave = this->getSlaveTriad(); slave)
+    return slave->isAttached(false,allowMultipleLinks);
 
   return false;
 }
@@ -284,8 +281,8 @@ FmLink* FmJointBase::getSlaveLink() const
 {
   if (this->isSlaveAttachedToLink())
     return this->getSlaveTriad()->getOwnerLink();
-  else
-    return NULL;
+
+  return NULL;
 }
 
 
@@ -371,12 +368,9 @@ FaDOF FmJointBase::getObjDegOfFreedom() const
 #endif
 
 
-bool FmJointBase::isLegalDOF(int DOFno) const
+bool FmJointBase::isLegalDOF(int dof) const
 {
-  if (DOFno >= 0 && DOFno < MAX_DOF)
-    return myLegalDOFs[DOFno];
-  else
-    return false;
+  return dof >= 0 && dof < MAX_DOF ? myLegalDOFs[dof] : false;
 }
 
 
@@ -724,7 +718,6 @@ bool FmJointBase::isMasterSlaveInOtherJoint() const
 }
 
 
-
 int FmJointBase::atWhatDOF(const FmJointSpring* spr) const
 {
   for (int i = 0; i < MAX_DOF; i++)
@@ -775,15 +768,10 @@ void FmJointBase::setJointRotations(const FaVec3& rotations,
   // quasi-setting of the DOF quadrant.
   // i=0 means first or second quadrant, 1 means larger angles.
   for (int i = 0; i < 3; i++)
-  {
-    double val = rotations[i]/M_PI;
-    if (val > 1.0 && val < 2.0)
-      myDOFQuadrant.getValue()[i] = 1;
-    else if (val < -1.0 && val > -2.0)
-      myDOFQuadrant.getValue()[i] = -1;
+    if (double val = fabs(rotations[i]); val > M_PI && val < 2.0*M_PI)
+      myDOFQuadrant.getValue()[i] = rotations[i] > 0.0 ? 1 : -1;
     else
       myDOFQuadrant.getValue()[i] = 0;
-  }
 
   slaveCS.eulerRotateZYX(rotations,masterCS);
   slaveTr->setGlobalCS(slaveCS);
