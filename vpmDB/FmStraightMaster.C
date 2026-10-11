@@ -79,27 +79,26 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
 {
   // Check that this line is connected to one (and only one) part
   FmTriad* first = this->getFirstTriad();
-  FmPart*  part  = first ? first->getOwnerPart() : NULL;
-  if (!part)
+  FmTriad* last  = this->getLastTriad();
+  FmPart*  part1 = first ? first->getOwnerPart() : NULL;
+  FmPart*  part2 = last  ? last->getOwnerPart() : NULL;
+  if (!part1 || !part2)
   {
     ListUI <<" ==> ERROR: Can not add independent triad: ";
-    if (first)
+    if (first && !part1)
       ListUI << first->getIdString(true) <<" is not attached to a Part.\n";
+    else if (last && !part2)
+      ListUI << last->getIdString(true) <<" is not attached to a Part.\n";
     else
       ListUI <<"(NULL)\n"; // should not happen (logic error if so)
     return false;
   }
 
-  FmTriad* last = this->getLastTriad();
-  if (!last || last->getOwnerPart() != part)
-    return false; // should never happen (topological inconsistency)
-
   // Check that the point is on the line between existing triads
-  FaVec3 point     = part->getGlobalCS().inverse() * globPoint;
-  FaVec3 firstPos  = first->getTranslation();
-  FaVec3 lineVec   = last->getTranslation() - firstPos;
+  FaVec3 firstPos  = first->getGlobalTranslation();
+  FaVec3 lineVec   = last->getGlobalTranslation() - firstPos;
   double parallTol = FmDB::getParallelTolerance();
-  int parallelFlag = lineVec.isParallell(point - firstPos, parallTol);
+  int parallelFlag = lineVec.isParallell(globPoint - firstPos, parallTol);
   if (parallelFlag == 0)
   {
     ListUI <<" ==> ERROR: Can not add independent triad:"
@@ -110,7 +109,39 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
   // If attached to an FE part,
   // check that there is a valid FE node on that point
   double posTolerance = FmDB::getPositionTolerance();
-  if (part->isFEPart() && !part->getNodeAtPoint(point,posTolerance))
+  FaVec3 point;
+  FmPart* part = NULL;
+  if (FaVec3 p1 = part1->getGlobalCS().inverse() * globPoint;
+      part1->isFEPart() && part1->getNodeAtPoint(p1,posTolerance))
+  {
+    point = p1;
+    part = part1;
+  }
+  else if (part2 != part1)
+  {
+    if (FaVec3 p2 = part2->getGlobalCS().inverse() * globPoint;
+        part2->isFEPart() && part2->getNodeAtPoint(p2,posTolerance))
+    {
+      point = p2;
+      part = part2;
+    }
+    else
+    {
+      std::vector<FmPart*> parts;
+      FmDB::getAllParts(parts);
+      for (FmPart* pp : parts)
+        if (pp != part1 && pp != part2 && pp->isFEPart())
+          if (FaVec3 p3 = pp->getGlobalCS().inverse() * globPoint;
+              pp->getNodeAtPoint(p3,posTolerance))
+          {
+            point = p3;
+            part = pp;
+            break;
+          }
+    }
+  }
+
+  if (!part)
   {
     ListUI <<" ==> ERROR: Can not add independent triad:"
            <<" Point is not on a valid FE-node.\n";
@@ -118,6 +149,8 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
   }
 
   FaMat33 Orient = first->getOrientation();
+  if (part != part1)
+    Orient = part->getOrientation().transpose()*part1->getOrientation()*Orient;
 
   // Check whether there already is a triad at that point, create one if not
   FmTriad* newTriad = part->getTriadAtPoint(point,posTolerance);
@@ -144,14 +177,15 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
 
   // Insert the triad in its proper location
   double myLength = lineVec.sqrLength();
-  double distance = (point-firstPos).sqrLength();
+  double distance = (globPoint-firstPos).sqrLength();
   bool ok = false;
   if (parallelFlag < 0)
     ok = this->addTriad(newTriad,true);
   else if (distance > myLength)
     ok = this->addTriad(newTriad,false);
   else for (size_t pos = 1; pos < this->size(); pos++)
-    if ((this->getTriad(pos)->getTranslation()-firstPos).sqrLength() > distance)
+    if (FaVec3 relPos = this->getTriad(pos)->getGlobalTranslation() - firstPos;
+        relPos.sqrLength() > distance)
     {
       ok = this->Fm1DMaster::insertTriad(newTriad,pos);
       break;
