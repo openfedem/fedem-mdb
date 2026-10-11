@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "vpmDB/FmArcSegmentMaster.H"
-#include "vpmDB/FmMMJointBase.H"
+#include "vpmDB/FmJointBase.H"
 #include "vpmDB/FmPart.H"
 #include "vpmDB/FmBeam.H"
 #include "vpmDB/FmDB.H"
@@ -15,17 +15,6 @@
 #include "FFaLib/FFaString/FFaParse.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include <algorithm>
-
-
-static double acosClip(double cosVal)
-{
-  if (cosVal >= 1.0)
-    return 0.0;
-  else if (cosVal <= -1.0)
-    return M_PI;
-  else
-    return acos(cosVal);
-}
 
 
 Fmd_DB_SOURCE_INIT(FcMASTER_ARC_SEGMENT, FmArcSegmentMaster, Fm1DMaster);
@@ -49,7 +38,8 @@ bool FmArcSegmentMaster::addTriadOnPoint(const FaVec3& globPoint)
   FmPart* part = dynamic_cast<FmPart*>(this->getOwnerLink());
   if (!part)
   {
-    ListUI <<"ERROR: Could not add triad: Arc segment object is not attached.\n";
+    ListUI <<" ==> ERROR: Can not add triad: "
+           <<"Arc segment object is not attached.\n";
     return false;
   }
 
@@ -60,7 +50,8 @@ bool FmArcSegmentMaster::addTriadOnPoint(const FaVec3& globPoint)
   double posTolerance = FmDB::getPositionTolerance();
   if (!part->getNodeAtPoint(point,posTolerance))
   {
-    ListUI <<"ERROR: Could not add triad: Point is not on a valid FE-node.\n";
+    ListUI <<" ==> ERROR: Can not add triad: "
+           <<"Point is not on a valid FE-node.\n";
     return false;
   }
 
@@ -91,14 +82,13 @@ bool FmArcSegmentMaster::isAddable(FmTriad* triad) const
   else if (!first->isAttached() && !triad->isAttached())
     return true; // The triads are not attached yet
 
-  FmPart* ownerPart = triad->getOwnerPart(0);
-  if (ownerPart)
+  if (FmPart* ownerPart = triad->getOwnerPart(0); ownerPart)
   {
     // The first triad is attached to a (FE or generic) part
     if (first->isAttached(ownerPart))
       return true;
 
-    ListUI <<"ERROR: All triads must be on the same part.\n";
+    ListUI <<" ==> ERROR: All triads must be on the same part.\n";
     return false;
   }
 
@@ -126,12 +116,12 @@ bool FmArcSegmentMaster::isAddable(FmTriad* triad) const
     else if (!second || std::find(bs.begin(),bs.end(),second) != bs.end())
       return true; // The triad to be added is on the right beamstring
 
-    ListUI <<"ERROR: All triads must be on the same part of the beamstring.\n";
+    ListUI <<" ==> ERROR: All triads must be on the same beamstring part.\n";
     return false;
   }
 
-  ListUI <<"ERROR: The triads can be attached to only parts and beams,\n"
-         <<"       and all (or none) must be attached during modeling.\n";
+  ListUI <<" ==> ERROR: The triads can be attached to only parts and beams,\n"
+         <<"            and all (or none) must be attached during modeling.\n";
   return false;
 }
 
@@ -142,7 +132,7 @@ bool FmArcSegmentMaster::addTriad(FmTriad* triad, bool asFront, bool updateViz)
 
   if (this->isLooping())
   {
-    ListUI <<"ERROR: Arc segment is closed. Can not add more triads.\n";
+    ListUI <<" ==> ERROR: Arc segment is closed. Can not add more triads.\n";
     return false;
   }
 
@@ -154,12 +144,12 @@ bool FmArcSegmentMaster::addTriad(FmTriad* triad, bool asFront, bool updateViz)
 
   else if (triad == this->getFirstTriad())
   {
-    ListUI <<"NOTE: Closing the arc segment loop.\n";
+    ListUI <<"  => NOTE: Closing the arc segment loop.\n";
     myLoopFlag.setValue(true);
     return true;
   }
   else
-    ListUI <<"ERROR: "<< triad->getIdString()
+    ListUI <<" ==> ERROR: "<< triad->getIdString()
            <<" is already on this arc segment.\n";
 
   return false;
@@ -236,7 +226,7 @@ void FmArcSegmentMaster::initAfterResolve()
   if (tr1 == tr2 && tr3 != tr2)
   {
     this->setLooping();
-    ListUI <<"     Setting looping flag ON instead.\n";
+    ListUI <<"  => NOTE: Setting looping flag ON instead.\n";
   }
 }
 
@@ -255,12 +245,7 @@ int FmArcSegmentMaster::printSolverEntry(FILE* fp)
   size_t nTriads = triads.size();
   if (nTriads < 2 || nTriads%2 == (this->isLooping() ? 1 : 0))
   {
-    FmMMJointBase* joint;
-    FFaMsg::list("\n---> ERROR: ",true);
-    if (this->hasReferringObjs(joint,"myMaster"))
-      ListUI << joint->getIdString(true);
-    else
-      ListUI << this->getIdString(true);
+    FFaMsg::list("\n ==> ERROR: " + this->getIdString(true), true);
     if (nTriads < 2)
       ListUI <<" has zero length.\n";
     else if (this->isLooping())
@@ -312,6 +297,21 @@ int FmArcSegmentMaster::printSolverEntry(FILE* fp)
 
   fprintf(fp,"\n");
   return 0;
+}
+
+
+namespace
+{
+  //! acos() function with out of valid range check [-1,1].
+  double acosClip(double cosVal)
+  {
+    if (cosVal >= 1.0)
+      return 0.0;
+    else if (cosVal <= -1.0)
+      return M_PI;
+    else
+      return acos(cosVal);
+  }
 }
 
 
@@ -521,22 +521,22 @@ double FmArcSegmentMaster::getSliderPosition(FaMat34& ur,
 }
 
 
-/*!
-  Returns the average of two matrices assuming they share Ey and Position.
-*/
-
-static FaMat34 average(const FaMat34& m1, const FaMat34& m2)
+namespace
 {
-  FaVec3 Ez = m1[2] + m2[2];
-  FaVec3 Ey = m1[1];
+  //! Returns the average of two matrices assuming they share Ey and Position.
+  FaMat34 average(const FaMat34& m1, const FaMat34& m2)
+  {
+    FaVec3 Ez = m1[2] + m2[2];
+    FaVec3 Ey = m1[1];
 
-  if (Ez.length() < 1.0e-9)
-    Ez = m1[2] ^ Ey;
+    if (Ez.length() < 1.0e-9)
+      Ez = m1[2] ^ Ey;
 
-  Ez.normalize();
-  FaVec3 Ex = Ey ^ Ez;
+    Ez.normalize();
+    FaVec3 Ex = Ey ^ Ez;
 
-  return FaMat34(Ex, Ey, Ez, m1[3]);
+    return FaMat34(Ex, Ey, Ez, m1[3]);
+  }
 }
 
 
@@ -606,15 +606,13 @@ void FmArcSegmentMaster::setDefaultOrientation(FmTriad* follower)
   double dist = upVec.length();
   size_t i, closestTriadIdx = 0;
   for (i = 1; i < triads.size(); i++)
-  {
-    FaVec3 up = followerPos - triads[i]->getLocalTranslation();
-    if (up.length() < dist)
+    if (FaVec3 up = followerPos - triads[i]->getLocalTranslation();
+        up.length() < dist)
     {
       upVec = up;
       dist = upVec.length();
       closestTriadIdx = i;
     }
-  }
 
   // Find a Z-direction (along the curve), and
   // adjust the plane normal to make the X-direction point towards the follower

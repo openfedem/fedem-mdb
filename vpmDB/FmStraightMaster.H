@@ -31,7 +31,7 @@ public:
   virtual double getSliderPosition(FaMat34& ur, const FaVec3& pos) const;
 
 protected:
-  virtual ~FmStraightMaster() {}
+  bool reOrientTriad(FmTriad* triad);
 
   virtual bool cloneLocal(FmBase* obj, int depth);
 };
