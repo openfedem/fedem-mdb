@@ -26,7 +26,7 @@ public:
   virtual const char* getUITypeName() const { return "Straight line"; }
 
   virtual bool addTriadOnPoint(const FaVec3& globalPoint);
-  virtual bool insertTriad(FmTriad* triad, size_t pos);
+  virtual bool insertTriad(FmTriad* triad, size_t pos, bool updateViz);
 
   virtual double getSliderPosition(FaMat34& ur, const FaVec3& pos) const;
 

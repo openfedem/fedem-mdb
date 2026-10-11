@@ -23,18 +23,18 @@ FmStraightMaster::FmStraightMaster()
 }
 
 
-bool FmStraightMaster::insertTriad(FmTriad* triad, size_t pos)
+bool FmStraightMaster::insertTriad(FmTriad* triad, size_t pos, bool updateViz)
 {
   if (!triad) return false;
 
   FmTriad* first = this->getFirstTriad();
   if (!first)
-    return this->Fm1DMaster::insertTriad(triad,pos);
+    return this->Fm1DMaster::insertTriad(triad,pos,updateViz);
 
   FmTriad* last = this->getLastTriad();
   if (last && first != last)
   {
-    // Check that the new triad is on the line between existing the triads
+    // Check that the new triad is on the line between the two end triads
     FaVec3 triadPos = triad->getGlobalTranslation();
     FaVec3 firstPos = first->getGlobalTranslation();
     FaVec3 lineVec  = last->getGlobalTranslation() - firstPos;
@@ -47,7 +47,7 @@ bool FmStraightMaster::insertTriad(FmTriad* triad, size_t pos)
     }
   }
 
-  // If the triad has important directions,
+  // If the new triad has important directions,
   // check that they fit with what we want to use
   if (!triad->importantDirections())
     triad->setOrientation(first->getOrientation());
@@ -60,7 +60,7 @@ bool FmStraightMaster::insertTriad(FmTriad* triad, size_t pos)
     return false;
   }
 
-  return this->Fm1DMaster::insertTriad(triad,pos);
+  return this->Fm1DMaster::insertTriad(triad,pos,updateViz);
 }
 
 
@@ -79,13 +79,13 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
     if (first)
       ListUI << first->getIdString(true) <<" is not attached to a Part.\n";
     else
-      ListUI <<" (NULL)\n"; // Should not happen (logic error if so)
+      ListUI <<"(NULL)\n"; // should not happen (logic error if so)
     return false;
   }
 
   FmTriad* last = this->getLastTriad();
   if (!last || last->getOwnerPart() != part)
-    return false; // Should never happen (topological inconsistency)
+    return false; // should never happen (topological inconsistency)
 
   // Check that the point is on the line between existing triads
   FaVec3 point     = part->getGlobalCS().inverse() * globPoint;
@@ -99,7 +99,8 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
     return false;
   }
 
-  // If attached to an FE part, check that there is a valid FE node on that point
+  // If attached to an FE part,
+  // check that there is a valid FE node on that point
   double posTolerance = FmDB::getPositionTolerance();
   if (part->isFEPart() && !part->getNodeAtPoint(point,posTolerance))
   {

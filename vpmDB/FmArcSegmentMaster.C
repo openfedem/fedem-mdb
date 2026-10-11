@@ -136,7 +136,7 @@ bool FmArcSegmentMaster::isAddable(FmTriad* triad) const
 }
 
 
-bool FmArcSegmentMaster::addTriad(FmTriad* triad, bool asFront)
+bool FmArcSegmentMaster::addTriad(FmTriad* triad, bool asFront, bool updateViz)
 {
   if (!triad) return false;
 
@@ -150,7 +150,7 @@ bool FmArcSegmentMaster::addTriad(FmTriad* triad, bool asFront)
     return false;
 
   else if (!this->hasTriad(triad))
-    return this->Fm1DMaster::addTriad(triad,asFront);
+    return this->Fm1DMaster::addTriad(triad,asFront,updateViz);
 
   else if (triad == this->getFirstTriad())
   {
