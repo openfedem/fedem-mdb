@@ -36,16 +36,16 @@ public:
                          bool sortOnId = false) const;
 
   virtual const FaMat34& getLocalCS() const;
-  virtual void setLocalCS(const FaMat34&) {}
+  virtual void           setLocalCS(const FaMat34&) {}
 
   virtual FaMat34 getGlobalCS() const;
-  virtual void    setGlobalCS(const FaMat34&, bool = false) {}
+  virtual void    setGlobalCS(const FaMat34&, bool) {}
 
   virtual FaVec3  getTranslation() const;
   virtual void    setTranslation(const FaVec3&) {}
 
   virtual FaMat33 getOrientation() const;
-  virtual void    setOrientation(const FaMat33&) {}
+  virtual void    setOrientation(const FaMat33&, bool) {}
 
   virtual void updateLocation(bool) {}
 

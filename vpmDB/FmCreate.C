@@ -754,19 +754,18 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
     ListUI <<"ERROR: Unspecified independent joint triad(s).\n";
     return joint;
   }
-  else if (triad1->getOwnerPart(0) != triad2->getOwnerPart(0))
-  {
-    ListUI <<"ERROR: The two triads must be on the same part.\n";
-    return joint;
-  }
+
+  FmPart* part1 = triad1->getOwnerPart(0);
+  FmPart* part2 = triad2->getOwnerPart(0);
 
   FmTriad* triad3 = dynamic_cast<FmTriad*>(slider);
-  if (triad3 && triad3->isAttached(triad1->getOwnerPart(0)))
-  {
-    ListUI <<"ERROR: The dependent triad can not be on the same part"
-           <<" as the independent triads of the joint.\n";
-    return joint;
-  }
+  if (triad3)
+    if (triad3->isAttached(part1) || triad3->isAttached(part2))
+    {
+      ListUI <<"ERROR: The dependent triad can not be on the same part"
+             <<" as the independent triads of the joint.\n";
+      return joint;
+    }
 
   // First check if the two triads already are used by other line joints
   bool newLine = true;
@@ -874,10 +873,8 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   else
     joint->setParentAssembly(triad1->getCommonAncestor(triad2));
 
-  FmPart* part = NULL;
   if (newLine)
   {
-    part = triad1->getOwnerPart(0);
     orientation = triad1->getOrientation();
     line = new FmStraightMaster();
     line->setParentAssembly(joint->getParentAssembly());
@@ -885,6 +882,8 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
     line->addTriad(triad2);
     line->connect();
   }
+  else
+    part1 = NULL;
 
   if (!triad3)
   {
@@ -906,17 +905,24 @@ FmJointBase* Fedem::createJoint(int jType, FmBase* first, FmBase* last,
   joint->draw();
 
   // If an existing line was used or the first triad is not attached we are done
-  if (!part || !addBetweens)
+  if (!part1 || !addBetweens)
     return joint;
 
-  // Check if the part connected to the line have other triads along the line
+  // Check if the parts connected to the line have other triads along the line
   // between the two end triads, and offer to add those as joint triads as well
   FaVec3 fstPos = triad1->getGlobalTranslation();
   FaVec3 linVec = triad2->getGlobalTranslation() - fstPos;
   double parTol = FmDB::getParallelTolerance();
 
   std::vector<FmTriad*> triads;
-  part->getTriads(triads);
+  part1->getTriads(triads);
+  if (part2 != part1)
+  {
+    std::vector<FmTriad*> moreTriads;
+    part2->getTriads(moreTriads);
+    triads.insert(triads.end(),moreTriads.begin(),moreTriads.end());
+  }
+
   std::vector<FmTriad*>::iterator it = triads.begin();
   while (it != triads.end())
     if (*it == triad1 || *it == triad2)

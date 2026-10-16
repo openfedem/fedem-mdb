@@ -1562,7 +1562,7 @@ void FmTriad::setLocalCS(const FaMat34& localMat)
     joint->updateLocation();
 
   std::vector<FmSticker*> stickers;
-  this->getLocalStickers(stickers);
+  this->getMyStickers(stickers);
   for (FmSticker* sticker : stickers)
   {
     sticker->placeAtPoint(this->getGlobalTranslation());

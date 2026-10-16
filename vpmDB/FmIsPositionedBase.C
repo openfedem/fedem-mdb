@@ -9,6 +9,7 @@
 #include "vpmDB/FmAssemblyBase.H"
 #include "vpmDB/FmSticker.H"
 #include "vpmDB/FmLoad.H"
+#include "FFaLib/FFaDefinitions/FFaMsg.H"
 
 
 Fmd_DB_SOURCE_INIT(FcIS_POSITIONED_BASE, FmIsPositionedBase, FmIsPlottedBase);
@@ -18,20 +19,19 @@ FmIsPositionedBase::FmIsPositionedBase(bool noFields)
 {
   Fmd_CONSTRUCTOR_INIT(FmIsPositionedBase);
 
-  if (!noFields)
-  {
-    FFA_FIELD_DEFAULT_INIT(myCS, "COORDINATE_SYSTEM");
-    FFA_FIELD_DEFAULT_INIT(myLocation, "LOCATION3D_DATA");
-
-    FFA_REFERENCE_FIELD_INIT(myPosRefField, myPosRef, "LOCATION3D_POS_VIEW_REF");
-    FFA_REFERENCE_FIELD_INIT(myRotRefField, myRotRef, "LOCATION3D_ROT_VIEW_REF");
-  }
-
   // To minimize the model file size (most positions have global reference)
   myPosRef.setPrintIfZero(false);
   myRotRef.setPrintIfZero(false);
 
   IAmSettingLocation = false;
+
+  if (noFields) return;
+
+  FFA_FIELD_DEFAULT_INIT(myCS, "COORDINATE_SYSTEM");
+  FFA_FIELD_DEFAULT_INIT(myLocation, "LOCATION3D_DATA");
+
+  FFA_REFERENCE_FIELD_INIT(myPosRefField, myPosRef, "LOCATION3D_POS_VIEW_REF");
+  FFA_REFERENCE_FIELD_INIT(myRotRefField, myRotRef, "LOCATION3D_ROT_VIEW_REF");
 }
 
 
@@ -59,6 +59,10 @@ void FmIsPositionedBase::updateChildrenDisplayTopology()
 
 void FmIsPositionedBase::setLocalCS(const FaMat34& localMat)
 {
+#ifdef FM_DEBUG
+  std::cout <<"FmIsPositionedBase::setLocalCS(): "
+            << this->getIdString(true) << localMat << std::endl;
+#endif
   myCS.setValue(localMat);
   this->updateLocation();
 }
@@ -84,13 +88,25 @@ void FmIsPositionedBase::setGlobalCS(const FaMat34& globalMat, bool)
 
 void FmIsPositionedBase::setTranslation(const FaVec3& tr)
 {
+#ifdef FM_DEBUG
+  std::cout <<"FmIsPositionedBase::setTranslation(): "
+            << this->getIdString(true) <<" "<< tr << std::endl;
+#endif
   myCS.getValue()[3] = tr;
   this->updateLocation();
 }
 
 
-void FmIsPositionedBase::setOrientation(const FaMat33& orient)
+void FmIsPositionedBase::setOrientation(const FaMat33& orient, bool notify)
 {
+#ifdef FM_DEBUG
+  std::cout <<"FmIsPositionedBase::setOrientation(): "
+            << this->getIdString(true) << orient;
+#endif
+  if (notify)
+    ListUI <<"  => NOTE: Resetting orientation of "<< this->getIdString(true)
+           <<".\n";
+
   FaMat34& itsCS = myCS.getValue();
   itsCS[0] = orient[0];
   itsCS[1] = orient[1];
@@ -117,23 +133,17 @@ FmAssemblyBase* FmIsPositionedBase::getPositionedAssembly() const
 }
 
 
-void FmIsPositionedBase::getStickers(std::vector<FmSticker*>& stickers) const
+void FmIsPositionedBase::getMyStickers(Stickers& stickers) const
 {
-  this->getLocalStickers(stickers);
-}
-
-
-void FmIsPositionedBase::getLocalStickers(std::vector<FmSticker*>& stickers) const
-{
-  // Note that the stickers std::vector is not cleared on entry
+  // Note that the stickers vector is not cleared on entry
   this->getReferringObjs(stickers,"myOwner");
 }
 
 
 bool FmIsPositionedBase::hasStickers() const
 {
-  std::vector<FmSticker*> stickers;
   // Calling virtual method to catch stickers on triads on links
+  Stickers stickers;
   this->getStickers(stickers);
   return !stickers.empty();
 }
@@ -155,7 +165,7 @@ bool FmIsPositionedBase::addSticker(FmSticker* sticker)
 }
 
 
-bool FmIsPositionedBase::addStickers(const std::vector<FmSticker*>& stickers)
+bool FmIsPositionedBase::addStickers(const Stickers& stickers)
 {
   bool ret = true;
   for (FmSticker* sticker : stickers)
@@ -167,8 +177,8 @@ bool FmIsPositionedBase::addStickers(const std::vector<FmSticker*>& stickers)
 
 void FmIsPositionedBase::removeAllStickers()
 {
-  std::vector<FmSticker*> stickers;
-  this->getLocalStickers(stickers);
+  Stickers stickers;
+  this->getMyStickers(stickers);
   for (FmSticker* sticker : stickers)
     sticker->erase();
 }
@@ -176,8 +186,8 @@ void FmIsPositionedBase::removeAllStickers()
 
 int FmIsPositionedBase::getNumberOfStickers() const
 {
-  std::vector<FmSticker*> stickers;
-  this->getLocalStickers(stickers);
+  Stickers stickers;
+  this->getMyStickers(stickers);
   return stickers.size();
 }
 
@@ -215,8 +225,8 @@ bool FmIsPositionedBase::cloneLocal(FmBase* obj, int depth)
     for (FmLoad* load : loads)
       load->setToRef(this);
 
-    std::vector<FmSticker*> stickers;
-    copyObj->getLocalStickers(stickers);
+    Stickers stickers;
+    copyObj->getMyStickers(stickers);
     this->addStickers(stickers);
   }
 
@@ -313,7 +323,8 @@ void FmIsPositionedBase::updateLocation(bool updateReferringObjs)
                             myLocation.getValue().getRotType(), rotRefCS,
                             this->getGlobalCS());
 #ifdef FM_DEBUG
-  std::cout <<"\nFmIsPositionedBase::updateLocation(): "<< this->getIdString();
+  std::cout <<"\nFmIsPositionedBase::updateLocation(): "
+            << this->getIdString() << this->getGlobalCS();
   myLocation.getValue().print(std::cout,true) << std::endl;
 #endif
 

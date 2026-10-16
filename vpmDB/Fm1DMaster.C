@@ -47,13 +47,13 @@ bool Fm1DMaster::detach()
 }
 
 
-bool Fm1DMaster::addTriad(FmTriad* triad, bool asFront)
+bool Fm1DMaster::addTriad(FmTriad* triad, bool asFront, bool updateViz)
 {
-  return this->insertTriad(triad, asFront ? 0 : myTriads.size());
+  return this->insertTriad(triad, asFront ? 0 : myTriads.size(), updateViz);
 }
 
 
-bool Fm1DMaster::insertTriad(FmTriad* triad, size_t pos)
+bool Fm1DMaster::insertTriad(FmTriad* triad, size_t pos, bool updateViz)
 {
   if (!triad) return false;
 
@@ -87,7 +87,9 @@ bool Fm1DMaster::insertTriad(FmTriad* triad, size_t pos)
   else
     myTriads.push_back(triad);
 
-  triad->updateTopologyInViewer();
+  if (updateViz)
+    triad->updateTopologyInViewer();
+
   triad->onChanged(); // to update triad icon
   return true;
 }
@@ -100,6 +102,13 @@ bool Fm1DMaster::insertTriad(FmTriad* triad, size_t pos)
 
 void Fm1DMaster::setTriads(const std::vector<int>& triadIDs)
 {
+#ifdef FM_DEBUG
+  std::cout <<"Fm1DMaster::setTriads():";
+  for (int tID : triadIDs)
+    std::cout <<" ["<< tID <<"]";
+  std::cout << std::endl;
+#endif
+
   // Release the existing triads
   this->releaseTriads();
 
@@ -115,12 +124,19 @@ void Fm1DMaster::setTriads(const std::vector<int>& triadIDs)
 
 bool Fm1DMaster::setTriads(const std::vector<FmTriad*>& triads)
 {
+#ifdef FM_DEBUG
+  std::cout <<"Fm1DMaster::setTriads():";
+  for (FmTriad* t : triads)
+    std::cout <<" "<< t->getIdPath();
+  std::cout << std::endl;
+#endif
+
   // Release the existing triads
   this->releaseTriads();
 
   // Insert the new triads
   for (FmTriad* triad : triads)
-    if (!this->addTriad(triad,false))
+    if (!this->addTriad(triad,false,false))
       return false;
 
   return true;

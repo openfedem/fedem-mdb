@@ -78,7 +78,7 @@ public:
 
   // Management of DOF's
 
-  virtual bool isLegalDOF(int DOFno) const;
+  virtual bool isLegalDOF(int dof) const;
   int getLegalDOFCount() const;
   int getJointVariableNumber(int dof) const;
 

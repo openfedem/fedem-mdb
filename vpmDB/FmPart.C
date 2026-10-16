@@ -652,7 +652,7 @@ void FmPart::getStickers(std::vector<FmSticker*>& stickers) const
   this->getTriads(triads);
   this->getFreeJointEnds(triads);
 
-  this->getLocalStickers(stickers);
+  this->getMyStickers(stickers);
   for (FmTriad* triad : triads)
     triad->getStickers(stickers);
 }
@@ -751,17 +751,17 @@ bool FmPart::cloneLocal(FmBase* obj, int depth)
 
   Old triad                    New triad
   ---------                    ---------
-  Master    --- cs check >>--  Master >> if the CSs are the same: OK
+  Master    --- CS check >>--  Master >> if the CSs are the same: OK
   Master    ---- XX ----       Slave  (except FreeJoint: same as None->Slave)
-  Master    -- cs -->          None w/o dirs
+  Master    -- CS -->          None w/o dirs
 
   Slave     ---- XX ----       Master (except FreeJoint: same as None->Master)
   Slave     ---- XX ----       Slave  (except FreeJoint: same as None->Slave)
-  Slave     -- cs -->          None
+  Slave     -- CS -->          None
 
-  None      <-- cs --          Master
-  None      <-- cs --          Slave
-  None      -- cs -->          None
+  None      <-- CS --          Master
+  None      <-- CS --          Slave
+  None      -- CS -->          None
 */
 
 bool FmPart::attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent)
@@ -2086,7 +2086,7 @@ static unsigned int extractCheckSum (const char* fName)
   Note that all non-alphanumeric characters also are replaced by "_"'s.
 */
 
-const std::string& FmPart::setValidBaseFTLFile(unsigned int myCS)
+const std::string& FmPart::setValidBaseFTLFile(unsigned int cs)
 {
   if (baseFTLFile.getValue().empty())
   {
@@ -2113,7 +2113,7 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int myCS)
     // that is incremented from 1 until no name conflict remains.
     // If two parts have the same check-sum, they are regarded as identical
     // and can then also share the same baseFTLFile.
-    std::function<int(std::string&)> checkName = [this,allParts,&myCS,&checkName]
+    std::function<int(std::string&)> checkName = [this,allParts,&cs,&checkName]
       (std::string& ftlName) -> int
     {
       for (FmPart* part : allParts)
@@ -2122,18 +2122,18 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int myCS)
         {
           // We have common names and two existing FE data handlers.
           // Now check if the parts match (except from external nodes).
-          if (!myCS) // Avoid calculating check-sum more than once.
-            myCS = myFEData->calculateChecksum();
+          if (!cs) // Avoid calculating check-sum more than once.
+            cs = myFEData->calculateChecksum();
 
-          if (myCS == part->savedCS.getValue() && part->isSaved(false))
+          if (cs == part->savedCS.getValue() && part->isSaved(false))
           {
             // This part matches a part that already has been saved.
             // Update the savedCS value to avoid saving more than once.
-            savedCS.setValue(myCS);
+            savedCS.setValue(cs);
             break;
           }
 
-          if (myCS != part->myFEData->calculateChecksum())
+          if (cs != part->myFEData->calculateChecksum())
           {
             // The check-sums are different - need to create a new file name.
             // Check if we have the string "_ftl###" at the end of the basename
@@ -2171,7 +2171,7 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int myCS)
   // we need to create a new file name if the file already exists.
 
   if (this->usesRepository() == INTERNAL_REP ||
-      myCS == 0 || myCS == savedCS.getValue())
+      cs == 0 || cs == savedCS.getValue())
     return baseFTLFile.getValue();
 
   std::string fName = this->getBaseFTLFile();
@@ -2189,7 +2189,7 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int myCS)
   // Increment until the file name no longer exists
   // or until we find a file with matching check-sum
   unsigned int fileCS = 0;
-  for (int i = 1; fileCS != myCS; i++)
+  for (int i = 1; fileCS != cs; i++)
     if (FmFileSys::isFile(fName = bName + FFaNumStr("-%d.ftl",i)))
       fileCS = extractCheckSum(fName.c_str());
     else
@@ -2198,10 +2198,10 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int myCS)
   baseFTLFile.setValue(FFaFilePath::getFileName(fName));
 
   ListUI <<"  -> Conflicting file name for "<< this->getIdString();
-  if (fileCS == myCS)
+  if (fileCS == cs)
   {
     ListUI <<". Using matching file: ";
-    savedCS.setValue(myCS);
+    savedCS.setValue(cs);
   }
   else
     ListUI <<". New FTL base name: ";

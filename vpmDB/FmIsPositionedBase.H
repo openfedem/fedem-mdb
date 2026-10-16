@@ -31,6 +31,8 @@ class FmIsPositionedBase : public FmIsPlottedBase
 {
   Fmd_DB_HEADER_INIT();
 
+  using Stickers = std::vector<FmSticker*>;
+
 public:
   virtual const FaMat34& getLocalCS() const { return myCS.getValue(); }
   virtual void setLocalCS(const FaMat34& localMat);
@@ -42,14 +44,14 @@ public:
   virtual void    setTranslation(const FaVec3& translation);
 
   virtual FaMat33 getOrientation() const;
-  virtual void    setOrientation(const FaMat33& orientation);
+  virtual void    setOrientation(const FaMat33& orient, bool notify = false);
 
-  virtual void getStickers(std::vector<FmSticker*>& stickers) const;
+  virtual void getStickers(Stickers& stck) const { this->getMyStickers(stck); }
 
   bool hasStickers() const;
 
   bool addSticker(FmSticker* sticker);
-  bool addStickers(const std::vector<FmSticker*>& stickers);
+  bool addStickers(const Stickers& stickers);
   bool removeSticker(FmSticker* sticker);
   void removeAllStickers();
   int  getNumberOfStickers() const;
@@ -78,7 +80,7 @@ protected:
   FmIsPositionedBase(bool noFields = false);
   virtual ~FmIsPositionedBase();
 
-  void getLocalStickers(std::vector<FmSticker*>& stickers) const;
+  void getMyStickers(Stickers& stickers) const;
 
   virtual bool cloneLocal(FmBase* obj, int depth);
   static  bool localParse(const char* keyWord, std::istream& activeStatement,

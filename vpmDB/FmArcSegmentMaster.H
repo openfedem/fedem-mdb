@@ -39,7 +39,8 @@ public:
   virtual const char* getUITypeName() const { return "Arc segments"; }
 
   virtual bool addTriadOnPoint(const FaVec3& globalPoint);
-  virtual bool addTriad(FmTriad* triad, bool asFront = false);
+  virtual bool addTriad(FmTriad* triad, bool asFront = false,
+                        bool updateViz = true);
   virtual int  releaseTriad(FmTriad* triad, FmTriad* replacement = NULL);
   virtual void releaseTriads(bool eraseUnused = false);
 

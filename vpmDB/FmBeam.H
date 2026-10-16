@@ -21,12 +21,12 @@ class FmBeam : public FmLink
   Fmd_DB_HEADER_INIT();
 
 public:
-  typedef std::pair<int,int> Ints;
+  using Ints = std::pair<int,int>;
 
   FmBeam();
 
-  bool connect(FmTriad* tr1, FmTriad* tr2);
   using FmLink::connect;
+  bool connect(FmTriad* tr1, FmTriad* tr2);
 
   void setTriad(FmTriad* tr, int pos = 0) { myTriads.setPtr(tr,pos); }
   void setTriads(FmTriad* tr1, FmTriad* tr2);
@@ -47,16 +47,16 @@ public:
                          bool sortOnId = false) const;
 
   virtual const FaMat34& getLocalCS() const;
-  virtual void setLocalCS(const FaMat34& localMat);
+  virtual void           setLocalCS(const FaMat34&);
 
   virtual FaMat34 getGlobalCS() const;
-  virtual void    setGlobalCS(const FaMat34& globalMat, bool = false);
+  virtual void    setGlobalCS(const FaMat34&, bool);
 
   virtual FaVec3  getTranslation() const;
-  virtual void    setTranslation(const FaVec3& translation);
+  virtual void    setTranslation(const FaVec3&);
 
   virtual FaMat33 getOrientation() const;
-  virtual void    setOrientation(const FaMat33& orientation);
+  virtual void    setOrientation(const FaMat33&, bool);
 
   FaMat33 getGlobalOrientation() const;
   void setOrientation(const FaVec3& Zaxis) { myLocalZaxis.setValue(Zaxis); }

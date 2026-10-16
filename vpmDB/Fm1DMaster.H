@@ -25,8 +25,10 @@ public:
   virtual bool isListable() const { return false; }
 
   virtual bool addTriadOnPoint(const FaVec3& globalPoint) = 0;
-  virtual bool addTriad(FmTriad* triad, bool asFront = false);
-  virtual bool insertTriad(FmTriad* triad, size_t pos = 0);
+  virtual bool addTriad(FmTriad* triad, bool asFront = false,
+                        bool updateViz = true);
+  virtual bool insertTriad(FmTriad* triad, size_t pos = 0,
+                           bool updateViz = true);
 
   virtual int  releaseTriad(FmTriad* triad, FmTriad* replacement = NULL);
   virtual void releaseTriads(bool eraseUnused = false);

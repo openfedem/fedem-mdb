@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "vpmDB/FmStraightMaster.H"
-#include "vpmDB/FmMMJointBase.H"
 #include "vpmDB/FmPart.H"
 #include "vpmDB/FmDB.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
@@ -23,44 +22,52 @@ FmStraightMaster::FmStraightMaster()
 }
 
 
-bool FmStraightMaster::insertTriad(FmTriad* triad, size_t pos)
+bool FmStraightMaster::insertTriad(FmTriad* triad, size_t pos, bool updateViz)
 {
   if (!triad) return false;
 
+  if (!this->reOrientTriad(triad)) return false;
+
+  return this->Fm1DMaster::insertTriad(triad,pos,updateViz);
+}
+
+
+bool FmStraightMaster::reOrientTriad(FmTriad* triad)
+{
   FmTriad* first = this->getFirstTriad();
-  if (!first)
-    return this->Fm1DMaster::insertTriad(triad,pos);
+  if (!first) return true; // this is the first triad, do nothing
 
   FmTriad* last = this->getLastTriad();
   if (last && first != last)
   {
-    // Check that the new triad is on the line between existing the triads
+    // Check that the new triad is on the line between the two end triads
     FaVec3 triadPos = triad->getGlobalTranslation();
     FaVec3 firstPos = first->getGlobalTranslation();
     FaVec3 lineVec  = last->getGlobalTranslation() - firstPos;
     if (!lineVec.isParallell(triadPos - firstPos, FmDB::getParallelTolerance()))
     {
-      ListUI <<"ERROR: Could not add "<< triad->getIdString(true)
-             <<" as independent triad.\n      "
-             <<" It is not on the straight line through existing triads.\n";
+      ListUI <<" ==> ERROR: "<< triad->getIdString(true)
+             <<" is not on the straight line through the end triads "
+             << first->getIdString() <<" and "<< last->getIdString()
+             <<".\n";
       return false;
     }
   }
 
-  // If the triad has important directions,
+  // If the new triad has important directions,
   // check that they fit with what we want to use
   if (!triad->importantDirections())
-    triad->setOrientation(first->getOrientation());
+    triad->setOrientation(first->getOrientation(),true);
   else if (!triad->getOrientation().isCoincident(first->getOrientation(),
                                                  FmDB::getPositionTolerance()))
   {
-    ListUI <<"ERROR: Could not add independent triad: "<< triad->getIdString(true)
+    ListUI <<" ==> ERROR: "<< triad->getIdString(true)
            <<" does not have same orientation as "<< first->getIdString(true)
            <<".\n";
     return false;
   }
 
-  return this->Fm1DMaster::insertTriad(triad,pos);
+  return true;
 }
 
 
@@ -72,40 +79,78 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
 {
   // Check that this line is connected to one (and only one) part
   FmTriad* first = this->getFirstTriad();
-  FmPart*  part  = first ? first->getOwnerPart() : NULL;
-  if (!part)
+  FmTriad* last  = this->getLastTriad();
+  FmPart*  part1 = first ? first->getOwnerPart() : NULL;
+  FmPart*  part2 = last  ? last->getOwnerPart() : NULL;
+  if (!part1 || !part2)
   {
-    ListUI <<"ERROR: Could not add independent triad: ";
-    if (first)
+    ListUI <<" ==> ERROR: Can not add independent triad: ";
+    if (first && !part1)
       ListUI << first->getIdString(true) <<" is not attached to a Part.\n";
+    else if (last && !part2)
+      ListUI << last->getIdString(true) <<" is not attached to a Part.\n";
     else
-      ListUI <<" (NULL)\n"; // Should not happen (logic error if so)
+      ListUI <<"(NULL)\n"; // should not happen (logic error if so)
     return false;
   }
-
-  FmTriad* last = this->getLastTriad();
-  if (!last || last->getOwnerPart() != part)
-    return false; // Should never happen (topological inconsistency)
 
   // Check that the point is on the line between existing triads
-  FaVec3 point     = part->getGlobalCS().inverse() * globPoint;
-  FaVec3 firstPos  = first->getTranslation();
-  FaVec3 lineVec   = last->getTranslation() - firstPos;
+  FaVec3 firstPos  = first->getGlobalTranslation();
+  FaVec3 lineVec   = last->getGlobalTranslation() - firstPos;
   double parallTol = FmDB::getParallelTolerance();
-  int parallelFlag = lineVec.isParallell(point - firstPos, parallTol);
+  int parallelFlag = lineVec.isParallell(globPoint - firstPos, parallTol);
   if (parallelFlag == 0)
   {
-    ListUI <<"ERROR: Could not add independent triad: Point is not on the straight line.\n";
+    ListUI <<" ==> ERROR: Can not add independent triad:"
+           <<" Point is not on the straight line.\n";
     return false;
   }
 
-  // If attached to an FE part, check that there is a valid FE node on that point
+  // If attached to an FE part,
+  // check that there is a valid FE node on that point
   double posTolerance = FmDB::getPositionTolerance();
-  if (part->isFEPart() && !part->getNodeAtPoint(point,posTolerance))
+  FaVec3 point;
+  FmPart* part = NULL;
+  if (FaVec3 p1 = part1->getGlobalCS().inverse() * globPoint;
+      part1->isFEPart() && part1->getNodeAtPoint(p1,posTolerance))
   {
-    ListUI <<"ERROR: Could not add independent triad: Point is not on a valid FE-node.\n";
+    point = p1;
+    part = part1;
+  }
+  else if (part2 != part1)
+  {
+    if (FaVec3 p2 = part2->getGlobalCS().inverse() * globPoint;
+        part2->isFEPart() && part2->getNodeAtPoint(p2,posTolerance))
+    {
+      point = p2;
+      part = part2;
+    }
+    else
+    {
+      std::vector<FmPart*> parts;
+      FmDB::getAllParts(parts);
+      for (FmPart* pp : parts)
+        if (pp != part1 && pp != part2 && pp->isFEPart())
+          if (FaVec3 p3 = pp->getGlobalCS().inverse() * globPoint;
+              pp->getNodeAtPoint(p3,posTolerance))
+          {
+            point = p3;
+            part = pp;
+            break;
+          }
+    }
+  }
+
+  if (!part)
+  {
+    ListUI <<" ==> ERROR: Can not add independent triad:"
+           <<" Point is not on a valid FE-node.\n";
     return false;
   }
+
+  FaMat33 Orient = first->getOrientation();
+  if (part != part1)
+    Orient = part->getOrientation().transpose()*part1->getOrientation()*Orient;
 
   // Check whether there already is a triad at that point, create one if not
   FmTriad* newTriad = part->getTriadAtPoint(point,posTolerance);
@@ -114,30 +159,33 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
     newTriad = new FmTriad(globPoint);
     newTriad->setParentAssembly(this->getParentAssembly());
     newTriad->connect(part);
-    newTriad->setOrientation(first->getOrientation());
+    newTriad->setOrientation(Orient);
   }
 
   // If the triad found has important directions,
   // check that they fit with what we want to use
   else if (!newTriad->importantDirections())
-    newTriad->setOrientation(first->getOrientation());
-  else if (!newTriad->getOrientation().isCoincident(first->getOrientation(),parallTol))
+    newTriad->setOrientation(Orient,true);
+  else if (!newTriad->getOrientation().isCoincident(Orient,parallTol))
   {
-    ListUI <<"ERROR: Could not add independent triad: "<< newTriad->getIdString(true)
-           <<" does not have same orientation as "<< first->getIdString(true) <<".\n";
+    ListUI <<" ==> ERROR: Can not add independent triad: "
+           << newTriad->getIdString(true)
+           <<" does not have same orientation as "
+           << first->getIdString(true) <<".\n";
     return false;
   }
 
   // Insert the triad in its proper location
   double myLength = lineVec.sqrLength();
-  double distance = (point-firstPos).sqrLength();
+  double distance = (globPoint-firstPos).sqrLength();
   bool ok = false;
   if (parallelFlag < 0)
     ok = this->addTriad(newTriad,true);
   else if (distance > myLength)
     ok = this->addTriad(newTriad,false);
   else for (size_t pos = 1; pos < this->size(); pos++)
-    if ((this->getTriad(pos)->getTranslation()-firstPos).sqrLength() > distance)
+    if (FaVec3 relPos = this->getTriad(pos)->getGlobalTranslation() - firstPos;
+        relPos.sqrLength() > distance)
     {
       ok = this->Fm1DMaster::insertTriad(newTriad,pos);
       break;
@@ -155,13 +203,13 @@ bool FmStraightMaster::addTriadOnPoint(const FaVec3& globPoint)
 
 double FmStraightMaster::getSliderPosition(FaMat34& ur, const FaVec3& pos) const
 {
-  FmTriad* first = this->getFirstTriad();
-  if (first)
-    ur = FaMat34(first->getGlobalCS().direction(),first->getGlobalCS().inverse()*pos);
+  if (FmTriad* first = this->getFirstTriad(); first)
+    ur = FaMat34(first->getGlobalCS().direction(),
+                 first->getGlobalCS().inverse()*pos);
   else
     ur = FaMat34(pos);
 
-  return ur[3][2];
+  return ur.translation().z();
 }
 
 
@@ -200,16 +248,19 @@ void FmStraightMaster::initAfterResolve()
   FmTriad* M2 = this->getLastTriad();
   if (!M1 || !M2) return;
 
-  // Get global positions of the triads
-  FaVec3 P1 = M1->getTranslation();
-  FaVec3 P2 = M2->getTranslation();
+  // Get global Z-axis of the master line
+  FaVec3 Axis = M2->getGlobalTranslation() - M1->getGlobalTranslation();
 
   // Check that the first triad has proper orientation
-  if (M1->getLocalCS()[2].isParallell(P2-P1,FmDB::getParallelTolerance()) != 1)
+  if (M1->getGlobalCS()[VZ].isParallell(Axis,FmDB::getParallelTolerance()) != 1)
   {
+    if (FmPart* masterPart = M1->getOwnerPart(0); masterPart)
+      Axis = Axis * masterPart->getGlobalCS().direction();
+
     FaMat33 newOrient;
-    newOrient.makeGlobalizedCS(P2-P1).shift(-1);
-    ListUI <<" ==> WARNING: Resetting orientation of "<< M1->getIdString(true) <<".\n";
+    newOrient.makeGlobalizedCS(Axis).shift(-1);
+    ListUI <<" ==> WARNING: Resetting orientation of "
+           << M1->getIdString(true) <<".\n";
     M1->setOrientation(newOrient);
   }
 
@@ -231,10 +282,14 @@ void FmStraightMaster::initAfterResolve()
     for (size_t i = 1; i+1 < triads.size(); i++)
       if (isT1beforeT2(triads[i+1],triads[i]))
       {
-        ListUI <<" ==> WARNING: Resetting the ordering of "<< this->getIdString(true) <<"\n.";
         std::sort(triads.begin(),triads.end(),isT1beforeT2);
+        ListUI <<" ==> WARNING: Resetting triad ordering of "
+               << this->getIdString() <<":";
+        for (FmTriad* triad : triads)
+          ListUI <<" "<< triad->getIdPath();
+        ListUI <<"\n";
         this->setTriads(triads);
-	break;
+        break;
       }
   }
 }
@@ -259,18 +314,17 @@ int FmStraightMaster::printSolverEntry(FILE* fp)
   this->printForSolver(fp,triads);
 
   double slideVarVal = -1.0;
-  FaVec3 thisPos, oldPos;
+  FaVec3 oldPos;
   FaMat34 ur;
 
   for (FmTriad* triad : triads)
   {
-    ur      = triad->getGlobalCS();
-    thisPos = ur.translation();
+    ur = triad->getGlobalCS();
     if (slideVarVal >= 0.0)
-      slideVarVal += (thisPos - oldPos).length();
+      slideVarVal += (ur.translation() - oldPos).length();
     else
       slideVarVal = 0.0;
-    oldPos  = thisPos;
+    oldPos = ur.translation();
 
     fprintf(fp,"&MASTER_POS\n");
     fprintf(fp,"  masterId = %d\n", this->getBaseID());
