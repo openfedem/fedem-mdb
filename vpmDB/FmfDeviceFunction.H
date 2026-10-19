@@ -72,7 +72,7 @@ private:
   double myHs; //!< User-defined wave function parameter
   double myTz; //!< User-defined wave function parameter
 
-  //! \brief Sets the \ref fileInd and \ref chanInd members, if file is valid.
+  //! \brief Sets the #fileInd and #chanInd members, if the file is valid.
   int checkFileValidity(bool keepOpen = false);
 
 protected:

@@ -16,7 +16,7 @@
 
 /*!
   \brief Class holding threshold settings for digital twin output functions.
-  \details The parameters here are not used by the Fedem simulation, they are
+  \details The parameters here are not used by the FEDEM simulation, they are
   only passed to the digital twin cloud framework through the app.json file
   of the exported app.
 */

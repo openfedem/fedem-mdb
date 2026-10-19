@@ -15,11 +15,13 @@
 #include "FFaLib/FFaContainers/FFaReferenceList.H"
 
 
-template<> inline
-bool FFaField<FmThreshold>::isPrintable() const
+//! \cond TEMPLATE_SPECIALIZATION
+template<>
+inline bool FFaField<FmThreshold>::isPrintable() const
 {
   return myData.isDefined();
 }
+//! \endcond
 
 
 class FmEngine : public FmIsPlottedBase

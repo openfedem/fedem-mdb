@@ -267,9 +267,11 @@ void FmSimulationEvent::initAfterResolve()
 
 
 /*!
-  Modify the given \a fileName to identify this simulation event:
-  <prefix>.<ext> --> <prefix>_event_<ID>.<ext>
-  where <ID> is the user-ID of this event.
+  This method modifies the given \a fileName to identify this simulation event:
+  \code
+    <prefix>.<ext> --> <prefix>_event_<ID>.<ext>
+  \endcode
+  where &lt;ID&gt; is the user-ID of this event.
   Ensure it has an absolute path, assuming it is relative to the model file.
 */
 
