@@ -30,7 +30,6 @@ class FmTurbine : public FmAssemblyBase
 
 public:
   FmTurbine(char createSubAssemblies = '\0', bool isDummy = false);
-  virtual ~FmTurbine() {}
 
   void getParts(FmTower*& tower, FmNacelle*& nacelle,
 		FmGenerator*& generator, FmGearBox*& gearbox,
@@ -90,17 +89,19 @@ struct FmTwrSegment
   { return H == s.H && D == s.D && N == s.N; }
 };
 
-typedef std::vector<FmTwrSegment> FmTwrSegmentVec;
+using FmTwrSegmentVec = std::vector<FmTwrSegment>;
 
 
-template<> inline
-bool FFaField<FmTwrSegmentVec>::isPrintable() const
+//! \cond TEMPLATE_SPECIALIZATION
+
+template<>
+inline bool FFaField<FmTwrSegmentVec>::isPrintable() const
 {
   return !myData.empty();
 }
 
-template<> inline
-void FFaField<FmTwrSegmentVec>::write(std::ostream& os) const
+template<>
+inline void FFaField<FmTwrSegmentVec>::write(std::ostream& os) const
 {
   for (size_t i = 0; i < myData.size(); i++)
   {
@@ -110,8 +111,8 @@ void FFaField<FmTwrSegmentVec>::write(std::ostream& os) const
   }
 }
 
-template<> inline
-void FFaField<FmTwrSegmentVec>::read(std::istream& is, FmTwrSegmentVec& v) const
+template<>
+inline void FFaField<FmTwrSegmentVec>::read(std::istream& is, FmTwrSegmentVec& v) const
 {
   v.clear();
   double h, d, n;
@@ -123,13 +124,13 @@ void FFaField<FmTwrSegmentVec>::read(std::istream& is, FmTwrSegmentVec& v) const
   }
   is.clear();
 }
+//! \endcond
 
 
 class FmTurbinePart : public FmAssemblyBase
 {
 protected:
   FmTurbinePart(bool isDummy) : FmAssemblyBase(isDummy) {}
-  virtual ~FmTurbinePart() {}
 
   void initFields(double mass);
 
@@ -148,7 +149,6 @@ class FmTower : public FmTurbinePart
 
 public:
   FmTower(bool isDummy = false);
-  virtual ~FmTower() {}
 
   static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -175,7 +175,6 @@ class FmNacelle : public FmTurbinePart
 
 public:
   FmNacelle(bool isDummy = false);
-  virtual ~FmNacelle() {}
 
   static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -199,7 +198,6 @@ class FmGenerator : public FmTurbinePart
 
 public:
   FmGenerator(bool isDummy = false);
-  virtual ~FmGenerator() {}
 
   static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -219,7 +217,6 @@ class FmGearBox : public FmTurbinePart
 
 public:
   FmGearBox(bool isDummy = false);
-  virtual ~FmGearBox() {}
 
   static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -242,7 +239,6 @@ class FmShaft : public FmAssemblyBase
 
 public:
   FmShaft(bool isDummy = false, double OD = 0.4, double ID = 0.3, double L = 7.0);
-  virtual ~FmShaft() {}
 
   static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -273,7 +269,6 @@ class FmRotor : public FmTurbinePart
 
 public:
   FmRotor(bool isDummy = false);
-  virtual ~FmRotor() {}
 
   static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);
@@ -295,7 +290,6 @@ class FmBlade : public FmAssemblyBase
 
 public:
   FmBlade(bool isDummy = false);
-  virtual ~FmBlade() {}
 
   static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
   virtual std::ostream& writeFMF(std::ostream& os = std::cout);

@@ -7,9 +7,9 @@
 
 /*!
   \file FedemDB.C
-  \brief Exported global functions for accessing the Fedem mechanism model.
+  \brief Exported global functions for accessing the FEDEM mechanism model.
   \details This file contains a collection of global functions serving as
-  the API for creating and accessing a Fedem mechanism model from python.
+  the API for creating and accessing a FEDEM mechanism model from python.
 */
 
 #include "vpmDB/FmModelLoader.H"
@@ -74,7 +74,7 @@
 
 namespace
 {
-  IntVec  typeMap; //!< Python-to-Fedem object type mapping
+  IntVec  typeMap; //!< Python-to-FEDEM object type mapping
   Strings funcMap; //!< Channel-to-tag input function mapping
 
   /*!

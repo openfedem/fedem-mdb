@@ -16,8 +16,12 @@
 
 
 /*!
-  A class to store a directory structure based on a <taskname>_####
-  naming convension. Contains a recursive hierarcy of itself.
+  \brief A class to store a directory structure.
+  \details Contains a recursive hierarcy of itself.
+  The directory naming convension is based on
+  \code
+    <taskname>_####
+  \endcode
 */
 
 class FmResultStatusData
@@ -45,7 +49,7 @@ public:
   void ignoreFiles(const std::vector<std::string>& files);
 
   //! \brief Fills this RSD with data from the specified \a rdbDir on disk.
-  //! \return Total number of files found.
+  //! \return Total number of files found
   size_t syncFromRDB(const std::string& rdbDir,
                      const std::string& taskName, int taskVer,
                      std::set<std::string>* obsoleteFiles = NULL);
