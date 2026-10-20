@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmSolverInput.C
+  \brief Global functions for managing creation of solver input files.
+*/
+
 #include "vpmDB/FmSolverInput.H"
 #include "vpmDB/FmSolverParser.H"
 #include "vpmDB/FmSimulationEvent.H"
