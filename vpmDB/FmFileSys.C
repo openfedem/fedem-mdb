@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmFileSys.C
+  \brief Global functions for manipulation of files on disk.
+*/
+
 #include "vpmDB/FmFileSys.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 
@@ -215,8 +220,10 @@ bool FmFileSys::verifyDirectory(const std::string& dirName, bool create)
 }
 
 
+namespace {
+
 /*!
-  \brief Static helper for extracting file names from a directory.
+  \brief Private helper for extracting file names from a directory.
   \param files List of found file (or directory) names
   \param[in] path Full pathname of the directory to search for files in
   \param[in] ext File extension(s) to search for.
@@ -226,9 +233,9 @@ bool FmFileSys::verifyDirectory(const std::string& dirName, bool create)
              otherwise relative to \a path
 */
 
-static bool get_files (std::vector<std::string>& files,
-                       const char* path, const char* ext,
-                       const char* filter, bool fullPath = true)
+bool get_files (std::vector<std::string>& files,
+                const char* path, const char* ext,
+                const char* filter, bool fullPath = true)
 {
   size_t existingFiles = files.size();
 #ifdef FT_HAS_QT
@@ -291,6 +298,7 @@ static bool get_files (std::vector<std::string>& files,
 
   return files.size() > existingFiles;
 }
+} // end anonymous namespace
 
 
 bool FmFileSys::getDirs(std::vector<std::string>& foundDirs,

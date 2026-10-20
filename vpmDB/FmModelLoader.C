@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmModelLoader.C
+  \brief Global functions for managing the parsing of FEDEM model files.
+*/
+
 #include "vpmDB/FmModelLoader.H"
 #include "vpmDB/FmMechanism.H"
 #include "vpmDB/FmPart.H"
