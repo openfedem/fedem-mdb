@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmModelMemberBase.C
+  \brief Base class for all model data objects.
+*/
+
 #include "vpmDB/FmModelMemberBase.H"
 #include "vpmDB/FmModelMemberConnector.H"
 #include "vpmDB/FmResultBase.H"
@@ -18,14 +23,16 @@
 
 bool FmModelMemberBase::inInteractiveErase = false;
 bool FmModelMemberBase::ignoreBaseID = false;
-int FmModelMemberBase::baseIDProblemCount = 0;
-std::map<FmModelMemberBase*,int> FmModelMemberBase::baseIDProblems;
 
+std::vector<FmModelMemberBase*> FmModelMemberBase::baseIdProblems;
+
+//! \cond DO_NOT_DOCUMENT
 #ifdef FM_DEBUG
 #define DBGID(p) p->getTypeIDName() <<" "<< p->getID() <<" ("<< p->getBaseID() <<")"
 #endif
 
 Fmd_DB_SOURCE_INIT(FcMODEL_MEMBER_BASE, FmModelMemberBase, FmBase);
+//! \endcond
 
 
 FmModelMemberBase::FmModelMemberBase(bool isDummy) : FmBase(isDummy)
@@ -95,9 +102,9 @@ void FmModelMemberBase::onMainConnected()
       FmDB::insertInBaseIDMap(objInWay);
     }
     else {
-      baseIDProblems[this] = this->getBaseID();
+      baseIdProblems.push_back(this);
 #ifdef FM_DEBUG
-      std::cout <<"\tAdded to baseIDProblemMap: "<< this->getBaseID() << std::endl;
+      std::cout <<"\tAdded to baseIdProblems: "<< this->getBaseID() << std::endl;
 #endif
     }
   }
@@ -152,11 +159,13 @@ void FmModelMemberBase::onChanged()
 }
 
 
+/*!
+  This method prints a log to the Output List view when interactively
+  erasing objects from either the Object or Result views.
+*/
+
 bool FmModelMemberBase::eraseOptions()
 {
-  // Print a log to the Output List view when interactively
-  // erasing objects from either the Object or Result views.
-
   if (inInteractiveErase && this->getID() > 0)
   {
     if (this->isOfType(FmResultBase::getClassTypeID()))
@@ -242,7 +251,7 @@ bool FmModelMemberBase::cloneLocal(FmBase* obj, int depth)
   }
   else {
     this->setBaseID(cloneObj->getBaseID());
-    baseIDProblems[this] = this->getBaseID();
+    baseIdProblems.push_back(this);
 #ifdef FM_DEBUG
     std::cout <<"\tAdded to baseIDProblemMap: "<< DBGID(this)
               <<"\n\tObject in the way: "<< DBGID(cloneObjInMap) << std::endl;
@@ -256,28 +265,28 @@ bool FmModelMemberBase::cloneLocal(FmBase* obj, int depth)
   This method contains the 'BaseId magic created by Jens' (moved from FmDB).
   It should only be invoked immediately after reading a model from file.
 
-  All objects that has experienced not to be inserted in the baseIDmap,
-  because the baseID was already taken, are now inserted with a new baseID.
-  Usually the objects that were in the way have disappeared due to cloning etc.
+  All objects that were not inserted in the base ID map (in FmDB.C file scope),
+  because their base ID already was taken, are now inserted with a new base ID.
+  Usually, the object that was in the way have disappeared due to cloning, etc.
   It is mostly (only) the "quasi"static objects that are created on demand
   that are the problems, because they are both created and read from file.
-  Time Sensor, Analysis, Mechanism and GlobalViewSettings.
+  Time Sensor, Analysis, Mechanism and Global View Settings.
 */
 
 void FmModelMemberBase::resolveBaseIDProblems()
 {
-  if (baseIDProblems.empty()) return;
+  if (baseIdProblems.empty()) return;
 
 #ifdef FM_DEBUG
   std::cout <<"\nFmModelMemberBase::resolveBaseIDProblems() "
-	    << baseIDProblems.size() << std::endl;
+	    << baseIdProblems.size() << std::endl;
 #endif
 
   int troubleCounter = 0;
-  for (const std::pair<FmModelMemberBase* const,int>& bit : baseIDProblems)
-    if (!FmDB::insertInBaseIDMap(bit.first))
+  for (FmModelMemberBase* obj : baseIdProblems)
+    if (!FmDB::insertInBaseIDMap(obj))
     {
-      if (bit.first->isOfType(FmIsPlottedBase::getClassTypeID()))
+      if (obj->isOfType(FmIsPlottedBase::getClassTypeID()))
       {
 	if (++troubleCounter == 1)
 	{
@@ -288,15 +297,18 @@ void FmModelMemberBase::resolveBaseIDProblems()
 		 <<"     revisit the definition (check object ID in topology view with object\n"
 		 <<"     in curve definition).\n";
 	}
-	ListUI <<"  -> "<< bit.first->getIdString(true) <<"\n";
+	ListUI <<"  -> "<< obj->getIdString(true) <<"\n";
       }
 
-      bit.first->setBaseID(FmDB::getFreeBaseID());
-      FmDB::insertInBaseIDMap(bit.first);
 #ifdef FM_DEBUG
-      FmModelMemberBase* objInWay = FmDB::findObject(bit.second);
-      std::cout <<"\tTrouble: "<< DBGID(bit.first) << std::endl;
-      if (objInWay) std::cout <<"\tObject in the way: "<< DBGID(objInWay) << std::endl;
+      FmModelMemberBase* objInWay = FmDB::findObject(obj->getBaseID());
+#endif
+      obj->setBaseID(FmDB::getFreeBaseID());
+      FmDB::insertInBaseIDMap(obj);
+#ifdef FM_DEBUG
+      std::cout <<"\tTrouble: "<< DBGID(obj) << std::endl;
+      if (objInWay)
+	std::cout <<"\tObject in the way: "<< DBGID(objInWay) << std::endl;
 #endif
     }
 #ifdef FM_DEBUG
@@ -304,7 +316,7 @@ void FmModelMemberBase::resolveBaseIDProblems()
       std::cout <<"\t"<< DBGID(bit.first) <<" OK"<< std::endl;
 #endif
 
-  baseIDProblems.clear();
+  baseIdProblems.clear();
 }
 
 
