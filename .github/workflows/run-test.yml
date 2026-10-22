@@ -45,11 +45,6 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Install python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.14"
-
       - name: Install googletest
         uses: Bacondish2023/setup-googletest@v1
 
@@ -93,6 +88,11 @@ jobs:
           fileName: 'pFUnit3_Ubuntu-22.04.tar.gz'
           latest: true
           extract: true
+
+      - name: Install python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
 
       - name: Install the fedempy package
         run: pip install ${{ fromJson(steps.fedempy.outputs.downloaded_files)[0] }} pyyaml progress
