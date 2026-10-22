@@ -155,7 +155,7 @@ FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
 
   FFA_FIELD_INIT(overrideChecksum, false, "OVERRIDE_CHECKSUM");
 
-  FFA_FIELD_INIT(nGenModes,   12, "NUM_GEN_MODES");
+  FFA_FIELD_INIT(nGenModes,    0, "NUM_GEN_MODES");
   FFA_FIELD_INIT(nEigvalsCalc, 0, "NUM_EIGVALS_CALC");
 
   FFA_FIELD_INIT(useConsistentMassMatrix, false, "USE_CONSISTENT_MASS_MATRIX");
@@ -1850,7 +1850,7 @@ bool FmPart::getMeshParams(int* nnod, int* nel, bool* parabolic, int* ndof,
 
 /*!
   Allocates a new part handler object for storage of FE data.
-  Sets the FE part size limit for the free version of Fedem.
+  Sets the FE part size limit for the free version of FEDEM.
 */
 
 bool FmPart::renewFEmodel()
@@ -2079,10 +2079,11 @@ static unsigned int extractCheckSum (const char* fName)
 
 
 /*!
-  Sets the \a baseFTLFile name of this part based on the \a originalFEFile, such
-  that the name is unique for all parts (in case this FE model is used more than
-  once). The name is set to <bName>.ftl where <bName> equals \a originalFEFile
-  without the directory part (if any) and file extension (if any).
+  This method sets the \a baseFTLFile name of this part based on the
+  \a originalFEFile, such that the name is unique for all parts (in case this
+  FE model is used more than once). The name is set to &lt;bName&gt;.ftl
+  where &lt;bName&gt; equals \a originalFEFile without the directory part
+  (if any) and file extension (if any).
   Note that all non-alphanumeric characters also are replaced by "_"'s.
 */
 

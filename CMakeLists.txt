@@ -153,3 +153,25 @@ if ( BUILD_TESTS )
   endif ( PythonInterp_FOUND )
 
 endif ( BUILD_TESTS )
+
+
+# Generate source code documentation with doxygen, if available
+
+find_program ( DOXYGEN "doxygen" )
+if ( DOXYGEN )
+  message ( STATUS "Found Doxygen : ${DOXYGEN}" )
+  if ( WIN )
+    execute_process ( COMMAND "echo %DATE:~7,2%.%DATE:~4,2%.%DATE:~10,4%"
+                      OUTPUT_VARIABLE BUILD_DATE )
+  else ( WIN )
+    execute_process ( COMMAND "date" "+%e %b %Y"
+                      OUTPUT_VARIABLE BUILD_DATE )
+  endif ( WIN )
+  configure_file ( Doxyfile.in Doxyfile )
+  configure_file ( mainpage.dox.in mainpage.dox )
+  add_custom_target ( doc
+                      COMMAND ${DOXYGEN} ${PROJECT_BINARY_DIR}/Doxyfile
+                      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                      COMMENT "Generating source code documentation"
+                      VERBATIM )
+endif ( DOXYGEN )

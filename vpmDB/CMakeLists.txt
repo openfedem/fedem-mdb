@@ -112,7 +112,8 @@ endif ( USE_EXT_CTRLSYS )
 
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HPP_FILE_LIST FmAllControlHeaders FmAllFunctionHeaders
-                    FmArray FmColor FmModelMemberConnector FmQuery FmVTFType
+                    FmArray FmColor FmModelMemberConnector FmQuery
+                    FmTypeCheck FmVTFType
 )
 
 

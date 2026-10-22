@@ -15,11 +15,13 @@
 #include "vpmDB/FmIsPositionedBase.H"
 
 
+//! \cond TEMPLATE_SPECIALIZATION
 template<>
 inline bool FFaField<FFaUnitCalculator>::isPrintable() const
 {
   return !this->isDefault();
 }
+//! \endcond
 
 
 //! \brief Same as FFaField<int>, but hiding negative-valued instances.
