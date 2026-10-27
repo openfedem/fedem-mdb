@@ -16,24 +16,24 @@
 struct cameraData
 {
   FaMat34 itsCameraOrientation;
-  double  itsFocalDistance;
-  double  itsHeight;
-  bool    itsIsOrthographicFlag;
+  double  itsFocalDistance = 1.0;
+  double  itsHeight = 1.0;
+  bool    itsIsOrthographicFlag = false;
 };
 
 
 struct ctrlViewData
 {
   FaVec3 itsCameraTranslation;
-  double itsFocalDistance;
+  double itsFocalDistance = 1.0;
 
-  bool   isGridOn;
-  double itsGridSizeX;
-  double itsGridSizeY;
+  bool   isGridOn = false;
+  double itsGridSizeX = 1.0;
+  double itsGridSizeY = 1.0;
 
-  bool   isSnapOn;
-  double itsSnapDistanceX;
-  double itsSnapDistanceY;
+  bool   isSnapOn = false;
+  double itsSnapDistanceX = 0.1;
+  double itsSnapDistanceY = 0.1;
 };
 
 
@@ -41,12 +41,11 @@ class FmGlobalViewSettings : public FmBase
 {
 private:
 
-  class FmSymbolSpec
+  struct FmSymbolSpec
   {
-  public:
     bool visible;
     FmColor color;
-    FmSymbolSpec() : visible(false), color(0,0,0) {}
+    FmSymbolSpec() : visible(false) {}
     FmSymbolSpec(double r, double g, double b) : visible(true), color(r,g,b) {}
     bool operator==(const FmSymbolSpec& obj) const
     { return visible == obj.visible && color == obj.color; }
@@ -199,6 +198,7 @@ public:
   void showTires(bool);
   void showStrainRosettes(bool);
 
+  static void setLinkDefaultColors(std::vector<FmColor>& colors);
   static const FmColor& getLinkDefaultColor(int index = -1);
 
   const FmColor& getFeedbackColor() const;

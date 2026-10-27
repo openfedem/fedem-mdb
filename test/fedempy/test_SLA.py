@@ -36,6 +36,7 @@ def make_model (fmm_name, src_dir):
     p1 = myModel.make_fe_part(src_dir + "lca.nas")
     p2 = myModel.make_fe_part(src_dir + "knuckle.nas")
     p3 = myModel.make_fe_part(src_dir + "uca.nas")
+    myModel.edit_part([p1, p2, p3], component_modes=12)
     print("Created FE parts", [p1, p2, p3])
 
     # Create triads attached to the FE parts.

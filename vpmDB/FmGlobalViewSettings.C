@@ -603,25 +603,38 @@ void FmGlobalViewSettings::showPartCoGCSs(bool var)
 #endif
 }
 
+
+namespace
+{
+  std::vector<FmColor> defaultColors;
+}
+
+
+void FmGlobalViewSettings::setLinkDefaultColors(std::vector<FmColor>& colors)
+{
+  defaultColors = colors;
+}
+
+
 const FmColor& FmGlobalViewSettings::getLinkDefaultColor(int index)
 {
-  static std::vector<FmColor> defaultColors;
   if (defaultColors.empty())
   {
-    defaultColors.push_back(FmColor(0.5, 0.5 , 0.36));
-    defaultColors.push_back(FmColor(0.0, 0.0 , 1.0));
-    defaultColors.push_back(FmColor(0.0, 0.33, 1.0));
-    defaultColors.push_back(FmColor(0.0, 0.67, 1.0));
-    defaultColors.push_back(FmColor(0.0, 1.0 , 1.0));
-    defaultColors.push_back(FmColor(0.0, 0.33, 0.0));
-    defaultColors.push_back(FmColor(0.0, 0.67, 0.0));
-    defaultColors.push_back(FmColor(0.0, 1.0 , 0.0));
-    defaultColors.push_back(FmColor(1.0, 1.0 , 0.0));
-    defaultColors.push_back(FmColor(1.0, 0.66, 0.0));
-    defaultColors.push_back(FmColor(1.0, 0.33, 0.0));
-    defaultColors.push_back(FmColor(1.0, 0.0 , 1.0));
-    defaultColors.push_back(FmColor(1.0, 0.33, 1.0));
-    defaultColors.push_back(FmColor(1.0, 0.67, 1.0));
+    defaultColors.reserve(14);
+    defaultColors.emplace_back(0.5f, 0.50f, 0.36f);
+    defaultColors.emplace_back(0.0f, 0.00f, 1.0f);
+    defaultColors.emplace_back(0.0f, 0.33f, 1.0f);
+    defaultColors.emplace_back(0.0f, 0.67f, 1.0f);
+    defaultColors.emplace_back(0.0f, 1.00f, 1.0f);
+    defaultColors.emplace_back(0.0f, 0.33f, 0.0f);
+    defaultColors.emplace_back(0.0f, 0.67f, 0.0f);
+    defaultColors.emplace_back(0.0f, 1.00f, 0.0f);
+    defaultColors.emplace_back(1.0f, 1.00f, 0.0f);
+    defaultColors.emplace_back(1.0f, 0.66f, 0.0f);
+    defaultColors.emplace_back(1.0f, 0.33f, 0.0f);
+    defaultColors.emplace_back(1.0f, 0.00f, 0.5f);
+    defaultColors.emplace_back(1.0f, 0.33f, 1.0f);
+    defaultColors.emplace_back(1.0f, 0.67f, 1.0f);
   }
 
   static int n = 0;

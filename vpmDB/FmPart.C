@@ -155,7 +155,7 @@ FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
 
   FFA_FIELD_INIT(overrideChecksum, false, "OVERRIDE_CHECKSUM");
 
-  FFA_FIELD_INIT(nGenModes,   12, "NUM_GEN_MODES");
+  FFA_FIELD_INIT(nGenModes,    0, "NUM_GEN_MODES");
   FFA_FIELD_INIT(nEigvalsCalc, 0, "NUM_EIGVALS_CALC");
 
   FFA_FIELD_INIT(useConsistentMassMatrix, false, "USE_CONSISTENT_MASS_MATRIX");
