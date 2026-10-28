@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmSubAssembly.C
+  \brief Base class for all sub-assembly objects.
+*/
+
 #include <fstream>
 
 #include "vpmDB/FmSubAssembly.H"
@@ -29,11 +34,14 @@
 
 
 std::string FmSubAssembly::mainFilePath;
+std::string FmSubAssembly::newLinkRepo;
 std::pair<int,int> FmSubAssembly::old2newAssID(0,0);
 FmSubAssembly::FmHeadMap* FmSubAssembly::tmpHeadMap = NULL;
 
 
+//! \cond DO_NOT_DOCUMENT
 Fmd_DB_SOURCE_INIT(FcSUBASSEMBLY, FmSubAssembly, FmModelMemberBase);
+//! \endcond
 
 
 FmSubAssembly::FmSubAssembly(bool isDummy)
@@ -129,7 +137,7 @@ FmSubAssembly* FmSubAssembly::duplicate(FmSubAssembly* parent) const
 
   // Lambda function for cloning a DB object. Note that all references are
   // copied in an unresolved state (DEEP_UNRESOLVED), since they must be updated
-  // to refer to objects in the newly copied sub-assembly before they are resolved.
+  // to refer to objects in the newly copied sub-assembly before resolving them.
   auto&& cloneIt = [&oldAssID,&newAssID,newAss](FmBase* obj)
   {
     FmBase* newObj = obj->clone(FmBase::DEEP_UNRESOLVED);
@@ -261,7 +269,7 @@ bool FmSubAssembly::readAndConnect(std::istream& is, std::ostream&)
     std::stringstream activeStatement;
     char keyWord[BUFSIZ];
     if (FaParse::parseFMFASCII(keyWord, is, activeStatement, '=', ';'))
-      localParse(keyWord, activeStatement, obj);
+      FmBase::localParse(keyWord, activeStatement, obj);
   }
 
   if (!obj->connect())
@@ -272,13 +280,6 @@ bool FmSubAssembly::readAndConnect(std::istream& is, std::ostream&)
                 << std::endl;
 
   return FmSubAssembly::readFMF(obj->myModelFile.getValue());
-}
-
-
-bool FmSubAssembly::localParse(const char* keyWord, std::istream& activeStatement,
-                               FmSubAssembly* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
 }
 
 
@@ -364,13 +365,12 @@ bool FmSubAssembly::readFMF(const std::string& fileName, FmSubAssembly** subAss)
       // Must assign a new unique ID to avoid conflicts.
       newAss->setID(0);
       newAss->connect();
-      old2newAssID = std::make_pair(uid,newAss->getID());
+      old2newAssID = { uid, newAss->getID() };
       FmModelMemberBase::ignoreBaseID = true;
       uid = old2newAssID.second;
 
       // Cannot use the same file name since the references will be different
-      size_t dotPos = aFile.find_last_of('.');
-      if (dotPos < aFile.size())
+      if (size_t dotPos = aFile.find_last_of('.'); dotPos < aFile.size())
         aFile.insert(dotPos,FFaNumStr("_%d",newAss->getID()));
       else
         aFile.append(FFaNumStr("_%d",newAss->getID()));
@@ -379,10 +379,11 @@ bool FmSubAssembly::readFMF(const std::string& fileName, FmSubAssembly** subAss)
       newAss->myModelFile.setValue(aFile);
     else // Make all objects into sub-objects of this assembly
     {
-      old2newAssID = std::make_pair(0,newAss->getID());
+      old2newAssID = { 0, newAss->getID() };
       tmpHeadMap = &newAss->myHeadMap;
     }
     ListUI <<"  => Created "<< newAss->getIdString() <<"\n";
+    newLinkRepo = FFaFilePath::getPath(aFile);
   }
 
   // Now parse the file and connect the objects of this assembly
@@ -399,17 +400,26 @@ bool FmSubAssembly::readFMF(const std::string& fileName, FmSubAssembly** subAss)
   else if (newAss)
   {
     // Imported sub-assembly.
-    // Set part-specific repository for FE parts, if any,
-    // such that their reduced data is reused in the new model.
-    std::vector<FmPart*> allParts;
-    FmDB::getAllParts(allParts,newAss);
-    for (FmPart* part : allParts)
-      if (part->isFEPart() && part->myRepository.getValue().empty())
-      {
-        std::string linkDB = FFaFilePath::getBaseName(fileName,true) + "_RDB";
-        FFaFilePath::appendToPath(linkDB,"link_DB");
-        part->myRepository.setValue(linkDB);
-      }
+    if (newLinkRepo != "(unchanged)")
+    {
+      // Set part-specific repository for FE parts, if any,
+      // such that their reduced data is reused in the new model.
+      std::vector<FmPart*> allParts;
+      FmDB::getAllParts(allParts,newAss);
+      for (FmPart* part : allParts)
+        if (part->isFEPart() && part->myRepository.getValue().empty())
+        {
+          std::string linkDB;
+          if (newLinkRepo.empty())
+          {
+            linkDB = FFaFilePath::getBaseName(fileName,true) + "_RDB";
+            FFaFilePath::appendToPath(linkDB,"link_DB");
+          }
+          else
+            linkDB = newLinkRepo;
+          part->myRepository.setValue(linkDB);
+        }
+    }
 
     // Translate relative pathnames according to the current model
     FmDB::translateRelativePaths(FFaFilePath::getPath(fullName,false),
@@ -441,7 +451,7 @@ bool FmSubAssembly::readFMF(const std::string& fileName, FmSubAssembly** subAss)
   }
 
   tmpHeadMap = NULL;
-  old2newAssID = std::make_pair(0,0);
+  old2newAssID = { 0,0 };
   return readStat > 0;
 }
 
