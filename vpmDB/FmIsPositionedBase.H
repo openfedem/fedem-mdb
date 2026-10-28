@@ -83,8 +83,6 @@ protected:
   void getMyStickers(Stickers& stickers) const;
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-                          FmIsPositionedBase* obj);
 
   FFaReference<FmIsPositionedBase> myPosRef;
   FFaField<FFaReferenceBase*>      myPosRefField;

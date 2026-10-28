@@ -88,8 +88,6 @@ protected:
   const char** itsPixmap;
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-                          FmCtrlElementBase* obj);
 
   virtual void changedEvent();
 };

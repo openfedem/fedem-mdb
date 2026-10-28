@@ -192,14 +192,6 @@ int FmIsPositionedBase::getNumberOfStickers() const
 }
 
 
-bool FmIsPositionedBase::localParse(const char* keyWord,
-                                    std::istream& activeStatement,
-                                    FmIsPositionedBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 bool FmIsPositionedBase::cloneLocal(FmBase* obj, int depth)
 {
   if (!obj->isOfType(FmIsPositionedBase::getClassTypeID()))

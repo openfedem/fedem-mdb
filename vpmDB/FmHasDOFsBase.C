@@ -257,13 +257,6 @@ double FmHasDOFsBase::getInitAcc(int dof, bool includeFixed) const
 }
 
 
-bool FmHasDOFsBase::localParse(const char* keyWord, std::istream& activeStatement,
-			       FmHasDOFsBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 void FmHasDOFsBase::initAfterResolve()
 {
   this->FmIsPositionedBase::initAfterResolve();

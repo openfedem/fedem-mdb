@@ -97,9 +97,6 @@ protected:
   void completeInitDOFs();
   void completeInitDOF(int i, const std::string& dofName);
 
-  static bool localParse(const char* keyWord, std::istream& activeStatement,
-			 FmHasDOFsBase* obj);
-
   virtual bool cloneLocal(FmBase* obj, int depth);
 
   FFaReference<FmDofLoad>   myLoads[MAX_DOF];
