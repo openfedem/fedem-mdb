@@ -5,25 +5,25 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmResultBase.C
+  \brief Base class for all objects that postprocess the simulation results.
+*/
+
 #include "vpmDB/FmResultBase.H"
 #include "vpmDB/FmAnimation.H"
 #include "vpmDB/FmCurveSet.H"
 #include "vpmDB/FmGraph.H"
 
 
+//! \cond DO_NOT_DOCUMENT
 Fmd_DB_SOURCE_INIT(FcRESULT_BASE, FmResultBase, FmModelMemberBase);
+//! \endcond
 
 
 FmResultBase::FmResultBase()
 {
   Fmd_CONSTRUCTOR_INIT(FmResultBase);
-}
-
-
-bool FmResultBase::localParse(const char* keyWord, std::istream& activeStatement,
-                              FmResultBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
 }
 
 
@@ -41,7 +41,7 @@ void FmResultBase::mainConnectedEvent()
 
 
 /*!
-  Returns a new result object of the same type as \a this.
+  This method returns a new result object of the same type as \a *this.
   If \a cloneDepth > FmBase::NOTHING the field values are also copied.
 */
 

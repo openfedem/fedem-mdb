@@ -22,13 +22,6 @@ FmIsControlledBase::FmIsControlledBase()
 }
 
 
-bool FmIsControlledBase::localParse(const char* keyWord, std::istream& activeStatement,
-				    FmIsControlledBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 bool FmIsControlledBase::cloneLocal(FmBase* obj, int depth)
 {
   if (!obj->isOfType(FmIsControlledBase::getClassTypeID()))

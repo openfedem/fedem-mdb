@@ -37,8 +37,6 @@ protected:
   void printVariables(FILE* fp);
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-			  FmCtrlOutputElementBase* obj);
 
 private:
   std::vector<int> itsStateVariables;

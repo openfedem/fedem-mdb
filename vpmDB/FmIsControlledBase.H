@@ -35,11 +35,8 @@ public:
 
 protected:
   FmIsControlledBase();
-  virtual ~FmIsControlledBase() {}
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-			  FmIsControlledBase* obj);
 
 private:
   FFaReference<FmEngine>      myEngine;

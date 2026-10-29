@@ -122,10 +122,3 @@ bool FmCtrlOutputElementBase::cloneLocal(FmBase* obj, int depth)
 
   return true;
 }
-
-
-bool FmCtrlOutputElementBase::localParse(const char* keyWord, std::istream& activeStatement,
-					 FmCtrlOutputElementBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}

@@ -99,13 +99,6 @@ int FmFrictionBase::printSolverEntry(FILE* fp)
 }
 
 
-bool FmFrictionBase::localParse(const char* keyWord, std::istream& activeStatement,
-				FmFrictionBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 bool FmFrictionBase::cloneLocal(FmBase* obj, int depth)
 {
   if (!obj->isOfType(FmFrictionBase::getClassTypeID()))

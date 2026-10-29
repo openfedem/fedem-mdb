@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmSimulationModelBase.C
+  \brief Base class for all objects that affect the simulation model.
+*/
+
 #include <algorithm>
 #include <sstream>
 
@@ -68,8 +73,10 @@
 #include "vpmDB/FmControlAdmin.H"
 
 
+//! \cond DO_NOT_DOCUMENT
 Fmd_DB_SOURCE_INIT(FcSIMULATION_MODEL_BASE, FmSimulationModelBase, FmModelMemberBase);
 Fmd_DB_SOURCE_INIT(FcSTRUCT_PROPERTY_BASE, FmStructPropertyBase, FmSimulationModelBase);
+//! \endcond
 
 std::string FmSimulationModelBase::relPathCorrection;
 
@@ -93,13 +100,6 @@ bool FmSimulationModelBase::parseField(const std::string& keyWord,
 }
 
 
-bool FmSimulationModelBase::localParse(const char* keyWord, std::istream& activeStatement,
-				       FmSimulationModelBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 bool FmSimulationModelBase::cloneLocal(FmBase* obj, int)
 {
   return obj->isOfType(FmSimulationModelBase::getClassTypeID());
@@ -112,10 +112,6 @@ void FmSimulationModelBase::initAfterResolve()
   this->initAfterParse();
 }
 
-
-/*!
-  Removes all fields from this object, except for the specified ones.
-*/
 
 void FmSimulationModelBase::removeFieldsExceptFor(const std::vector<FDictIt>& keep)
 {
@@ -132,10 +128,6 @@ void FmSimulationModelBase::removeFieldsExceptFor(const std::vector<FDictIt>& ke
 }
 
 
-/*!
-  Updates the default value to the current value for the specified fields.
-*/
-
 void FmSimulationModelBase::setAsDefault(const std::vector<FDictIt>& fieldNames)
 {
   for (const FDictIt& field : fieldNames)
@@ -146,10 +138,6 @@ void FmSimulationModelBase::setAsDefault(const std::vector<FDictIt>& fieldNames)
 }
 
 
-/*!
-  Returns all field names present in this object.
-*/
-
 void FmSimulationModelBase::getFields(std::vector<FDictIt>& fieldNames) const
 {
   for (const FieldContainerMap::value_type& field : myFields)
@@ -157,20 +145,12 @@ void FmSimulationModelBase::getFields(std::vector<FDictIt>& fieldNames) const
 }
 
 
-/*!
-  Checks if \a *this is referred by simulation events.
-*/
-
 bool FmSimulationModelBase::isEventModified() const
 {
   FmSimulationEvent* event;
   return this->hasReferringObjs(event);
 }
 
-
-/*!
-  Returns a string with all information stored in this object.
-*/
 
 std::string FmSimulationModelBase::getObjectInfo() const
 {
@@ -203,7 +183,7 @@ std::string FmSimulationModelBase::getObjectInfo() const
 
 
 /*!
-  Returns a new simulation model object of the same type as \a this.
+  This method returns a new object of the same type as \a *this.
   If \a cloneDepth > FmBase::NOTHING the field values are also copied.
 */
 

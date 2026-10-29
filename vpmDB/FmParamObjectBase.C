@@ -22,10 +22,3 @@ const char** FmParamObjectBase::getPixmap() const
 {
   return blank;
 }
-
-
-bool FmParamObjectBase::localParse(const char* keyWord, std::istream& activeStatement,
-				   FmParamObjectBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}

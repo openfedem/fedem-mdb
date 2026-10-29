@@ -30,8 +30,6 @@ protected:
   virtual void getTypeDepVars(std::vector<double>& vars) const { vars.clear(); }
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-			  FmFrictionBase* obj);
 
   M_MOD_PARAMS(PrestressLoad,FmFrictionBase);
   M_MOD_PARAMS(CoulombCoeff,FmFrictionBase);

@@ -113,13 +113,6 @@ bool FmCtrlInputElementBase::cloneLocal(FmBase* obj, int depth)
 }
 
 
-bool FmCtrlInputElementBase::localParse(const char* keyWord, std::istream& activeStatement,
-                                        FmCtrlInputElementBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 void FmCtrlInputElementBase::printSolverTopology(FILE* fp)
 {
   // input ports
