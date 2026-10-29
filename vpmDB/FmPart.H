@@ -17,11 +17,13 @@
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
 
 
+//! \cond TEMPLATE_SPECIALIZATION
 template<>
 inline bool FFaField<FmResultStatusData>::isPrintable() const
 {
   return !this->isDefault();
 }
+//! \endcond
 
 
 class FmElementGroupProxy;

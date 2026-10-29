@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmBase.C
+  \brief Base parent class for the model data structure entries.
+*/
+
 #include "vpmDB/FmBase.H"
 #include "vpmDB/FmRingStart.H"
 #include "vpmDB/FmSubAssembly.H"
@@ -18,14 +23,16 @@
 #include <cstring>
 
 
+//! \cond DO_NOT_DOCUMENT
+Fmd_DB_SOURCE_INIT(FcBASE, FmBase, FmBase);
+//! \endcond
+
+
 /**********************************************************************
  *
  * Class constructor and destructor
  *
  **********************************************************************/
-
-Fmd_DB_SOURCE_INIT(FcBASE, FmBase, FmBase);
-
 
 FmBase::FmBase(bool isDummy)
 {
@@ -110,7 +117,6 @@ bool FmBase::isPartOf(const FmSubAssembly* subAss) const
 
 
 /*!
-  Method to retrieve the assembly ID of this object.
   The "live" path is returned if the model is resolved,
   and the read path if not.
 
@@ -131,7 +137,7 @@ void FmBase::getAssemblyID(std::vector<int>& assID) const
   containing this object. The input vector must be empty. It gets the resolved
   "live" assembly ID and returns nothing if the model is not resolved.
 
-  The "path" to this object. MainModel.SubAss.SubAss ... SubAss
+  The "path" to this object: `MainModel.SubAss.SubAss...SubAss`
 */
 
 void FmBase::getResolvedAssemblyID(std::vector<int>& assID) const
@@ -304,7 +310,7 @@ std::ostream& FmBase::writeFields(std::ostream& os) const
 
 
 /*!
-  Try to copy all fields of the cloned object into this object.
+  This method tries to copy all fields of the cloned object into this object.
   \return true if all of them have a matching field in this and false otherwise.
 */
 
@@ -358,7 +364,6 @@ bool FmBase::setUserDescription(const std::string& descr)
 
 
 /*!
-  Returns the user description of this object.
   If \a maxLength is non-zero, only the first \a maxLength characters are
   returned, or only the first line if that is shorter than \a maxLength.
 */
@@ -376,7 +381,6 @@ std::string FmBase::getUserDescription(size_t maxLength) const
 
 
 /*!
-  Returns a composed string describing this object.
   Mainly used to refer to this object in pulldown menus, etc.
 */
 
@@ -388,7 +392,6 @@ std::string FmBase::getInfoString() const
 
 
 /*!
-  Returns a composed string describing this object.
   Mainly used to refer to this object in Output List error messages, etc.
 */
 

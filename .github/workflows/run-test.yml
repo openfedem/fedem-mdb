@@ -101,7 +101,7 @@ jobs:
       - name: Configure main build
         run: >
           GTEST_ROOT=/usr/local PFUNIT=${{ github.workspace }}/pFUnit3
-          cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DUSE_FORTRAN=OFF -DUSE_CHSHAPE=ON
+          cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DUSE_FORTRAN=ON -DUSE_CHSHAPE=ON
 
       - name: Build binaries and execute tests
         run: cmake --build ./build --target check

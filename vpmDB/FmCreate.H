@@ -32,7 +32,7 @@ class FmSubAssembly;
 class FaVec3;
 
 
-namespace Fedem //! Fedem model database utilities
+namespace Fedem //! FEDEM model database utilities
 {
   //! \brief Creates a triad.
   //! \param[in] createPos Global position of the triad

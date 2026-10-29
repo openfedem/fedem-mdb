@@ -22,11 +22,13 @@
 #include "FFpLib/FFpCurveData/FFpDFTparams.H"
 
 
+//! \cond TEMPLATE_SPECIALIZATION
 template<>
 inline bool FFaField<FFaResultDescription>::isPrintable() const
 {
   return !myData.empty();
 }
+//! \endcond
 
 
 class FmCurveSet : public FmResultBase

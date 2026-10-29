@@ -37,10 +37,10 @@ namespace Fedem
   //! \brief Checks the validity of the reduced matrix files of a part.
   //! \param[in] part The FE part to check matrix files for
   //! \param[in] needMassMatrix If \e true, mass matrix files are needed
-  //! \param[in] checkingWith Flag indicating which files to check for.
-  //! 'S': Files needed by the Dynamics Solver only.
-  //! 'R': Files needed by Stress Recovery only.
-  //! 'A': Check all files.
+  //! \param[in] checkingWhich Flag indicating which files to check for.
+  //! - 'S': Files needed by the Dynamics Solver only.
+  //! - 'R': Files needed by Stress Recovery only.
+  //! - 'A': Check all files.
   //! \param[in] preparingForBatch If \e true, prepare for batch execution
   //! \param[in] wantCS Expected checksum value (ignore if zero)
   int checkReducerFiles(const FmPart* part,

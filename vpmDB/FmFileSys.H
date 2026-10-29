@@ -19,21 +19,32 @@
 
 namespace FmFileSys //! File system utilities
 {
+  //! \brief Returns the number of bytes in the file \a filename.
   unsigned int getFileSize(const std::string& filename);
 
+  //! \brief Returns the date and time of last change of the file \a filename.
   std::string fileLastModified(const std::string& filename);
 
+  //! \brief Returns the home directory of the running process.
   std::string getHomeDir();
 
+  //! \brief Returns \e true if \a path is an existing file.
   bool isFile(const std::string& path);
+  //! \brief Returns \e true if \a path is an existing directory.
   bool isDirectory(const std::string& path);
 
+  //! \brief Returns \e true if \a filename can be opened for reading.
   bool isReadable(const std::string& filename);
+  //! \brief Returns \e true if \a filename can be opened for writing.
   bool isWritable(const std::string& filename);
 
+  //! \brief Deletes the file \a filename from disk.
   bool deleteFile(const std::string& filename);
+  //! \brief Rename the file named \a from to \a to.
   bool renameFile(const std::string& from, const std::string& to);
+  //! \brief Copies the file named \a from to \a to.
   bool copyFile(const std::string& from, const std::string& to);
+  //! \brief Copies the file \a filename in directory \a from to \a to.
   bool copyFile(const std::string& filename,
                 const std::string& from, const std::string& to);
 
