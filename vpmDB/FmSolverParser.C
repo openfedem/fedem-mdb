@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmSolverParser.C
+  \brief Class managing writing the FEDEM dynamics solver input file.
+*/
+
 #include "vpmDB/FmSolverParser.H"
 #include "vpmDB/FmDB.H"
 #include "vpmDB/FmSeaState.H"
@@ -52,7 +57,7 @@
 
 FmSolverParser::FmSolverParser(const char* fileName)
 {
-  myFile = fopen(fileName,"w");
+  myFile = fileName ? fopen(fileName,"w") : NULL;
 }
 
 
@@ -309,7 +314,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
       fmxFiles.reserve(7);
 
       // Lambda function checking for non-empty fmx-file names
-      auto&& addFile = [&fmxFiles,partPath](size_t idx, std::string& file)
+      auto addFile = [&fmxFiles,&partPath](size_t idx, std::string& file)
       {
         if (file.empty()) return;
 
@@ -363,7 +368,7 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
         fprintf(myFile,"  numGenDOFs = %d\n",ngen);
 
       if (activePart->hasLoads())
-        fprintf(myFile,"  numLoadCase = %u\n",(unsigned int)activePart->myLoadCases.getValue().size());
+        fprintf(myFile,"  numLoadCase = %zu\n",activePart->myLoadCases.getValue().size());
 
       IntVec genDOFsBC;
       if (activePart->getCompModesFlags(genDOFsBC))
@@ -454,23 +459,33 @@ int FmSolverParser::writeParts(std::vector<FmPart*>& gageParts)
       }
 
       unsigned int nodeNum = 1; // Setting up CoG first
-      nodeNos[nodeNum] = cgTriadId;
+      nodeNos.emplace(nodeNum,cgTriadId);
 
       // Use the current ordering of the localTriads array
       for (FmTriad* triad : localTriads)
         if (triad->getBaseID() != cgTriadId)
-          nodeNos[++nodeNum] = triad->getBaseID();
+          nodeNos.emplace_hint(nodeNos.end(),++nodeNum,triad->getBaseID());
     }
     else
     {
       // Use the FE nodal ordering
       activePart->getTriads(localTriads);
       for (FmTriad* triad : localTriads)
-        nodeNos[triad->FENodeNo.getValue()] = triad->getBaseID();
+        if (std::pair<std::map<unsigned int,int>::const_iterator,bool> np =
+            nodeNos.emplace(triad->FENodeNo.getValue(),triad->getBaseID());
+            !np.second)
+        {
+          ListUI <<"\n---> ERROR: "
+                 << activePart->getIdString(true) <<" has both\n            "
+                 << FmDB::findObject(np.first->second)->getIdString() <<" and "
+                 << triad->getIdString() <<" attached at FE node "
+                 << static_cast<int>(np.first->first) <<".\n";
+          err++;
+        }
     }
 
     // Write out the triad array
-    fprintf(myFile,"  numTriads = %u\n",(unsigned int)nodeNos.size());
+    fprintf(myFile,"  numTriads = %zu\n",nodeNos.size());
     fprintf(myFile,"  triadIds =");
     size_t j = 0;
     for (const std::pair<const unsigned int,int>& node : nodeNos)
@@ -771,7 +786,7 @@ int FmSolverParser::writeJoints()
     if (activeJoint->isSuppressed()) continue;
 
     if (activeJoint->isContactElement())
-      err += writeContactElement((FmCamJoint*)activeJoint);
+      err += writeContactElement(static_cast<FmCamJoint*>(activeJoint));
 
     else if (activeJoint->isGlobalSpringElement())
     {
@@ -852,6 +867,54 @@ int FmSolverParser::writeJoints()
       int nJVar = 0;
       IntVec iDof;
       iDof.reserve(6);
+
+      // Lambda function for writing the rotation variables of the joint.
+      auto writeRotVars = [activeJoint,&iDof,fd=myFile](const char* jVarDefs)
+      {
+        switch (activeJoint->rotSequence.getValue()) {
+        case FmJointBase::rZYX:
+          iDof = { 5, 4, 3 };
+          break;
+        case FmJointBase::rYXZ:
+          iDof = { 4, 3, 5 };
+          break;
+        case FmJointBase::rXZY:
+          iDof = { 3, 5, 4 };
+          break;
+        case FmJointBase::rXYZ:
+          iDof = { 3, 4, 5 };
+          break;
+        case FmJointBase::rYZX:
+          iDof = { 4, 5, 3 };
+          break;
+        case FmJointBase::rZXY:
+          iDof = { 5, 3, 4 };
+          break;
+        default:
+          iDof = { 0, 0, 0};
+          return 1;
+        }
+
+        std::array<int,3> iMat;
+        switch (activeJoint->rotFormulation.getValue()) {
+        case FmJointBase::ROT_AXIS:
+          iDof = { 3, 4, 5 }; // ignore rotation sequence settings
+          iMat = { 1, 1, 1 };
+          break;
+        case FmJointBase::FOLLOWER_AXIS:
+          iMat = { 3, 2, 1 };
+          break;
+        case FmJointBase::ORTHOGONAL_AXIS:
+          iMat = { 1, 2, 3 };
+          break;
+        default:
+          return 1;
+        }
+
+        fprintf(fd,"  %s %d %d   %d %d   %d %d\n", jVarDefs,
+                iDof[0]+1,iMat[0], iDof[1]+1,iMat[1], iDof[2]+1,iMat[2]);
+        return 0;
+      };
 
       // Beta feature: Separate version type flag
       int version = jDesc.getIntAfter("#Version");
@@ -974,7 +1037,7 @@ int FmSolverParser::writeJoints()
 
 	  nJVar = 3;
 	  fprintf(myFile,"  nJointVars   = 3\n");
-	  err += writeRotationJointVars("JointVarDefs =",activeJoint,iDof);
+	  err += writeRotVars("JointVarDefs =");
 
 	  fprintf(myFile,"  JVarInitVal  = %17.9e %17.9e %17.9e\n",
 		  activeJoint->getJointVariable(iDof[0]),
@@ -1097,7 +1160,7 @@ int FmSolverParser::writeJoints()
 	if (version == 0 && jDesc.hasSubString("#noRotTransCoupling"))
 	  fprintf(myFile,"  version      = -1\n");
 	fprintf(myFile,"  nJointVars   = 6\n");
-	err += writeRotationJointVars("JointVarDefs = 1 3   2 3   3 3  ",activeJoint,iDof);
+	err += writeRotVars("JointVarDefs = 1 3   2 3   3 3  ");
 
 	fprintf(myFile,"  JVarInitVal  = %17.9e %17.9e %17.9e %17.9e %17.9e %17.9e\n",
 		activeJoint->getJointVariable(0),
@@ -1230,7 +1293,7 @@ int FmSolverParser::writeJoints()
 
 	fprintf(myFile,"  type         = 7\n");
 	fprintf(myFile,"  camThickness = %17.9e\n",
-		((FmCamJoint*)activeJoint)->getThickness());
+		static_cast<FmCamJoint*>(activeJoint)->getThickness());
 
 	// Beta feature: Fix the lateral translation DOFs
 	bool freeX = !jDesc.hasSubString("#FixX");
@@ -1386,44 +1449,6 @@ int FmSolverParser::writeJoints()
 }
 
 
-int FmSolverParser::writeRotationJointVars(const char* jointVarDefs,
-					   FmJointBase* aJoint, IntVec& iDof)
-{
-  iDof.resize(3,0);
-  switch (aJoint->rotSequence.getValue())
-    {
-    case FmJointBase::rZYX: iDof[0]=5; iDof[1]=4; iDof[2]=3; break;
-    case FmJointBase::rYXZ: iDof[0]=4; iDof[1]=3; iDof[2]=5; break;
-    case FmJointBase::rXZY: iDof[0]=3; iDof[1]=5; iDof[2]=4; break;
-    case FmJointBase::rXYZ: iDof[0]=3; iDof[1]=4; iDof[2]=5; break;
-    case FmJointBase::rYZX: iDof[0]=4; iDof[1]=5; iDof[2]=3; break;
-    case FmJointBase::rZXY: iDof[0]=5; iDof[1]=3; iDof[2]=4; break;
-    default: return 1;
-    }
-
-  int iMat[3];
-  switch (aJoint->rotFormulation.getValue())
-    {
-    case FmJointBase::ROT_AXIS:
-      iDof[0]=3; iDof[1]=4; iDof[2]=5; // ignore rotation sequence settings
-      iMat[0]=1; iMat[1]=1; iMat[2]=1;
-      break;
-    case FmJointBase::FOLLOWER_AXIS:
-      iMat[0]=3; iMat[1]=2; iMat[2]=1;
-      break;
-    case FmJointBase::ORTHOGONAL_AXIS:
-      iMat[0]=1; iMat[1]=2; iMat[2]=3;
-      break;
-    default:
-      return 1;
-    }
-
-  fprintf(myFile,"  %s %d %d   %d %d   %d %d\n", jointVarDefs,
-	  iDof[0]+1,iMat[0], iDof[1]+1,iMat[1], iDof[2]+1,iMat[2]);
-  return 0;
-}
-
-
 int FmSolverParser::writeContactElement(FmCamJoint* activeJoint)
 {
   fprintf(myFile,"&CONTACT_ELEMENT\n");
@@ -1544,7 +1569,7 @@ int FmSolverParser::writeSprings()
 
   // Lambda function checking if a Cam joint DOF is fixed or not,
   // through a description-field command (beta feature)
-  auto&& isFixedCamDof = [](FmJointBase* joint, FmJointSpring* spr)
+  auto isFixedCamDof = [](FmJointBase* joint, FmJointSpring* spr)
   {
     if (!joint->isOfType(FmCamJoint::getClassTypeID()))
       return false;
