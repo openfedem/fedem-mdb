@@ -37,7 +37,11 @@
 #include "vpmDB/FmMechanism.H"
 #include "vpmDB/FmGlobalViewSettings.H"
 
+//! \cond DO_NOT_DOCUMENT
 #define SIZEMASS(n) (n == 6 ? 9 : n)
+
+Fmd_DB_SOURCE_INIT(FcTRIAD, FmTriad, FmHasDOFsBase);
+//! \endcond
 
 
 /**********************************************************************
@@ -45,9 +49,6 @@
  * Class constructor and destructor
  *
  **********************************************************************/
-
-Fmd_DB_SOURCE_INIT(FcTRIAD, FmTriad, FmHasDOFsBase);
-
 
 FmTriad::FmTriad()
 {
@@ -130,7 +131,6 @@ bool FmTriad::highlight(bool trueOrFalse)
 
 #ifdef FT_USE_CONNECTORS
 /*!
-  Updates a connector using the triad's stored info.
   Unless \a ownerPart is NULL, the connector is recreated even if its type is
   not changed (this is typically used when changing the FE mesh of a part).
   If \a ownerPart is NULL, we do nothing unless the connector type is changed.
@@ -182,6 +182,12 @@ FmPart* FmTriad::getOwnerFEPart() const
 }
 
 
+/*!
+  - \a partIndex = -1 : Expect only one owner part and return NULL otherwise
+  - \a partIndex &ge; 0 : Return the (<i>partIndex</i>+1)'th part this triad
+    is attached to, and NULL if less than \a partIndex + 1 links attached
+*/
+
 FmPart* FmTriad::getOwnerPart(int partIndex) const
 {
   if (myAttachedLinks.empty())
@@ -194,6 +200,12 @@ FmPart* FmTriad::getOwnerPart(int partIndex) const
   return NULL;
 }
 
+
+/*!
+  - \a linkIndex = -1 : Expect only one owner link and return NULL otherwise
+  - \a linkIndex &ge; 0 : Return the (<i>linkIndex</i>+1)'th link this triad
+    is attached to, and NULL if less than \a linkIndex + 1 links attached
+*/
 
 FmLink* FmTriad::getOwnerLink(int linkIndex) const
 {
@@ -215,26 +227,26 @@ FmLink* FmTriad::getOwnerLink(int linkIndex) const
 
 
 /*!
-  This method is an "external" erase. It is called from erase().
+  This method is an \e external erase, doing the following:
 
-  1. Check the joints connected.
-  1.1 Point joint:
-  1.1.1 If the erased triad and joint belong to the same assembly, erase joint
-        and the other triad if that one is not referred by other joints.
-  1.1.2 If the erased triad and joint belong to different assemblies,
-        create a new triad for the joint replacing the erased one.
-  1.2 Line joint:
-  1.2.1 If the erased triad is a dependent joint triad and belongs to same
-        assembly as the joint, try to erase that triad, then erase the joint,
-        and erase all independent triads of the erased joint that are empty.
-  1.2.2 If the erased triad is a dependent joint triad and belongs to a
-        different assembly than the joint itself, create a new dependent triad
-        for the joint replacing the erased one.
-  1.2.3 If the erased triad is among the independent triads of a joint,
-        try to erase that triad if the number of independent triads of the joint
-        are greater than two, otherwise erase the joint
-        and erase the other triads connected if they are empty.
-  2. Invoke the parent class eraseOptions() method.
+  -# Check the joints connected.
+    -# Point joint:
+      -# If the erased triad and joint belong to the same assembly, erase joint
+         and the other triad if that one is not referred by other joints.
+      -# If the erased triad and joint belong to different assemblies,
+         create a new triad for the joint replacing the erased one.
+    -# Line joint:
+      -# If the erased triad is a dependent joint triad and belongs to same
+         assembly as the joint, try to erase that triad, then erase the joint,
+         and erase all independent triads of the erased joint that are empty.
+      -# If the erased triad is a dependent joint triad and belongs to a
+         different assembly than the joint itself, create a new dependent triad
+         for the joint replacing the erased one.
+      -# If the erased triad is among the independent triads of a joint,
+         try to erase that triad if the number of independent triads of
+         the joint are greater than two, otherwise erase the joint
+         and erase the other triads connected if they are empty.
+  -# Invoke the parent class eraseOptions() method.
 */
 
 bool FmTriad::eraseOptions()
@@ -617,13 +629,13 @@ void FmTriad::setInitAcc(int DOF, double var)
 
 /*!
   Use this method to insert the Triad into the main book-keeping ring,
-  and update the FE connection of the Triad.
-  If parent is supplied (must be an FmLink) it will be added to myAttachedLinks.
-  If parent is an FmPart, the local coordinate system of the triad is updated to
-  be relative to this part, if it is the first part to be attached to the triad.
+  and update its FE connection. If \a parent is supplied (must be an FmLink)
+  it will be added to #myAttachedLinks. If \a parent is an FmPart,
+  the local coordinate system of the triad is updated to be relative
+  to this part, if it is the first part to be attached to the triad.
 */
 
-bool FmTriad::connect(FmBase* parent)
+bool FmTriad::connect(FmBase* parent, int nodeId)
 {
   bool status = this->mainConnect();
 
@@ -649,18 +661,21 @@ bool FmTriad::connect(FmBase* parent)
               <<"\n\tNew global position:"<< this->getGlobalCS() << std::endl;
 #endif
   }
-  this->updateFENodeAndDofs(owner);
+  this->updateFENodeAndDofs(owner,nodeId);
   return status;
 }
 
 
 /*!
-  Internal method used only from connect and initAfterResolve.
-  Sets up the allowed DOFs for the Triad and makes sure the associated
-  FE node is labelled as external.
+  This method sets up the allowed DOFs for the Triad and makes sure
+  the associated FE node is labelled as external.
+  If \a nodeId is specified (and larger than 0), it is taken as the connected
+  FE node, if it exists in the FE model of the owner part.
+  Otherwise (i.e., \a nodeId &le; 0), the non-slave FE node closest to
+  the triad location will be used.
 */
 
-bool FmTriad::updateFENodeAndDofs(FmPart* ownerPart)
+bool FmTriad::updateFENodeAndDofs(FmPart* ownerPart, int nodeId)
 {
   itsNode = NULL;
   if (!ownerPart)
@@ -674,15 +689,19 @@ bool FmTriad::updateFENodeAndDofs(FmPart* ownerPart)
   if (ownerPart->useGenericProperties.getValue())
     return this->setNDOFs(6);
 
-  // For triads on FE parts, find the FE-node number of DOFs
+  // For triads on FE parts, find the FE-node and number of DOFs
+  if (nodeId > 0)
+    itsNode = ownerPart->getNode(nodeId);
+  else
+  {
 #ifdef FT_USE_CONNECTORS
-  FFlConnectorItems* ci = &(itsConnectorItems.getValue());
+    FFlConnectorItems* ci = &(itsConnectorItems.getValue());
 #else
-  FFlConnectorItems* ci = NULL;
+    FFlConnectorItems* ci = NULL;
 #endif
-  itsNode = ownerPart->getNodeAtPoint(this->getLocalCS().translation(),
-                                      FmDB::getPositionTolerance(),ci);
-
+    itsNode = ownerPart->getNodeAtPoint(this->getLocalCS().translation(),
+                                        FmDB::getPositionTolerance(),ci);
+  }
   // If no node => the FE data is most likely not loaded, don't touch anything.
   if (!itsNode) return false;
 
@@ -796,10 +815,6 @@ void FmTriad::initAfterResolve()
       }
 }
 
-
-/*!
-  Syncronizes the FE node reference of the triad
-*/
 
 int FmTriad::syncOnFEmodel(bool useDialog)
 {
@@ -938,6 +953,12 @@ bool FmTriad::disconnect()
 }
 
 
+/*!
+  If \a fromThisOnly is not NULL, the triad is detached only if it was
+  connected to that link. If \a notFromDisabledPart is \e true, the triad
+  is not detached if it is connected to a disabled part.
+*/
+
 bool FmTriad::detach(FmLink* fromThisOnly, bool notFromDisabledPart)
 {
   if (fromThisOnly && myAttachedLinks.size() > 1)
@@ -1013,8 +1034,7 @@ std::string FmTriad::getLinkIDString(bool objPrefix) const
 
 
 /*!
-  Returns true if the triad symbol is to be displayed. This is:
-
+  The triad symbol should be displayed if:
   - the triad is not a joint triad (because in that case
     its visualization is part of the joint visualization itself)
   - it is not a beam triad or beam triad visualization is enabled
@@ -1035,9 +1055,7 @@ bool FmTriad::showSymbol() const
 
 
 /*!
-  Returns true if the triad represents something that requires its directions
-  to be visualized. This is:
-
+  The triad diractions should be shown if:
   - the triad is not on a link
   - the triad has important directions
   - the triad description contains "#ShowDir"
@@ -1056,9 +1074,7 @@ bool FmTriad::showDirections()
 
 
 /*!
-  Returns true if the triad represents something that is referring to
-  its directions. This is either of the following:
-
+  Either of the following is referring to the triad directions:
   - the triad is in a joint
   - the triad has measurements attached (simple sensor only)
   - the triad has boundary conditions or component loads
@@ -1114,7 +1130,6 @@ bool FmTriad::hasReferences() const
 
 
 /*!
-  Deletes all the joints that this triad is a member of.
   If this triad is an independent line joint triad, the joint is
   deleted only if it is less than tree such triads left in the joint.
 */
@@ -1161,8 +1176,7 @@ FmJointBase* FmTriad::getJointWhereSlave() const
 
 
 /*!
-  Check if this triad is attached to the specified link,
-  when exceptForThis is \e false. Otherwise, check if this triad is attached
+  When exceptForThis is \e true, this method checks if the triad is attached
   to any link except the specified one.
 */
 
@@ -1182,9 +1196,9 @@ bool FmTriad::isAttached(const FmLink* link, bool exceptForThis) const
 
 
 /*!
-  Check if this triad is attached to a link. If \a ignoreGPandEarth is \e true,
-  only FE parts are considered. If \a allowMultipleLinks is \e false,
-  this method returns \e true only when the triad is attached to one single link
+  If \a ignoreGPandEarth is \e true, only FE parts are considered.
+  If \a allowMultipleLinks is \e false, this method returns \e true
+  only when the triad is attached to one single link
   and \e false if it is attached to more than one or not at all.
   If \a allowMultipleLinks is \e true, this method returns \e true no matter
   how many links the triad is attached to.
@@ -1491,10 +1505,6 @@ FaMat34 FmTriad::getGlobalCS() const
 }
 
 
-/*!
-  Get local coordinate system of triad, relative to given link.
-*/
-
 FaMat34 FmTriad::getRelativeCS(const FmLink* link) const
 {
   if (!link)
@@ -1509,11 +1519,10 @@ FaMat34 FmTriad::getRelativeCS(const FmLink* link) const
 
 
 /*!
-  Sets the position of this triad to be aligned with the provided matrix,
-  taking into account the part it could be attached to.
+  This method takes into account the part the triad could be attached to.
 
-  If moveRelationsAlong == true, the triads in the joints this triad is a member
-  of is moved as well, if the joints constraint system demands it.
+  If \a moveRelationsAlong is \e true, the triads in the joints this triad is
+  a member of is moved as well, if the joints constraint system demands it.
 
   This method assumes that it is not called on a triad (with relations)
   that is not movable.
@@ -1548,8 +1557,8 @@ void FmTriad::setGlobalCS(const FaMat34& globalMat, bool moveRelationsAlong)
 
 
 /*!
-  Reimplemented to update the position of the connected stickers, if any,
-  and to update the location data of the joint(s) using this triad.
+  This method is overridden to update the position of the connected stickers,
+  if any, and to update the location data of the joint(s) using this triad.
 */
 
 void FmTriad::setLocalCS(const FaMat34& localMat)
@@ -2221,7 +2230,6 @@ char FmTriad::isRotatable(const FmJointBase* jointToIgnore) const
 
 
 /*!
-  This method returns the list view icon to be used in the Objects browser.
   The icon is selected based on the most dominant DOF status in the triad.
   Joint triads are not checked further for DOF status.
   Neither are triads attached to FE parts without a matching FE node.
@@ -2272,8 +2280,8 @@ const char** FmTriad::getListViewPixmap() const
 
 
 /*!
-  This method is used to get all triads along a generated beamstring.
-  Its main purpose is for easy generation of force- and moment diagrams.
+  The main purpose of this method is to facilitate easy generation of
+  force- and moment diagrams.
 */
 
 int FmTriad::traverseBeam(FmBase* start, std::vector<FmIsPlottedBase*>& objs)
@@ -2310,8 +2318,7 @@ int FmTriad::traverseBeam(FmBase* start, std::vector<FmIsPlottedBase*>& objs)
 
 
 /*!
-  This method is used to create a triad at a specified node,
-  when creating a system-level beam model from an FE part.
+  This method is used when creating a system-level beam model from an FE part.
 */
 
 FmTriad* FmTriad::createAtNode(FFlNode* node, FmBase* parent,
