@@ -62,7 +62,7 @@ public:
   FmSimulationModelBase* copy(int cloneDepth) const;
 
   // From FmBase
-  virtual FmBase* clone(int depth) const { return this->copy(depth); }
+  FmBase* clone(int depth) const final { return this->copy(depth); }
   using FmBase::clone;
 
   static std::string relPathCorrection; //!< For writing of solver input file
@@ -72,7 +72,7 @@ protected:
   FmSimulationModelBase();
 
   // From FmBase
-  virtual bool cloneLocal(FmBase* obj, int depth);
+  bool cloneLocal(FmBase* obj, int depth) override;
 };
 
 
@@ -88,10 +88,10 @@ class FmStructPropertyBase : public FmSimulationModelBase
 
 public:
   // From FmSimulationModelBase
-  virtual bool isListable() const { return true; }
+  bool isListable() const  override { return true; }
 
   // From FmModelMemberBase
-  virtual FmBase* duplicate() const;
+  FmBase* duplicate() const override;
 
 protected:
   //! \brief Default constructor.

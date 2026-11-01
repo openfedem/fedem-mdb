@@ -59,27 +59,27 @@ public:
   static FFaSwitchBoardConnector* getSignalConnector();
 
   // From FFaListViewItem
-  virtual const char* getItemName() const { return this->getUITypeName(); }
-  virtual std::string getItemDescr() const { return this->getUserDescription(64); }
-  virtual int getItemID() const { return this->getID(); }
-  virtual int getItemBaseID() const { return this->getBaseID(); }
-  virtual void getItemAssemblyPath(std::vector<int>& assID) const;
+  const char* getItemName() const override { return this->getUITypeName(); }
+  std::string getItemDescr() const override { return this->getUserDescription(64); }
+  int getItemID() const final { return this->getID(); }
+  int getItemBaseID() const final { return this->getBaseID(); }
+  void getItemAssemblyPath(std::vector<int>& assID) const final;
 
 protected:
   //! \brief Default constructor.
   explicit FmModelMemberBase(bool isDummy = false);
 
   // From FmBase
-  virtual bool cloneLocal(FmBase* obj, int depth);
+  bool cloneLocal(FmBase* obj, int depth) override;
 
   //! \copybrief FFaFieldContainer::eraseOptions()
-  virtual bool eraseOptions();
+  bool eraseOptions() override;
 
 public:
   // From FmBase
-  virtual void onMainConnected();
-  virtual void onMainDisconnected();
-  virtual void onMainAboutToDisconnect();
+  void onMainConnected() final;
+  void onMainDisconnected() final;
+  void onMainAboutToDisconnect() final;
 
   //! \brief Invokes call-backs when this object updated.
   void onChanged();

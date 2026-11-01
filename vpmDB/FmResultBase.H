@@ -31,18 +31,18 @@ protected:
   FmResultBase();
 
   // From FmBase
-  virtual bool cloneLocal(FmBase* obj, int depth);
+  bool cloneLocal(FmBase* obj, int depth) override;
 
   //! \brief Sets the user description to "New <object typename>".
-  virtual void mainConnectedEvent();
+  void mainConnectedEvent() override;
 
   //! \brief Makes a copy of this object.
   FmResultBase* copy(int cloneDepth) const;
 
 public:
   // From FmBase
-  virtual bool connect() { return this->eraseOrConnect(); }
-  virtual FmBase* clone(int depth) const { return this->copy(depth); }
+  bool connect() final { return this->eraseOrConnect(); }
+  FmBase* clone(int depth) const final { return this->copy(depth); }
   using FmBase::clone;
 };
 
