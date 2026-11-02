@@ -71,17 +71,18 @@ using namespace FF_NAMESPACE;
 #endif
 
 
+bool FmPart::enableNonlinearFE = false;
+
+//! \cond DO_NOT_DOCUMENT
+Fmd_DB_SOURCE_INIT(FcPART, FmPart, FmLink);
+//! \endcond
+
+
 /**********************************************************************
  *
  * Class constructor and destructor
  *
  **********************************************************************/
-
-bool FmPart::enableNonlinearFE = false;
-long int FmPart::nFENodesTotal = 0;
-
-Fmd_DB_SOURCE_INIT(FcPART, FmPart, FmLink);
-
 
 FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
 {
@@ -204,7 +205,7 @@ FmPart::FmPart(const FaVec3& globalPos) : FmLink(globalPos)
 
 
 /*!
-  Constructor for the earth link (no field initialization or visualization)
+  For the earth link, no field initialization or visualization model is needed.
 */
 
 FmPart::FmPart(const char* EarthName) : FmLink(true)
@@ -229,14 +230,7 @@ FmPart::~FmPart()
     itsDisplayPt->removeDisplayData();
 #endif
 
-  this->clearElemGroupProxies(true);
-
-  if (myFEData)
-  {
-    nFENodesTotal -= myFEData->getNodeCount();
-    delete myFEData;
-  }
-  myFEData = NULL;
+  this->setLinkHandler(NULL,true);
 
   // Cannot use the getTriads method here, because the detach call on one triad
   // may detach other triads too if they are glider triads in a point-to-path joint
@@ -247,8 +241,8 @@ FmPart::~FmPart()
 
 
 /*!
-  Reimplemented to update the location data on all triads on this part
-  when changing this parts position.
+  This method is overridden to update the location data on all triads on this
+  part when changing this parts position.
 
   Also move any joints whose dependent triad is connected to this part,
   if the corresponding independent triad is un-attached or attached to ground.
@@ -325,10 +319,6 @@ void FmPart::setLocalCS(const FaMat34& localCS)
 }
 
 
-/*!
-  Checks if the part data files are saved in an "external" repository.
-*/
-
 FmPart::ReposType FmPart::usesRepository() const
 {
   if (!myRepository.getValue().empty())
@@ -342,8 +332,8 @@ FmPart::ReposType FmPart::usesRepository() const
 
 
 /*!
-  Returns the path to the directory in which the part will be saved.
-  Tries to create the directory if it does not exist, if \a createDir is true.
+  This method will try to create the directory if it does not exist,
+  but only if \a createDir is \e true.
 */
 
 std::string FmPart::getAbsFilePath(bool createDir) const
@@ -389,10 +379,6 @@ std::string FmPart::getAbsFilePath(bool createDir) const
 }
 
 
-/*!
-  Returns the full path of the saved part file of this part.
-*/
-
 std::string FmPart::getBaseFTLFile(bool createDir) const
 {
   if (baseFTLFile.getValue().empty())
@@ -402,10 +388,6 @@ std::string FmPart::getBaseFTLFile(bool createDir) const
                                            baseFTLFile.getValue());
 }
 
-
-/*!
-  Returns the base ftl-file name (optionally without extension) of this part.
-*/
 
 std::string FmPart::getBaseFTLName(bool includExt) const
 {
@@ -419,8 +401,7 @@ std::string FmPart::getBaseFTLName(bool includExt) const
 
 
 /*!
-  Returns true if the part is saved in its associated repository.
-  Always return true for generic parts if \a checkFEpartsOnly is true.
+  Always return \e true for generic parts if \a checkFEpartsOnly is \e true.
 */
 
 bool FmPart::isSaved(bool checkFEpartsOnly) const
@@ -435,10 +416,6 @@ bool FmPart::isSaved(bool checkFEpartsOnly) const
 }
 
 
-/*!
-  Returns true if this is a used (and loaded) FE part.
-*/
-
 bool FmPart::isFEPart(bool loadedOnly) const
 {
   if (useGenericProperties.getValue())
@@ -450,10 +427,6 @@ bool FmPart::isFEPart(bool loadedOnly) const
   return loadedOnly ? myFEData != NULL : true;
 }
 
-
-/*!
-  Returns true if the part's FE model currently is loaded.
-*/
 
 bool FmPart::isFELoaded(bool fullOnly) const
 {
@@ -467,10 +440,6 @@ bool FmPart::isFELoaded(bool fullOnly) const
 }
 
 
-/*!
-  Returns true if the part's FE model is used for visualization.
-*/
-
 bool FmPart::useFEModelAsVisualization() const
 {
 #ifdef USE_INVENTOR
@@ -481,10 +450,6 @@ bool FmPart::useFEModelAsVisualization() const
   return myFEData != NULL;
 }
 
-
-/*!
-  Returns true if external node status changes are allowed.
-*/
 
 bool FmPart::isAttachable() const
 {
@@ -503,16 +468,25 @@ FaMat34 FmPart::getTransform() const
 }
 
 
-void FmPart::setLinkHandler(FFlLinkHandler* part, bool updateNnodes)
+/*!
+  The current FE model data pointed to by #myFEData is deleted.
+  This method will also clear all existing proxy element groups in this part.
+  Either they are erased completely, or the pointer to the real finite element
+  group is reset to NULL.
+*/
+
+void FmPart::setLinkHandler(FFlLinkHandler* part, bool eraseGroupProxies)
 {
-  this->clearElemGroupProxies();
+  std::vector<FmElementGroupProxy*> groups;
+  this->getReferringObjs(groups,"myOwner");
 
-  if (myFEData)
-  {
-    if (updateNnodes) nFENodesTotal -= myFEData->getNodeCount();
-    delete myFEData;
-  }
+  for (FmElementGroupProxy* group : groups)
+    if (eraseGroupProxies)
+      group->erase();
+    else
+      group->setRealObject(NULL);
 
+  delete myFEData;
   myFEData = part;
 }
 
@@ -735,17 +709,16 @@ bool FmPart::cloneLocal(FmBase* obj, int depth)
 
 
 /*!
-  \brief Attaching a triad when having an old triad in the same place.
-
   This is what has to be done in this method:
-  * If the triad to attach is a dependent joint triad
+  - If the triad to attach is a dependent joint triad
     and the old triad has boundary conditions,
     inquire if the boundary conditions should be moved to the joint instead.
-  * Clone properties from the old triad to the attached one
-  * Erase the old triad
+  - Clone properties from the old triad to the attached one.
+  - Erase the old triad.
 
   HOW THE COORDINATE SYSTEMS FOR THE TRIADS ARE CHECKED AND MATCHED
   -----------------------------------------------------------------
+  \verbatim
   Master = Independent joint triad
   Slave  = Dependent joint triad
 
@@ -762,6 +735,7 @@ bool FmPart::cloneLocal(FmBase* obj, int depth)
   None      <-- CS --          Master
   None      <-- CS --          Slave
   None      -- CS -->          None
+  \endverbatim
 */
 
 bool FmPart::attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent)
@@ -865,9 +839,9 @@ bool FmPart::attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent)
 
 
 /*!
-  Returns any existing triad that is positioned at the same spot as \a triad
-  on this part, and whether \a triad is attachable in case no triad is found.
-  Used internally by FmLink::isTriadAttachable.
+  This method returns any existing triad that is positioned at the same point
+  as \a triad on this part, and whether \a triad is attachable in case no triad
+  is found. The method is used internally by FmLink::isTriadAttachable().
 */
 
 std::pair<FmTriad*,bool> FmPart::getExistingTriad(const FmTriad* triad)
@@ -877,7 +851,7 @@ std::pair<FmTriad*,bool> FmPart::getExistingTriad(const FmTriad* triad)
   double positionTol = FmDB::getPositionTolerance();
 
   if (useGenericProperties.getValue())
-    return std::make_pair(this->getTriadAtPoint(point,positionTol),true);
+    return { this->getTriadAtPoint(point,positionTol), true };
 
   else if (myFEData)
   {
@@ -912,14 +886,14 @@ std::pair<FmTriad*,bool> FmPart::getExistingTriad(const FmTriad* triad)
 	     << this->getIdString(true) <<".\n";
     else
       // Get the existing triad associated with this node, if any
-      return std::make_pair(this->getTriadAtNode(tmpNode->getID()),true);
+      return { this->getTriadAtNode(tmpNode->getID()), true };
   }
   else
   {
     // FE data is not loaded, we must have an existing triad here
     FmTriad* existingTriad = this->getTriadAtPoint(point,positionTol);
     if (existingTriad || !this->isAttachable())
-      return std::make_pair(existingTriad,true);
+      return { existingTriad, true };
 
     ListUI <<"Error: "<< triad->getIdString()
 	   <<" is not coincident with any of the Triads already\n"
@@ -935,11 +909,6 @@ std::pair<FmTriad*,bool> FmPart::getExistingTriad(const FmTriad* triad)
 }
 
 
-/*!
-  Returns the triad associated with the given FE node.
-  Returns NULL if no triad is found.
-*/
-
 FmTriad* FmPart::getTriadAtNode(int nodeNo) const
 {
   std::vector<FmTriad*> triads;
@@ -954,7 +923,6 @@ FmTriad* FmPart::getTriadAtNode(int nodeNo) const
 
 
 /*!
-  Returns the closest FE node to point using tolerance, or NULL if none found.
   If the found node is a dependent FE node, a new node is created by adding a
   stiff CBUSH element between the dependent node and the new node.
   The new node is then returned.
@@ -1308,8 +1276,7 @@ bool FmPart::setVisualizationFile(const std::string& fileName, bool updateViz)
 
 
 /*!
-  Static (private) method to search for the original FE file of a part,
-  as given by \a fileName on input, in the following possible locations:
+  Based on the given \a fileName, the following possible locations are checked:
   - The original FE part location, as given in the model file
   - The original FE part, in a sub-folder of current model file path
   - The original FE part, in a parallel folder to current model file path
@@ -1411,14 +1378,27 @@ std::string FmPart::locateFEfile(const std::string& originalName)
 
 
 /*!
-  Imports part from an external source (other file format, other location etc).
-  \a fileName is here supposed to be a full-path name of an existing file.
+  The \a fileName is here supposed to be a full-path name of an existing file
+  outside the model database. It can be of any of the supported file formats.
+  If \a conv is specified (i.e., not NULL), it is used to convert the units of
+  all dimensional quantities in the imported file to the current modeling units.
+  If \a storeRelativePath is \e true, only the path relative to current model
+  file location is stored in #originalFEFile, otherwise the full path is stored.
+
+  This method will also create triads at all FE nodes in the imported file
+  that are tagged as external. In addition (but only if \a autoRefNodeTriads
+  is \e true), triads will be created at the reference nodes of WAVGM and RGD
+  elements in the model, if no other elements are connected to these nodes.
+  For the WAVGM elements, this will results in additional nodes and elements
+  being created since the WAVGM reference node itslef is a slave node and
+  can not be external, see getNodeAtPoint().
 */
 
 bool FmPart::importPart(const std::string& fileName,
-			const FFaUnitCalculator* conv,
-			bool storeRelativePath,
-			bool autoRefNodeTriads)
+                        const FFaUnitCalculator* conv,
+                        bool storeRelativePath,
+                        bool autoRefNodeTriads,
+                        bool isReloading)
 {
   FFaMsg::list("  -> Importing FE data file " + fileName);
 
@@ -1444,13 +1424,12 @@ bool FmPart::importPart(const std::string& fileName,
   // Check if we shall allow triad attachments to dependent RGD nodes
   FFaCmdLineArg::instance()->getValue("allowDepAttach",
                                       FFlRGDTopSpec::allowSlvAttach);
-
   // Check if we shall convert all parabolic elements to linear elements
   FFaCmdLineArg::instance()->getValue("convertToLinear",fileVersion);
   FFlReaders::convertToLinear = fileVersion;
 #endif
 
-  // Read and interpret the part data file
+  // Read and interpret the FE data file
   if (FFlReaders::instance()->read(fileName,myFEData) > 0)
     FFaMsg::list(" ...OK\n");
   else
@@ -1464,8 +1443,10 @@ bool FmPart::importPart(const std::string& fileName,
     return false;
   }
 
+  // Total number of FE nodes in this model before adding the extra ones
+  const size_t nnod = myFEData->getNodeCount();
+
   fileVersion = 1; // Don't care about file version on import
-  nFENodesTotal += myFEData->getNodeCount();
 #ifdef FT_USE_PROFILER
 #ifdef FT_USE_CMDLINEARG
   int memPoll = 0;
@@ -1482,37 +1463,74 @@ bool FmPart::importPart(const std::string& fileName,
   if (!importConverter.isDefault())
     myFEData->convertUnits(&(importConverter.getValue()));
 
-  std::vector<FFlNode*> rNodes;
-  if (autoRefNodeTriads) // Automatically create triads at reference nodes
-    myFEData->getRefNodes(rNodes);
+  // Automatically create triads at reference nodes?
+  std::vector<FFlNode*> rNodes, mNodes;
+  if (autoRefNodeTriads && myFEData->getRefNodes(rNodes,mNodes) > 0)
+  {
+    ListUI <<"  -> Spider reference nodes:";
+    for (FFlNode* n : mNodes) ListUI <<" "<< n->getID();
+    for (FFlNode* n : rNodes) ListUI <<" "<< n->getID();
+    ListUI <<"\n";
+  }
 
-  // Create triads at the external nodes from the imported file
-  double positionTol = FmDB::getPositionTolerance();
-  for (NodesCIter it = myFEData->nodesBegin(); it != myFEData->nodesEnd(); ++it)
-    if ((*it)->isExternal() || std::find(rNodes.begin(),rNodes.end(),*it) != rNodes.end())
-    {
-      // Check if a triad already exists at this nodes position
-      FaVec3 point = (*it)->getPos();
-      if (FmTriad* triad = this->getTriadAtPoint(point,positionTol); triad)
-        // Check that the closest node to this position
-        // is the same node that we want to attach
-        if (this->getNodeAtPoint(triad->getLocalTranslation(),
-                                 positionTol) == *it)
-        {
-          // The node matches, no new triad needed
-          ListUI <<"   > Existing "<< triad->getIdString()
-                 <<" matches external FE node "<< (*it)->getID() <<"\n";
-          continue;
-        }
+  // Lambda function searching/creating a new triad at the location of *node.
+  // If nId is specified and larger than zero it is assumed to specify the
+  // the FE node that should be connected to the new triad. Otherwise, the
+  // non-slave FE node that is closest to the created triad will be used.
+  // Note that this is not necessarily the same as *node.
+  std::map<int,FmTriad*> nodeTriad;
+  const double posTol = FmDB::getPositionTolerance();
+  auto addTriadAtNode = [this,&nodeTriad,posTol](FFlNode* node, int nId = -1)
+  {
+    if (nodeTriad.find(node->getID()) != nodeTriad.end())
+      return; // This node already has a triad connected to it
 
-      // Create a new triad at the (global) position of this node
-      FmTriad* tmpTr = new FmTriad(this->getGlobalCS()*point);
-      tmpTr->setParentAssembly(this->getParentAssembly());
-      tmpTr->connect(this);
+    // Check if a triad already exists at the position of this node.
+    // If nId is non-zero, only the triads not already assigned a FE node
+    // will be considered when searching for a matching existing triad.
+    const FaVec3& xpos = node->getPos();
+    if (FmTriad* triad = this->getTriadAtPoint(xpos,posTol,false,nId); triad)
+      // Check that the closest node to this position
+      // is the same node that we want to attach
+      if (this->getNodeAtPoint(triad->getLocalTranslation(),posTol) == node)
+      {
+        // The node matches, no new triad needed
+        ListUI <<"   > Existing "<< triad->getIdString()
+               <<" matches external FE node "<< node->getID() <<"\n";
+        nodeTriad.emplace(node->getID(),triad);
+        return;
+      }
 
-      ListUI <<"   > New "<< tmpTr->getIdString()
-             <<" created at external FE node "<< (*it)->getID() <<"\n";
-    }
+    // Create a new triad at the (global) position of this node
+    FmTriad* triad = new FmTriad(this->getGlobalCS()*xpos);
+    triad->setParentAssembly(this->getParentAssembly());
+    triad->connect(this,nId); // using nId if > 0
+
+    nId = triad->FENodeNo.getValue();
+    ListUI <<"   > New "<< triad->getIdString()
+           <<" created at external FE node "<< nId <<"\n";
+    nodeTriad.emplace(nId,triad);
+  }; // end of addTriadAtNode lambda
+
+  // First, create triads at the free RBE2 master nodes
+  for (FFlNode* node : mNodes)
+    addTriadAtNode(node,node->getID());
+
+  // Then, create triads at the free RBE3 reference nodes (adding extra nodes)
+  for (FFlNode* node : rNodes)
+    addTriadAtNode(node);
+
+  // Finally, create triads at nodes flagged as external in the imported file.
+  // If we are reloading an FE model during the opening of a new model (because
+  // the internally stored FE model was deleted or no longer present), the FE
+  // node numbers assigned to the triads from the model file will be respected.
+  // Otherwise (signalled by idFlag=-1), only the triads with no node connection
+  // yet will be considered when seaching for matching triads.
+  const int idFlag = isReloading ? 0 : -1;
+  NodesCIter itNod = myFEData->nodesBegin();
+  for (size_t inod = 0; inod < nnod; ++inod, ++itNod)
+    if ((*itNod)->isExternal())
+      addTriadAtNode(*itNod,idFlag);
 
   this->updateElemGroupProxies();
   this->updateMassProperties();
@@ -1532,7 +1550,7 @@ bool FmPart::importPart(const std::string& fileName,
   else if (FFaFilePath::isExtension(fileName,"ftl"))
   {
     // Lambda function checking for externally reduced matrix file
-    auto&& checkExt = [fileName](FFaField<std::string>& field, char mType)
+    auto checkExt = [fileName](FFaField<std::string>& field, char mType) -> bool
     {
       std::string matrixFile = FFaFilePath::getBaseName(fileName);
       matrixFile.append(1,'_');
@@ -1572,14 +1590,10 @@ bool FmPart::importPart(const std::string& fileName,
 }
 
 
-/*!
-  Reads the FE data from a file already in the part DB.
-*/
-
 bool FmPart::openFEData()
 {
   // Lambda function that re-imports the part from the given FE data file
-  auto&& reImport = [this](std::string fileName)
+  auto reImport = [this](std::string fileName) -> bool
   {
     this->readyForUpdate(true);
 
@@ -1591,7 +1605,7 @@ bool FmPart::openFEData()
     else if (usePartUnitCalc)
       calc = &importConverter.getValue();
 
-    return this->importPart(fileName,calc,useRelativePath);
+    return this->importPart(fileName,calc,useRelativePath,false,true);
   };
 
   std::string readerFileName = this->getBaseFTLFile();
@@ -1635,7 +1649,6 @@ bool FmPart::openFEData()
   if (fileVersion > 0)
   {
     FFaMsg::list(" ...OK\n");
-    nFENodesTotal += myFEData->getNodeCount();
 #ifdef FT_USE_PROFILER
 #ifdef FT_USE_CMDLINEARG
     int memPoll = 0;
@@ -1722,10 +1735,6 @@ bool FmPart::isMeshable() const
 }
 
 
-/*!
-  Generates a tetrahedron mesh from CAD data, if any.
-*/
-
 bool FmPart::createFEData(bool parabolic)
 {
   std::string cadFile = this->getGeometryFile();
@@ -1797,7 +1806,6 @@ bool FmPart::createFEData(bool parabolic)
   if (fileVersion > 0)
   {
     FFaMsg::list(" ...OK\n");
-    nFENodesTotal += myFEData->getNodeCount();
 
     this->updateElemGroupProxies();
     this->updateLoadCases();
@@ -1847,11 +1855,6 @@ bool FmPart::getMeshParams(int* nnod, int* nel, bool* parabolic, int* ndof,
   return true;
 }
 
-
-/*!
-  Allocates a new part handler object for storage of FE data.
-  Sets the FE part size limit for the free version of FEDEM.
-*/
 
 bool FmPart::renewFEmodel()
 {
@@ -1972,7 +1975,7 @@ bool FmPart::saveFEData(bool forceSave)
 
 
 /*!
-  Writes the FE data of this part to the specified \a ftlFile, with some
+  This method writes the FE data toghether with some
   additional meta information on from where, who, and when the file was written.
   Optionally, the part check-sum is also written, which then is used to detect
   whether the file has been edited manually when reading it.
@@ -1996,10 +1999,6 @@ bool FmPart::exportPart(const std::string& ftlFile, bool extNodeInfo,
 }
 
 
-/*!
-  Writes the FE data of this part to the specified \a vtfFile.
-*/
-
 bool FmPart::writeToVTF(VTFAFile& vtfFile, IntVec* outputOrder, IntVec* fstOrdNodes)
 {
   // If FE data currently is disabled - read the part data file (if any)
@@ -2007,7 +2006,7 @@ bool FmPart::writeToVTF(VTFAFile& vtfFile, IntVec* outputOrder, IntVec* fstOrdNo
   {
     myFEData = new FFlLinkHandler();
     if (FFlReaders::instance()->read(this->getBaseFTLFile(),myFEData) <= 0)
-      this->setLinkHandler(NULL,false);
+      this->setLinkHandler(NULL);
   }
 
   bool createdSpider = false;
@@ -2054,35 +2053,17 @@ bool FmPart::writeToVTF(VTFAFile& vtfFile, IntVec* outputOrder, IntVec* fstOrdNo
 
   // Erase the FE data again if currently disabled or a dummy spider was used
   if (ramUsageLevel.getValue() == NOTHING || createdSpider)
-    this->setLinkHandler(NULL,false);
+    this->setLinkHandler(NULL);
 
   return success;
 }
 
 
 /*!
-  Extracts the recorded file check-sum from the meta data section.
-*/
-
-static unsigned int extractCheckSum (const char* fName)
-{
-  char cline[BUFSIZ], *csend;
-  std::ifstream ftl(fName,std::ios::in);
-  for (int l = 0; l < 10 && ftl.getline(cline,BUFSIZ,'\n'); l++)
-    if (l == 0 && std::string(cline,10) != "FTLVERSION")
-      break; // Not an FTL-file
-    else if (std::string(cline,16) == "# File checksum:")
-      return strtoul(cline+16,&csend,10);
-
-  return 0;
-}
-
-
-/*!
-  This method sets the \a baseFTLFile name of this part based on the
-  \a originalFEFile, such that the name is unique for all parts (in case this
+  This method sets the #baseFTLFile name of this part based on the
+  #originalFEFile, such that the name is unique for all parts (in case this
   FE model is used more than once). The name is set to &lt;bName&gt;.ftl
-  where &lt;bName&gt; equals \a originalFEFile without the directory part
+  where &lt;bName&gt; equals #originalFEFile without the directory part
   (if any) and file extension (if any).
   Note that all non-alphanumeric characters also are replaced by "_"'s.
 */
@@ -2187,12 +2168,26 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int cs)
   else if (underscorePos == std::string::npos)
     bName.append("_ftl1"); // No numbering yet, add one
 
+  // Lambda function extracting the recorded file check-sum from a FE data file.
+  auto extractCheckSum = [](const std::string& fName) -> unsigned int
+  {
+    char cline[BUFSIZ], *csend;
+    std::ifstream ftl(fName,std::ios::in);
+    for (int l = 0; l < 10 && ftl.getline(cline,BUFSIZ,'\n'); l++)
+      if (l == 0 && std::string(cline,10) != "FTLVERSION")
+        break; // Not an FTL-file
+      else if (std::string(cline,16) == "# File checksum:")
+        return strtoul(cline+16,&csend,10);
+
+    return 0;
+  };
+
   // Increment until the file name no longer exists
   // or until we find a file with matching check-sum
   unsigned int fileCS = 0;
   for (int i = 1; fileCS != cs; i++)
     if (FmFileSys::isFile(fName = bName + FFaNumStr("-%d.ftl",i)))
-      fileCS = extractCheckSum(fName.c_str());
+      fileCS = extractCheckSum(fName);
     else
       break;
 
@@ -2212,29 +2207,6 @@ const std::string& FmPart::setValidBaseFTLFile(unsigned int cs)
 }
 
 
-/*!
-  Clears all existing proxy element groups in the part,
-  either they are erased completely or only the pointer to the
-  real FE element group.
-*/
-
-void FmPart::clearElemGroupProxies(bool doErase)
-{
-  std::vector<FmElementGroupProxy*> groups;
-  this->getReferringObjs(groups,"myOwner");
-
-  for (FmElementGroupProxy* group : groups)
-    if (doErase)
-      group->erase();
-    else
-      group->setRealObject(NULL);
-}
-
-
-/*!
-  Creates proxy element groups based on the groups in the part object.
-*/
-
 void FmPart::createElemGroupProxies()
 {
   // Not needed for generic parts and suppressed parts
@@ -2244,7 +2216,7 @@ void FmPart::createElemGroupProxies()
   myFEData->updateGroupVisibilityStatus();
 
   // Lambda function creating a new proxy for an element group
-  auto&& newGProxy = [this](FFlNamedPartBase* group)
+  auto newGProxy = [this](FFlNamedPartBase* group) -> int
   {
     FmElementGroupProxy* newGrp = new FmElementGroupProxy();
     newGrp->setParentAssembly(this->getParentAssembly());
@@ -2287,11 +2259,6 @@ void FmPart::createElemGroupProxies()
 }
 
 
-/*!
-  Updates the proxy element groups for this part to be in sync
-  with the FE part data object.
-*/
-
 void FmPart::updateElemGroupProxies()
 {
   // Not needed for generic parts and suppressed parts
@@ -2310,7 +2277,7 @@ void FmPart::updateElemGroupProxies()
 
   // Lambda function searching for a specific element proxy group object,
   // creating a new proxy group if not found
-  auto&& getGProxy = [this,&oldGroups](int gId, const std::string& name)
+  auto getGProxy = [this,&oldGroups](int gId, const std::string& name)
   {
     size_t idx = 0;
     for (FmElementGroupProxy* grp : oldGroups)
@@ -2356,10 +2323,6 @@ void FmPart::updateElemGroupProxies()
 }
 
 
-/*!
-  Updates the load case data from the FE part data object.
-*/
-
 void FmPart::updateLoadCases()
 {
   // Not needed for generic parts and suppressed parts
@@ -2404,10 +2367,6 @@ void FmPart::updateLoadCases()
 }
 
 
-/*!
-  Check if this part has any distributed loads.
-*/
-
 bool FmPart::hasLoads() const
 {
   if (myLoadCases.getValue().empty())
@@ -2421,10 +2380,6 @@ bool FmPart::hasLoads() const
   return false;
 }
 
-
-/*!
-  Writes distributed load data to the solver input file.
-*/
 
 void FmPart::printSolverLoads(FILE* fd) const
 {
@@ -2455,15 +2410,15 @@ void FmPart::printSolverLoads(FILE* fd) const
   for solving, because they are wrongly positioned or can not be associated with
   a valid FE node. It is used to keep the model as consistent as possible.
 
-  If it is a generic or suppressed part:
-    No checking, all triads are valid.
-  If it is a FE part:
-    If no FE data is loaded:
-      Checks that all triads have a FE node assigned.
-      Report those triads that don't.
-    If FE data is loaded:
-      Checks which triads are validly connected to the underlying FE mesh.
-      Updates the FE node number on each triad. Set to -1 if no FE node found.
+  - If it is a generic or suppressed part:
+    - No checking, all triads are valid.
+  - If it is a FE part:
+    - If no FE data is loaded:
+      - Checks that all triads have a FE node assigned.
+      - Report those triads that don't.
+    - If FE data is loaded:
+      - Checks which triads are validly connected to the underlying FE mesh.
+      - Updates the FE node number on each triad. Set to -1 if no FE node found.
 */
 
 bool FmPart::updateTriadTopologyRefs(bool checkUnloaded, char useOutput)
@@ -2525,9 +2480,9 @@ bool FmPart::updateTriadTopologyRefs(bool checkUnloaded, char useOutput)
 
 
 /*!
-  Checking:
-  1. At least one triad on each part.
-  2. All triads must have a proper FE-node.
+  This method checks that:
+  -# At least one triad on each part.
+  -# All triads must have a proper FE-node.
 */
 
 int FmPart::checkParts()
@@ -2654,7 +2609,7 @@ void FmPart::readyForUpdate(bool useExistingFmx)
   if (useExistingFmx && FmFileSys::isDirectory(partPath))
   {
     // Lambda function checking for existing fmx-file names
-    auto&& checkFile = [&partPath](std::string& fName)
+    auto checkFile = [&partPath](std::string& fName)
     {
       if (!fName.empty())
         if (!FmFileSys::isFile(FFaFilePath::appendFileNameToPath(partPath,fName)))
@@ -2773,8 +2728,8 @@ bool FmPart::syncRSD(bool askForMissingFiles)
   rsd.getAllFileNames(fmxFiles,"fsm",false);
 
   // Lambda function syncronizing an explicit file name field
-  auto&& syncField = [&fmxFiles](FFaField<std::string>& field,
-                                 const std::string& ext) -> bool
+  auto syncField = [&fmxFiles](FFaField<std::string>& field,
+                               const std::string& ext) -> bool
   {
     for (const std::string& fname : fmxFiles)
       if (fname.find(ext) == fname.size()-ext.size())
@@ -2860,10 +2815,6 @@ bool FmPart::setCGRotRef(FmIsPositionedBase* refObj)
   return true;
 }
 
-
-/*!
-  Returns the Center of Gravity position in either global or part coordinates.
-*/
 
 FaMat34 FmPart::getPositionCG(bool globalCS) const
 {
@@ -2983,6 +2934,7 @@ bool FmPart::mergeGenericParts(FmPart* that)
 }
 
 
+#ifdef FT_USE_CONNECTORS
 double FmPart::getConnectorTolerance() const
 {
   if (myFEData)
@@ -2992,10 +2944,6 @@ double FmPart::getConnectorTolerance() const
   return dimension > 0.0 ? dimension*0.0001 : 1.0e-6;
 }
 
-
-/*!
-  Check if the given triad can be attached and used as a connector triad.
-*/
 
 char FmPart::isTriadConnectable(FmTriad* triad) const
 {
@@ -3024,7 +2972,6 @@ char FmPart::isTriadConnectable(FmTriad* triad) const
 }
 
 
-#ifdef FT_USE_CONNECTORS
 void FmPart::updateConnectorVisualization()
 {
 #ifdef USE_INVENTOR
@@ -3064,8 +3011,8 @@ bool FmPart::createConnector(const IntVec& nodes, const FaVec3& refNodePos,
 
 
 /*!
-  Creates a (rigid or flexible) spider element at the specified location,
-  connecting the given triad, or a newly created triad if no triad specified,
+  This method creates a rigid or flexible spider element at the given location,
+  connecting the given \a triad, or a newly created triad if no triad specified,
   to the set of FE nodes in this part that lie on the specified geometry.
 */
 
@@ -3116,10 +3063,6 @@ bool FmPart::createConnector(const FFaCompoundGeometry& geometry,
 }
 
 
-/*!
-  Creates a (rigid or flexible) circular/cylindric connector at the specified location.
-*/
-
 bool FmPart::createCylinderConnector(const FaVec3Vec& cylPoints, bool useArcOnly,
                                      const FaVec3* refNodePos, bool projectRefNodeToAxis,
                                      FmTriad* triad, int spiderType)
@@ -3154,10 +3097,6 @@ bool FmPart::createCylinderConnector(const FaVec3Vec& cylPoints, bool useArcOnly
 }
 
 
-/*!
-  Creates a (rigid or flexible) plane connector at the specified location.
-*/
-
 bool FmPart::createPlaneConnector(const FaVec3Vec& planePoints,
                                   const FaVec3* refNodePos, bool projectRefNodeToPlane,
                                   FmTriad* triad, int spiderType)
@@ -3188,10 +3127,6 @@ bool FmPart::createPlaneConnector(const FaVec3Vec& planePoints,
   return this->createConnector(geometry,localRefNodePos,planeCS.direction(),triad,spiderType);
 }
 
-
-/*!
-  Creates a (rigid or flexible) plane connector at the specified location.
-*/
 
 bool FmPart::createLineConnector(const FaVec3Vec& linePoints,
                                  const FaVec3* refNodePos, bool projectRefNodeToAxis,

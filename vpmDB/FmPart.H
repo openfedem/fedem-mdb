@@ -39,42 +39,60 @@ class FFlNode;
 using FFlLinkHandler = FF_NAMESPACE::FFlLinkHandler;
 using FFlNode        = FF_NAMESPACE::FFlNode;
 #endif
-using FaVec3Vec = std::vector<FaVec3>;
+
+using FaVec3Vec = std::vector<FaVec3>; //!< Convenience type alias
 
 
 class FmPart : public FmLink
 {
+  //! \cond DO_NOT_DOCUMENT
   Fmd_DB_HEADER_INIT();
+  //! \endcond
 
 public:
+  //! \brief Default constructor.
   FmPart(const FaVec3& globalPos = FaVec3());
+  //! \brief Constructor used for creating the earth link only.
   FmPart(const char* EarthName);
 
 protected:
+  //! \brief The destructor disconnects the part from the model database.
   virtual ~FmPart();
 
+  //! \brief Deleted copy constructor.
   FmPart(const FmPart&) = delete;
+  //! \brief Deleted assignment operator.
   FmPart operator=(const FmPart&) = delete;
 
-  virtual bool cloneLocal(FmBase* obj, int depth);
+  // From FmBase
+  bool cloneLocal(FmBase* obj, int depth) override;
 
-  virtual bool attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent);
-  virtual std::pair<FmTriad*,bool> getExistingTriad(const FmTriad* triad);
-  virtual bool isAttachable() const;
+  //! \brief Attaching a triad when having an old triad in the same place.
+  bool attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent) final;
+  //! \brief Returns a triad co-located with another triad, if any.
+  std::pair<FmTriad*,bool> getExistingTriad(const FmTriad* triad) final;
+  //! \brief Returns \e true if external node status changes are allowed.
+  bool isAttachable() const final;
 
 public:
 
   // Utility methods
 
-  virtual bool interactiveErase();
-  virtual bool isDisabled() const;
-  virtual bool isSuppressed() const { return suppressInSolver.getValue(); }
-  virtual bool isGenericPart() const { return useGenericProperties.getValue(); }
-  virtual bool isFEPart(bool loadedOnly = false) const;
+  // From FmModelMemberBase
+  bool interactiveErase() override;
+
+  // From FmLink
+  bool isDisabled() const final;
+  bool isSuppressed() const final { return suppressInSolver.getValue(); }
+  bool isGenericPart() const final { return useGenericProperties.getValue(); }
+  //! \brief Returns \e true if this is a used (and loaded) FE part.
+  bool isFEPart(bool loadedOnly = false) const final;
 
   FaMat34 getTransform() const;
 
+  //! \brief Returns the triad associated with given FE node, or NULL if none.
   FmTriad* getTriadAtNode(int nodeNo) const;
+  //! \brief Returns the closest FE node to a given point, or NULL if not found.
   FFlNode* getNodeAtPoint(const FaVec3& point, double tolerance,
                           FFlConnectorItems* addItems = NULL);
   int getNodeIDAtPoint(const FaVec3& point, double tolerance);
@@ -87,16 +105,18 @@ public:
   int  getCompModesFlags(IntVec& BCcodes) const;
   bool getCompModesAlpha(DoubleVec& alpha, int type) const;
 
+  //! \brief Checks if this part has any distributed loads.
   bool hasLoads() const;
+  //! \brief Writes distributed load data to the solver input file.
   void printSolverLoads(FILE* fp) const;
 
   bool mergeGenericParts(FmPart* that);
 
-  virtual bool getBBox(FaVec3& max, FaVec3& min) const;
+  // From FmLink
+  bool getBBox(FaVec3& max, FaVec3& min) const final;
 
+  //! \brief Updates triad to FE node connection after (re)loading the FE model.
   bool updateTriadTopologyRefs(bool checkUnloaded = true, char useOutput = 3);
-
-  virtual const char* getUITypeName() const { return "Part"; }
 
   std::string getTaskName(const char* fmt = "%d_") const;
 
@@ -114,7 +134,8 @@ public:
 
   void getFreeJointEnds(std::vector<FmTriad*>& toFill) const;
 
-  virtual void getStickers(std::vector<FmSticker*>& toFill) const;
+  // From FmIsPositionedBase
+  void getStickers(std::vector<FmSticker*>& toFill) const override;
 
   bool setCGPosRef(FmIsPositionedBase* ref);
   bool setCGRotRef(FmIsPositionedBase* ref);
@@ -124,63 +145,88 @@ public:
   const FFa3DLocation& getLocationCG() const { return myCG.getValue(); }
   void setLocationCG(const FFa3DLocation& cg);
 
-  virtual double getMass() const { return mass.getValue(); }
-  virtual FaMat34 getPositionCG(bool globalCS = true) const;
+  // From FmLink
+  double getMass() const final { return mass.getValue(); }
+
+  //! \brief Returns the Center of Gravity position for this part.
+  //! \param[in] globalCS If \e false, use part coordinates, otherwise global
+  FaMat34 getPositionCG(bool globalCS = true) const override;
   void setPositionCG(const FaVec3& CoG, bool edited = false);
   void setLocationCG(const FaVec3& CoG, const FaVec3& Iaxes);
   void setOrientationCG(const FaVec3& Xaxis, const FaVec3& XYplane);
 
-  virtual void setLocalCS(const FaMat34& localCS);
-
-  virtual char isRotatable() const { return this->isTranslatable(); }
-  virtual bool isTranslatable() const;
+  // From FmIsPositionedBase
+  void setLocalCS(const FaMat34& localCS) override;
+  char isRotatable() const override { return this->isTranslatable(); }
+  bool isTranslatable() const override;
 
   // FE mesh generation
   bool isMeshable() const;
+  //! \brief Generates a tetrahedron mesh from CAD data, if any.
   bool createFEData(bool parabolic);
   bool getMeshParams(int* nnod, int* nel = NULL,
                      bool* parabolic = NULL, int* ndof = NULL,
                      std::string* elmTypeCount = NULL) const;
 
   // File handling
+
+  //! \brief Reads the FE data from a file already in the part DB.
   bool openFEData();
   bool saveFEData(bool forceSave = false);
   bool setVisualizationFile(const std::string& fileName, bool updateViz = true);
-  virtual bool writeToVTF(VTFAFile& file,
-                          IntVec* outputOrder, IntVec* fstOrdNodes);
+  //! \brief Writes the FE data of this part to the specified \a vtfFile.
+  bool writeToVTF(VTFAFile& vtfFile,
+                  IntVec* outputOrder, IntVec* fstOrdNodes) override;
   bool hasOP2files() const;
   bool convertOP2files(const std::string& filePath);
   bool copyExternalFiles(const std::string& from, const std::string& to);
   static std::string locateFEfile(const std::string& fileName);
-  bool importPart(const std::string& fileName, const FFaUnitCalculator* conv,
-                  bool storeRelativePath = false,
-                  bool autoRefNodeTriads = false);
-  bool exportPart(const std::string& fileName, bool extNodeInfo = true,
+  //! \brief Imports FE part data from an external source.
+  bool importPart(const std::string& fileName,
+                  const FFaUnitCalculator* conv = NULL,
+                  bool storeRelativePath = true,
+                  bool autoRefNodeTriads = false,
+                  bool isReloading = false);
+  //! \brief Writes the FE data of this part to the specified \a ftlFile
+  bool exportPart(const std::string& ftlFile, bool extNodeInfo = true,
                   bool withCheckSum = false, bool noMetaData = false) const;
+  //! \brief Returns \e true if the part is saved in its associated repository.
   bool isSaved(bool checkFEpartsOnly = true) const;
+  //! \brief Returns \e true if the part's FE model currently is loaded.
   bool isFELoaded(bool fullOnly = false) const;
+  //! \brief Returns \e true if the part's FE model is used for visualization.
   bool useFEModelAsVisualization() const;
 
+  //! \brief Returns the current FE data model for this part.
   FFlLinkHandler* getLinkHandler() const { return myFEData; }
-  void setLinkHandler(FFlLinkHandler* data, bool updateNnodes = true);
+  //! \brief Assigns a new FE data model to the part.
+  void setLinkHandler(FFlLinkHandler* data, bool eraseGroupProxies = false);
 
-  double getConnectorTolerance() const;
-  char isTriadConnectable(FmTriad* triad) const;
 #ifdef FT_USE_CONNECTORS
+  //! \brief Returns the geometric tolerance used when creating connectors.
+  double getConnectorTolerance() const;
+  //! \brief Checks if \a triad can be attached and used as a connector triad.
+  char isTriadConnectable(FmTriad* triad) const;
+  //! \brief Updates the visualization of the surface connectors in this part.
   void updateConnectorVisualization();
+  //! \brief Creates a connector to the given \a nodes at specified location.
   bool createConnector(const IntVec& nodes, const FaVec3& refNodePos,
                        FmTriad* triad = NULL, int spiderType = 0);
+  //! \brief Creates a connector at the specified location.
   bool createConnector(const FFaCompoundGeometry& geometry,
                        const FaVec3& refNodePos, const FaMat33& refNodeCS,
                        FmTriad* triad = NULL, int spiderType = 0);
+  //! \brief Creates a circular/cylindric connector at the specified location.
   bool createCylinderConnector(const FaVec3Vec& cylPoints, bool useArcOnly,
                                const FaVec3* refNodePos = NULL,
                                bool projectRefNodeToAxis = false,
                                FmTriad* triad = NULL, int spiderType = 2);
+  //! \brief Creates a plane connector at the specified location.
   bool createPlaneConnector(const FaVec3Vec& planePoints,
                             const FaVec3* refNodePos = NULL,
                             bool projectRefNodeToPlane = false,
                             FmTriad* triad = NULL, int spiderType = 2);
+  //! \brief Creates a line connector at the specified location.
   bool createLineConnector(const FaVec3Vec& linePoints,
                            const FaVec3* refNodePos = NULL,
                            bool projectRefNodeToAxis = false,
@@ -197,12 +243,17 @@ public:
   bool hasStrainCoat() const;
   bool hasResults() const;
 
+  //! \brief Clears data related to the FE model before importing a new one.
   void readyForUpdate(bool useExistingFmx = false);
+  //! \brief Clears all file paths derived from #originalFEFile.
   void clearSupelFiles(bool includeFTL = true);
-  void clearElemGroupProxies(bool doErase = false);
+  //! \brief Creates proxy element groups based on the groups in the FE model.
   void createElemGroupProxies();
+  //! \brief Updates element groups to be in sync with the FE model of the part.
   void updateElemGroupProxies();
+  //! \brief Recalculates the mass properties of the part from its FE model.
   void updateMassProperties();
+  //! \brief Updates the load case data from the FE part data object.
   void updateLoadCases();
 
   //! \brief Syncronizes the FE part RSD with data found on disk.
@@ -210,27 +261,42 @@ public:
 
   enum ReposType { INTERNAL_REP = 0, EXTERNAL_REP, LINK_SPECIFIC };
 
+  //! \brief Checks if the part data files are saved in an external repository.
   ReposType usesRepository() const;
-  std::string getAbsFilePath(bool createDir = false) const;
+  //! \brief Returns the path to the directory in which the part will be saved.
+  std::string getAbsFilePath(bool createDir = false) const override;
+  //! \brief Returns the full path of the saved FE data file of this part.
   std::string getBaseFTLFile(bool createDir = false) const;
+  //! \brief Returns the base ftl-file name of this part.
   std::string getBaseFTLName(bool includExt = false) const;
 
+  //! \brief Assigns a valid filename for storing the FE data of this part.
   const std::string& setValidBaseFTLFile(unsigned int cs = 0);
 
+  //! \brief Checks the consistency of the part topology.
   static int checkParts();
 
   // Basic DB methods
 
-  static  bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
-  virtual std::ostream& writeFMF(std::ostream& os = std::cout);
-  virtual bool clone(FmBase* obj, int depth);
-  virtual void initAfterResolve();
+  //! \brief Creates a new part object by reading data from a stream.
+  static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
 
-  virtual FmBase* duplicate() const;
+  // From FmBase
+  std::ostream& writeFMF(std::ostream& os = std::cout) override;
+  bool clone(FmBase* obj, int depth) override;
+  const char* getUITypeName() const override { return "Part"; }
+
+  // From FmSimulationModelBase
+  void initAfterResolve() override;
+
+  // From FmModelMemberBase
+  FmBase* duplicate() const override;
 
 private:
+  //! \brief Allocates a new FFlLinkHandler object for the storage of FE data.
   bool renewFEmodel();
 
+  //! \brief Private method searching for the original FE file of a part.
   static bool locateOriginalFEfile(std::string& fileName, bool& useUnitCalc);
 
 public:
@@ -252,8 +318,8 @@ public:
   FFaField<std::string>       originalFEFile;  //!< Full name of imported file
   FFaField<FFaUnitCalculator> importConverter; //!< Converter to modeling units
 
-  FFaField<bool>        externalSource;
-  FFaField<std::string> myRepository;
+  FFaField<bool>        externalSource; //!< Externally reduced FE data?
+  FFaField<std::string> myRepository; //!< Part-specific model data repository
   FFaField<std::string> baseFTLFile; //!< The part file basename actually used
 
   // Options
@@ -345,7 +411,7 @@ public:
 
   // Reducer options:
 
-  // Ignore checksum for reducer and solver - only check file presence
+  //! Ignore checksum for reducer and solver - only check file presence
   FFaField<bool>   overrideChecksum;
 
   FFaField<int>    nGenModes;
@@ -371,7 +437,7 @@ public:
   FFaField<double> tolFactorize;
   FFaField<double> tolEigenval;
 
-  // Parameters related to centripital force correction
+  // Parameters related to centripetal force correction
 
   enum CentripOption {
     MODEL_DEFAULT_CENTRIP_CORRECTION,
@@ -416,8 +482,6 @@ public:
   FFaField<bool> hasBuoyancy;
 
 private:
-  static long int nFENodesTotal; //!< Total model size (summed over all parts)
-
   FFlLinkHandler*               myFEData; //!< The actual FE model data
   FFaNoPrintField<bool>    needsCSupdate; //!< To delay checksum calculation
   FFaField<FFaCheckSum>   cachedChecksum; //!< Used when FE model is unloaded
@@ -429,7 +493,7 @@ private:
   FFaReference<FmIsPositionedBase> myCGRotRef;
   FFaField<FFaReferenceBase*>      myCGRotRefField;
 
-  bool isCGedited; //!< true, when the CG has been edited manually
+  bool isCGedited; //!< If \e true, the CG has been edited manually
   int fileVersion; //!< Version number of the saved FTL-file
 };
 
