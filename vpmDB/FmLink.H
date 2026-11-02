@@ -28,7 +28,7 @@ inline bool FFaField<FFaUnitCalculator>::isPrintable() const
 class FFaFieldUnsignedInt : public FFaField<int>
 {
 public:
-  virtual bool isPrintable() const { return this->myData >= 0; }
+  bool isPrintable() const final { return this->myData >= 0; }
 };
 
 
@@ -41,7 +41,9 @@ class VTFAFile;
 
 class FmLink : public FmIsPositionedBase
 {
+  //! \cond DO_NOT_DOCUMENT
   Fmd_DB_HEADER_INIT();
+  //! \endcond
 
 public:
 
@@ -60,6 +62,7 @@ public:
   double getTransparency() const { return myTransparency.getValue(); }
   bool setTransparency(double var);
 
+  //! \brief Enumerator for different visualization modes.
   enum Detail { FULL = 0, SURFACE = 1, REDUCED = 2,
                 BBOX = 3, OFF = 4, RED_FULL = 5,
                 REDUCED_NO1D = 6, SIMPLIFIED = 7 };
@@ -82,67 +85,101 @@ public:
   Detail getModelType() const { return myModelType.getValue(); }
   bool   setModelType(Detail detailType);
 
-  virtual bool highlight(bool trueOrFalse);
+  // From FmIsRenderedBase
+  bool highlight(bool trueOrFalse) override;
 
   // Utility methods
 
-  virtual bool interactiveErase();
+  // From FmModelMemberBase
+  bool interactiveErase() override;
 
+  //! \brief Returns \e true if \a *this is the earth link.
   bool isEarthLink() const { return this->getID() == -1; }
 
+  //! \brief Returns \e true if objects can be attached to this link.
   virtual bool isAttachable() const { return false; }
+  //! \brief Returns \e true if the FE data of this link is disabled.
   virtual bool isDisabled() const { return false; }
+  //! \brief Returns \e true if this link is suppressed.
   virtual bool isSuppressed() const { return false; }
+  //! \brief Returns \e true if this link is a generic part.
   virtual bool isGenericPart() const { return false; }
+  //! \brief Returns \e true if this link is a (loaded) FE part.
   virtual bool isFEPart(bool = false) const { return false; }
 
+  //! \brief Returns the closest triad to \a point, or NULL if none found.
   FmTriad* getTriadAtPoint(const FaVec3& point, double tolerance,
-                           bool globalPoint = false) const;
+                           bool globalPoint = false,
+                           bool unconnectedOnly = false) const;
 
+  //! \brief Returns the extension of this link in each coordinate direction.
   FaVec3 getExtents() const;
+  //! \brief Calculates the bounding box of this link.
   virtual bool getBBox(FaVec3& max, FaVec3& min) const;
 
-  virtual void updateChildrenDisplayTopology();
+  // From FmIsRenderedBase
+  void updateChildrenDisplayTopology() override;
 
+  //! \brief Attaches the object \a attachObject to this link.
   bool attach(FmBase* attachObject, bool isSilent = false);
 
-  virtual std::string getLinkIDString(bool objPrefix = false) const;
+  // From FmIsPositionedBase
+  std::string getLinkIDString(bool objPrefix = false) const override;
 
   // DB Topology
 
+  //! \brief Returns the number of triads attached to this link.
   virtual int getNumberOfTriads() const = 0;
+  //! \brief Returns a specified triad attached to this link.
   virtual FmTriad* findTriad(int baseID) const = 0;
+  //! \brief Returns all triads attached to this link.
   virtual void getTriads(std::vector<FmTriad*>& toFill,
                          bool sortOnId = false) const = 0;
+  //! \brief Returns all joints attached to this link.
   void getJoints(std::vector<FmJointBase*>& toFill) const;
 
-  // Co-rotated coordinate system control
-
+  //! \brief Returns the points used for co-rotated coordinate system control.
   virtual bool getRefPoints(FmTriad*& node1, FmTriad*& node2, FmTriad*& node3,
                             FaVec3& offset1, FaVec3& offset2, FaVec3& offset3) const;
 
+  //! \brief Returns the total mass of this link.
   virtual double getMass() const = 0;
+  //! \brief Returns the position of the center of gravity of this link.
   virtual FaMat34 getPositionCG(bool globalCS = true) const = 0;
+  //! \brief Returns the physical property object associated with this link.
   virtual FmModelMemberBase* getProperty() const { return NULL; }
 
   // File handling
 
-  virtual int printSolverEntry(FILE*, int) { return 0; }
-  virtual int printSolverEntry(FILE* fp) { return this->printSolverEntry(fp,0); }
+  // Hook for VTF output of the FE model of this link.
   virtual bool writeToVTF(VTFAFile& file, IntVec* = NULL, IntVec* = NULL) = 0;
+  // Hook for writing solver input file entries for beam elements.
+  virtual int printSolverEntry(FILE*, int) { return 0; }
+  // From FmModelMemberBase
+  int printSolverEntry(FILE* f) override { return this->printSolverEntry(f,0); }
 
+  //! \brief Reads the CAD model associated with this link for visualization.
   bool openCadData();
+  //! \brief Writes visualization datA associated with this link to CAD file.
   bool saveCadData();
+  //! \brief Returns \e true if the link's CAD model currently is loaded.
   bool isCADLoaded() const;
+  //! \brief Returns \e true if the link uses generic part visualization.
   bool isUsingGenPartVis() const;
+  //! \brief Updates the simplified generic part visualization.
   void updateGPVisualization();
 
+  //! \brief Returns the path to the directory in which the link will be saved.
   virtual std::string getAbsFilePath(bool createDir = false) const;
+  //! \brief Returns the full path of the saved CAD file of this link.
   std::string getBaseCadFile(bool createDir = false) const;
+  //! \brief Returns the full path of the geometry file of this link.
   std::string getGeometryFile() const;
 
+  //! \brief Returns the base ID of structural damping function for this link.
   int getStructDmpEngineId() const;
 
+  //! \brief Creates a new link object by reading data from a stream.
   static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
 
 protected:
@@ -153,18 +190,26 @@ protected:
   //! \brief The destructor disconnects the link.
   virtual ~FmLink();
 
-  virtual bool cloneLocal(FmBase* obj, int depth);
+  // From FmBase
+  bool cloneLocal(FmBase* obj, int depth) override;
+
   static  bool localParse(const char* keyWord, std::istream& activeStatement,
                           FmLink* obj);
 
+  //! \brief Attaches the triad \a attachTr to this link.
   bool attachTriad(FmTriad* attachTr, bool isSilent, bool doUpdate = true);
+  //! \brief Attaches the single-master joint \a attachJnt to this link.
   virtual bool attachSMJoint(FmSMJointBase* attachJnt, bool isSilent = false);
+  //! \brief Attaches the multi-master joint \a attachJnt to this link.
   virtual bool attachMMJoint(FmMMJointBase* attachJnt, bool isSilent = false);
+  //! \brief Attaches a triad when having an old triad in the same place.
   virtual bool attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool silence);
 
+  //! \brief Checks whether the triad \a attachTr can be attached to this link.
   bool isTriadAttachable(FmTriad*& existingTriad,
                          FmTriad* attachTr, bool isSilent = false);
 
+  //! \brief Returns any triad at the same location as \a triad on this link.
   virtual std::pair<FmTriad*,bool> getExistingTriad(const FmTriad* triad);
 
 public:
@@ -183,8 +228,7 @@ public:
   FFaField<double> massScale;      //!< Mass matrix scaling factor
   FFaField<double> stiffnessScale; //!< Stiffness matrix scaling factor
 
-  // Parameters related to shadow element positioning algorithm
-
+  //! \brief Enumerator related to shadow element positioning algorithm.
   enum CoordSysOption {
     MODEL_DEFAULT,
     MAX_TRI_UNIT_OFFSET,
@@ -200,7 +244,7 @@ public:
     FFaEnumEntryEnd;
   };
 
-  FFaField<CoordSysOptionEnum> myCSOption;
+  FFaField<CoordSysOptionEnum> myCSOption; //!< Selected CS option for \a *this
 
   FFaFieldUnsignedInt objFileGroupIndex; //!< Group index in obj-file
 

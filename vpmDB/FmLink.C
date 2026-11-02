@@ -38,15 +38,16 @@
 #include <fstream>
 #include <cfloat>
 
+//! \cond DO_NOT_DOCUMENT
+Fmd_DB_SOURCE_INIT(FcLINK, FmLink, FmIsPositionedBase);
+//! \endcond
+
 
 /**********************************************************************
  *
  * Class constructor and destructor
  *
  **********************************************************************/
-
-Fmd_DB_SOURCE_INIT(FcLINK, FmLink, FmIsPositionedBase);
-
 
 FmLink::FmLink(const FaVec3& globalPos)
 {
@@ -80,7 +81,7 @@ FmLink::FmLink(const FaVec3& globalPos)
 
 
 /*!
-  Constructor for the earth link (no field initialization)
+  For the earth link, no field initialization is needed.
 */
 
 FmLink::FmLink(bool) : FmIsPositionedBase(true)
@@ -106,8 +107,8 @@ FmLink::~FmLink()
 
 
 /*!
-  Returns the path to the directory in which the link will be saved.
-  Tries to create the directory if it does not exist, if \a createDir is true.
+  This method will try to create the directory if it does not exist,
+  but only if \a createDir is \e true.
 */
 
 std::string FmLink::getAbsFilePath(bool createDir) const
@@ -115,10 +116,6 @@ std::string FmLink::getAbsFilePath(bool createDir) const
   return FmDB::getMechanismObject()->getAbsModelLRDBPath(createDir);
 }
 
-
-/*!
-  Returns the full path of the saved CAD file of this link.
-*/
 
 std::string FmLink::getBaseCadFile(bool createDir) const
 {
@@ -130,9 +127,8 @@ std::string FmLink::getBaseCadFile(bool createDir) const
 
 
 /*!
-  Returns the full path of the geometry file of this link.
-  If a CAD file is defined, return that file name.
-  Otherwise, return the visualization file name, if any.
+  If a CAD file is defined, this method will return that file name.
+  Otherwise, the visualization file name is returned, if any.
 */
 
 std::string FmLink::getGeometryFile() const
@@ -149,10 +145,6 @@ std::string FmLink::getGeometryFile() const
 }
 
 
-/*!
-  Returns true if the link's CAD model currently is loaded.
-*/
-
 bool FmLink::isCADLoaded() const
 {
 #ifdef USE_INVENTOR
@@ -164,10 +156,6 @@ bool FmLink::isCADLoaded() const
 }
 
 
-/*!
-  Returns true if the link uses generic part visualization.
-*/
-
 bool FmLink::isUsingGenPartVis() const
 {
 #ifdef USE_INVENTOR
@@ -177,10 +165,6 @@ bool FmLink::isUsingGenPartVis() const
   return false;
 }
 
-
-/*!
-  Updates the simplified generic part visualization.
-*/
 
 void FmLink::updateGPVisualization()
 {
@@ -508,6 +492,7 @@ bool FmLink::attachMMJoint(FmMMJointBase* attachJt, bool isSilent)
 
 /*!
   This is what has to be done in this method:
+  \verbatim
   1. check if the triad is owned.
   IF this link is a generic part or not loaded THEN
      2. check if the triad position matches an existing triad.
@@ -517,6 +502,7 @@ bool FmLink::attachMMJoint(FmMMJointBase* attachJt, bool isSilent)
   END IF
   5. if an existing triad is found and is attachable,
      clone properties from the new triad to the existing one.
+  \endverbatim
 */
 
 bool FmLink::attachTriad(FmTriad* attachTr, bool isSilent, bool doUpdate)
@@ -588,10 +574,6 @@ bool FmLink::attachTriad(FmTriad* attachTr, bool isSilent, bool doUpdate)
 }
 
 
-/*!
-  \brief Attaching a triad when having an old triad in the same place.
-*/
-
 bool FmLink::attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent)
 {
 #ifdef FM_DEBUG
@@ -646,10 +628,9 @@ bool FmLink::attachTriad(FmTriad* attachTr, FmTriad* oldTr, bool isSilent)
 
 
 /*!
-  Checks whether \a attachTriad can be attached to this link.
-  Internally used by attach, attachTriad, attachSMJoint and attachMMJoint.
-  Will return true if it is, along with a possible \a existingTriad
-  that is positioned at the same spot on this link.
+  Used by attach(), attachTriad(), attachSMJoint() and attachMMJoint().
+  Will return \e true if the triad is attachable, along with a possible
+  \a existingTriad that is positioned at the same point on this link.
 */
 
 bool FmLink::isTriadAttachable(FmTriad*& existingTriad,
@@ -712,10 +693,6 @@ bool FmLink::isTriadAttachable(FmTriad*& existingTriad,
 }
 
 
-/*!
-  Returns any existing triad at the same location as \a triad on this link.
-*/
-
 std::pair<FmTriad*,bool> FmLink::getExistingTriad(const FmTriad* triad)
 {
   FmTriad* oldTr = this->getTriadAtPoint(triad->getGlobalTranslation(),
@@ -725,11 +702,15 @@ std::pair<FmTriad*,bool> FmLink::getExistingTriad(const FmTriad* triad)
 
 
 /*!
-  Returns the closest triad to point using tolerance, or NULL if none found.
+  Only the triads closer to \a point than the given \a tolerance are checked.
+  If \a globalPoint is \e true, \a point is assumed to be in global coordinates.
+  Otherwise, local coordinates w.r.t. the link coordinate system is assumed.
+  If \a unconnectedOnly is \e true, only the triads not already assigned a
+  FE node number is considered.
 */
 
 FmTriad* FmLink::getTriadAtPoint(const FaVec3& point, double tolerance,
-				 bool globalPoint) const
+                                 bool globalPoint, bool unconnectedOnly) const
 {
   FmTriad* closestTr = NULL;
   double dist, closestDist = tolerance*tolerance;
@@ -739,7 +720,9 @@ FmTriad* FmLink::getTriadAtPoint(const FaVec3& point, double tolerance,
 
   for (FmTriad* triad : triads)
   {
-    if (globalPoint)
+    if (unconnectedOnly && triad->FENodeNo.getValue() > 0)
+      continue;
+    else if (globalPoint)
       dist = (point - triad->getGlobalTranslation()).sqrLength();
     else
       dist = (point - triad->getLocalTranslation(this)).sqrLength();
