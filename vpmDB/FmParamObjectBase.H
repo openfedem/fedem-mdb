@@ -43,10 +43,6 @@ public:
 
 protected:
   FmParamObjectBase();
-  virtual ~FmParamObjectBase() {}
-
-  static bool localParse(const char* keyWord, std::istream& activeStatement,
-			 FmParamObjectBase* obj);
 };
 
 

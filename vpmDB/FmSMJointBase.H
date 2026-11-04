@@ -54,8 +54,6 @@ protected:
   virtual ~FmSMJointBase();
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-			  FmSMJointBase* obj);
 
   virtual bool eraseOptions();
 

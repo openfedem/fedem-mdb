@@ -146,14 +146,6 @@ void FmIsRenderedBase::updateDisplayCS()
 }
 
 
-bool FmIsRenderedBase::localParse(const char* keyWord,
-                                  std::istream& activeStatement,
-                                  FmIsRenderedBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 bool FmIsRenderedBase::cloneLocal(FmBase* obj, int)
 {
   return obj->isOfType(FmIsRenderedBase::getClassTypeID());

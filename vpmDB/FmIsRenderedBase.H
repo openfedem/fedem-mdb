@@ -53,8 +53,6 @@ protected:
   FmIsRenderedBase& operator=(const FmIsRenderedBase&) = delete;
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-			  FmIsRenderedBase* obj);
 
 #ifdef USE_INVENTOR
   FdObject* itsDisplayPt;

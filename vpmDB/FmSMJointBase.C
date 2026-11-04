@@ -293,13 +293,6 @@ bool FmSMJointBase::swapMasterAndSlave()
 }
 
 
-bool FmSMJointBase::localParse(const char* keyWord, std::istream& activeStatement,
-			       FmSMJointBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 bool FmSMJointBase::cloneLocal(FmBase* obj, int depth)
 {
   if (!obj->isOfType(FmSMJointBase::getClassTypeID()))

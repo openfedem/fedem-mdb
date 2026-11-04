@@ -79,10 +79,3 @@ bool FmSensorBase::cloneLocal(FmBase* obj, int depth)
 
   return true;
 }
-
-
-bool FmSensorBase::localParse(const char* keyWord, std::istream& activeStatement,
-			      FmSensorBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}

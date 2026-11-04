@@ -36,13 +36,6 @@ void FmCtrlElementBase::changedEvent()
 }
 
 
-bool FmCtrlElementBase::localParse(const char* keyWord, std::istream& activeStatement,
-                                   FmCtrlElementBase* obj)
-{
-  return parentParse(keyWord, activeStatement, obj);
-}
-
-
 bool FmCtrlElementBase::cloneLocal(FmBase* obj, int)
 {
   return obj->isOfType(FmCtrlElementBase::getClassTypeID());

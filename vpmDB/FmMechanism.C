@@ -8,6 +8,7 @@
 #include "vpmDB/FmMechanism.H"
 #include "vpmDB/FmSubAssembly.H"
 #include "vpmDB/FmTriad.H"
+#include "vpmDB/FmPart.H"
 #include "vpmDB/FmDB.H"
 #include "vpmDB/FmAnalysis.H"
 #include "vpmDB/FmFileSys.H"
@@ -248,11 +249,6 @@ std::ostream& FmMechanism::writeFMF(std::ostream& os)
 
 bool FmMechanism::readAndConnect(std::istream& is, std::ostream&)
 {
-  // If we are importing a regular model as a sub-assembly,
-  // the mechanism object read from file should be ignored
-  if (FmSubAssembly::old2newAssID.second > 0)
-    return true;
-
   FmMechanism* obj = new FmMechanism();
   while (is.good())
   {
@@ -265,6 +261,28 @@ bool FmMechanism::readAndConnect(std::istream& is, std::ostream&)
   // A mechanism object should always exist before reading a new model
   FmMechanism* old = FmDB::getMechanismObject(false);
   if (!old) return obj->connect(); // Probably we are reading a template file
+
+  // If we are importing a regular model as a sub-assembly,
+  // the mechanism object read from file should be ignored
+  if (FmSubAssembly::old2newAssID.second > 0)
+  {
+    // But first check if it uses a model link repository
+    std::string newRepo = obj->modelLinkRepository.getValue();
+    if (!newRepo.empty() && newRepo != old->modelLinkRepository.getValue())
+    {
+      FFaFilePath::makeItAbsolute(newRepo,FmSubAssembly::newLinkRepo);
+      if (FmDB::getObjectCount(FmPart::getClassTypeID()) > 0)
+        std::swap(newRepo,FmSubAssembly::newLinkRepo);
+      else
+      {
+        ListUI <<" ==> Setting the model link repository to: "<< newRepo <<"\n";
+        old->modelLinkRepository.setValue(newRepo);
+        FmSubAssembly::newLinkRepo = "(unchanged)";
+      }
+    }
+    ListUI <<"  -> Ignoring "<< obj->getIdString(true) <<"\n";
+    return obj->erase();
+  }
 
   if (old->getID() != obj->getID())
   {

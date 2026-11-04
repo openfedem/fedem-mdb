@@ -34,8 +34,6 @@ protected:
   void setPortCount(int count) { itsInputs.resize(count,NULL); }
 
   virtual bool cloneLocal(FmBase* obj, int depth);
-  static  bool localParse(const char* keyWord, std::istream& activeStatement,
-			  FmCtrlInputElementBase* obj);
 
 private:
   std::vector<FmCtrlLine*> itsInputs;
