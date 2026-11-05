@@ -830,7 +830,8 @@ int FmTriad::syncOnFEmodel(bool useDialog)
 
   // Find an FE node at the triad's location
   itsNode = owner->getNodeAtPoint(this->getLocalTranslation(),
-                                  FmDB::getPositionTolerance(),items);
+                                  FmDB::getPositionTolerance(),
+                                  items, FENodeNo.getValue());
 
   // If it was a dependent node, consider as no node
   if (itsNode && itsNode->isSlaveNode())

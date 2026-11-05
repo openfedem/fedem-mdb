@@ -923,13 +923,15 @@ FmTriad* FmPart::getTriadAtNode(int nodeNo) const
 
 
 /*!
+  If \a oldId is given and larger than zero, it is taken as the existing node
+  at the \a point and will be used if it satisfies the other search criteria.
   If the found node is a dependent FE node, a new node is created by adding a
-  stiff CBUSH element between the dependent node and the new node.
+  stiff CBUSH element between the dependent node and the newly created node.
   The new node is then returned.
 */
 
 FFlNode* FmPart::getNodeAtPoint(const FaVec3& point, double tolerance,
-				FFlConnectorItems* addItems)
+                                FFlConnectorItems* addItems, int oldId)
 {
   if (!myFEData) return NULL;
 
@@ -941,22 +943,28 @@ FFlNode* FmPart::getNodeAtPoint(const FaVec3& point, double tolerance,
   int dofFilter = FFlNode::FFL_THREE_DOFS;
 #endif
 
+  // Check if the existing node (if specified) matches the search criteria.
+  FFlNode* newNode = oldId > 0 ? myFEData->getNode(oldId) : NULL;
+  if (newNode && !newNode->isSlaveNode() && newNode->hasDOFs(dofFilter))
+    if (newNode->getPos().equals(point,tolerance))
+      return newNode;
+
   // If more than one node matches the point, prefer the non-dependent nodes.
   // If 3-DOF nodes are allowed, prefer 6-DOF nodes if more than one
   // non-dependent nodes matches.
-  FFlNode* attachNode = myFEData->findFreeNodeAtPoint(point,tolerance,dofFilter);
-  if (attachNode && attachNode->isSlaveNode() && addItems)
+  newNode = myFEData->findFreeNodeAtPoint(point,tolerance,dofFilter);
+  if (newNode && newNode->isSlaveNode() && addItems)
     if (addItems->empty() && lockLevel.getValue() == FM_ALLOW_MODIFICATIONS)
     {
       // Must create a new node at this location.
       // Use the position of the existing dependent node instead of given point
       // to ensure the new node is created at exactly the same location.
-      FaVec3 pos = attachNode->getPos();
-      attachNode = myFEData->createAttachableNode(attachNode,pos,addItems);
+      const FaVec3& pos = newNode->getPos();
+      newNode = myFEData->createAttachableNode(newNode,pos,addItems);
       needsCSupdate.setValue(true);
     }
 
-  return attachNode;
+  return newNode;
 }
 
 

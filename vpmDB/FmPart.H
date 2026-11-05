@@ -94,7 +94,7 @@ public:
   FmTriad* getTriadAtNode(int nodeNo) const;
   //! \brief Returns the closest FE node to a given point, or NULL if not found.
   FFlNode* getNodeAtPoint(const FaVec3& point, double tolerance,
-                          FFlConnectorItems* addItems = NULL);
+                          FFlConnectorItems* addItems = NULL, int oldId = -1);
   int getNodeIDAtPoint(const FaVec3& point, double tolerance);
   FFlNode* getNode(int nodeNo) const;
   int getNodePos(int nodeNo,
