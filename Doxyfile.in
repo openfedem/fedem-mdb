@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: 2023 SAP SE
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This file is part of FEDEM - https://openfedem.org
+
 # Doxyfile 1.9.1
 
 # This file describes the settings to be used by the documentation system
@@ -855,8 +861,9 @@ WARN_LOGFILE           = ${PROJECT_BINARY_DIR}/DoxyWarnings.log
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = ${PROJECT_BINARY_DIR} \
-                         vpmDB chainShape chainShape/Minpack/src test \
-                         fedem-foundation/src/gtest.h \
+                         FedemDB.C vpmDB vpmDB/Icons \
+                         chainShape chainShape/Minpack/src \
+                         fedem-foundation/src/gtest.h test \
                          fedem-foundation/src/FFlLib \
                          fedem-foundation/src/FFlLib/FFlFEParts \
                          fedem-foundation/src/FFlLib/FFlIOAdaptors \
@@ -954,7 +961,8 @@ EXCLUDE_PATTERNS       = *_F.C *Interface.f90
 EXCLUDE_SYMBOLS        = SUBROUTINE \
                          INTEGER_FUNCTION \
                          REAL_FUNCTION \
-                         DOUBLE_FUNCTION
+                         DOUBLE_FUNCTION \
+                         DLLexport
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
 # that contain example code fragments that are included (see the \include
