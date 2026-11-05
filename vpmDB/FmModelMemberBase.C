@@ -308,12 +308,12 @@ void FmModelMemberBase::resolveBaseIDProblems()
 #ifdef FM_DEBUG
       std::cout <<"\tTrouble: "<< DBGID(obj) << std::endl;
       if (objInWay)
-	std::cout <<"\tObject in the way: "<< DBGID(objInWay) << std::endl;
+        std::cout <<"\tObject in the way: "<< DBGID(objInWay) << std::endl;
 #endif
     }
 #ifdef FM_DEBUG
     else
-      std::cout <<"\t"<< DBGID(bit.first) <<" OK"<< std::endl;
+      std::cout <<"\t"<< DBGID(obj) <<" OK"<< std::endl;
 #endif
 
   baseIdProblems.clear();

@@ -80,9 +80,9 @@ public:
 
   // Reimplemented from FFaFieldContainer
 
-  virtual int getResolvedID() const { return this->getID(); }
+  int getResolvedID() const final { return this->getID(); }
   //! \copybrief FFaFieldContainer::getResolvedAssemblyID()
-  virtual void getResolvedAssemblyID(IntVec& assID) const;
+  void getResolvedAssemblyID(IntVec& assID) const final;
 
   // Topology
 

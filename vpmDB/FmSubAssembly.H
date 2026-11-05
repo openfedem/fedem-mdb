@@ -40,9 +40,9 @@ public:
   static bool readAndConnect(std::istream& is, std::ostream& os = std::cout);
 
   // From FmBase
-  virtual std::ostream& writeFMF(std::ostream& os = std::cout);
-  virtual bool clone(FmBase* obj, int depth);
-  virtual const char* getUITypeName() const { return "Sub Assembly"; }
+  std::ostream& writeFMF(std::ostream& os = std::cout) override;
+  bool clone(FmBase* obj, int depth) override;
+  const char* getUITypeName() const override { return "Sub Assembly"; }
 
   //! \brief Returns \e true if this object should be visible in the tree views.
   virtual bool isListable(bool resultView = false) const;
@@ -61,7 +61,7 @@ public:
   virtual double getMass(FaVec3&, bool = true) const { return 0.0; }
 
   // From FmModelMemberBase
-  virtual FmBase* duplicate() const { return this->duplicate(NULL); }
+  FmBase* duplicate() const override { return this->duplicate(NULL); }
 
   //! \brief Creates sub-assembly members by reading from specified file.
   static bool readFMF(const std::string& fileName,
@@ -83,8 +83,8 @@ protected:
   bool writeFMF(const std::string& fileName) const;
 
   // From FmBase
-  virtual bool cloneLocal(FmBase* obj, int depth);
-  virtual bool eraseOptions();
+  bool cloneLocal(FmBase* obj, int depth) override;
+  bool eraseOptions() override;
 
 public:
   FFaField<std::string> myModelFile; //! Model file for storing the sub-assembly
