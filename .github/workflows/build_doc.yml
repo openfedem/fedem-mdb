@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: 2023 SAP SE
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This file is part of FEDEM - https://openfedem.org
+
+name: Build source code documentation
+
+on:
+  push:
+    tags:
+      - fedem-*
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-docs-pages
+  cancel-in-progress: true
+
+jobs:
+  build-doc:
+    name: Build API documentation
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Install doxygen
+        run: sudo apt-get -y install doxygen graphviz
+
+      - name: Checkout source code repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: recursive
+          token: ${{ secrets.ACCESS_PAT }}
+
+      - name: Checkout release tag
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            MY_TAG=${GITHUB_REF_NAME}
+          else
+            MY_TAG=$(git tag -l --sort=version:refname 'fedem-*' | tail -1)
+          fi
+          git checkout "$MY_TAG"
+          git submodule update
+
+      - name: Configure for build
+        run: >
+          cmake . -DCMAKE_BUILD_TYPE=Release
+          -DUSE_FORTRAN=ON -DUSE_CHSHAPE=ON -DBUILD_TESTS=OFF
+
+      - name: Build source code documentation
+        run: |
+          make doc
+          if [ ! -e doc/html/index.html ]; then
+            echo Expected file doc/html/index.html is missing.
+            echo \"make doc\" probably failed.
+            exit 1
+          fi
+
+      - name: Fetch existing documentation
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git fetch origin gh-pages:gh-pages
+          git checkout gh-pages
+          git rm -r --ignore-unmatch docs
+
+      - name: Push updates if changed
+        run: |
+          mv doc/html/index.html new_index.html
+          mv doc/html docs
+          git restore --staged docs/index.html
+          git restore docs/index.html
+          git add docs
+          if git diff -I "^Generated on .* for FEDEM" --quiet --cached HEAD; then
+            echo No changes in source code documentation
+            git reset --hard HEAD
+          else
+            mv new_index.html docs/index.html
+            git add docs/index.html
+            git commit -m"Update source code documentation"
+            git push origin HEAD
+          fi
