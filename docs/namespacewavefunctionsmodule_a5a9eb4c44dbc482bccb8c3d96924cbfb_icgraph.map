@@ -1,0 +1,6 @@
+<map id="wavefunctionsmodule::streamwave" name="wavefunctionsmodule::streamwave">
+<area shape="rect" id="node1" title="Evaluates the nonlinear wave profile according to streamline theory." alt="" coords="367,25,533,66"/>
+<area shape="rect" id="node2" href="$namespacewavefunctionsmodule.html#ae6675f30431fbeb5ee575addef577573" title="Evaluates a wave function with embedded nonlinear components." alt="" coords="152,25,319,66"/>
+<area shape="rect" id="node3" href="$waveFunctions_8f90.html#af53dd46f6ec6f14c122049d65d401d22" title="Evaluates a wave profile." alt="" coords="12,5,97,32"/>
+<area shape="rect" id="node4" href="$waveFunctions_8f90.html#a87f58579e696210125726e70c72a80fb" title="Evaluates a wave profile function." alt="" coords="5,60,104,87"/>
+</map>

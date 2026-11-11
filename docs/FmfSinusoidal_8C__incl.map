@@ -1,0 +1,60 @@
+<map id="vpmDB/FmfSinusoidal.C" name="vpmDB/FmfSinusoidal.C">
+<area shape="rect" id="node1" title=" " alt="" coords="1940,5,2120,32"/>
+<area shape="rect" id="node2" href="$FFaParse_8H.html" title="Utilities for input file parsing." alt="" coords="302,789,505,815"/>
+<area shape="rect" id="node6" href="$FFaMath_8H.html" title="Various math utility functions (extension of math.h)." alt="" coords="1260,80,1472,107"/>
+<area shape="rect" id="node9" href="$FFaFunctionManager_8H.html" title="Global functions direct evaluation of some explicit function types." alt="" coords="224,871,423,912"/>
+<area shape="rect" id="node10" href="$FmMechanism_8H.html" title=" " alt="" coords="1049,155,1233,181"/>
+<area shape="rect" id="node37" href="$FmSeaState_8H.html" title=" " alt="" coords="1847,80,2013,107"/>
+<area shape="rect" id="node51" href="$FmDB_8H.html" title=" " alt="" coords="998,699,1126,726"/>
+<area shape="rect" id="node53" href="$FmfWaveSinus_8H.html" title=" " alt="" coords="2377,155,2563,181"/>
+<area shape="rect" id="node54" href="$FmfComplSinus_8H.html" title=" " alt="" coords="2587,155,2777,181"/>
+<area shape="rect" id="node55" href="$FmfDelayedComplSinus_8H.html" title=" " alt="" coords="2555,80,2801,107"/>
+<area shape="rect" id="node56" href="$FmfSquarePuls_8H.html" title=" " alt="" coords="2038,80,2225,107"/>
+<area shape="rect" id="node57" href="$FmfSinusoidal_8H.html" title=" " alt="" coords="2249,80,2430,107"/>
+<area shape="rect" id="node58" title=" " alt="" coords="2825,80,3056,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="782,878,857,905"/>
+<area shape="rect" id="node4" title=" " alt="" coords="606,960,665,987"/>
+<area shape="rect" id="node5" title=" " alt="" coords="1035,960,1097,987"/>
+<area shape="rect" id="node7" title=" " alt="" coords="1420,379,1483,405"/>
+<area shape="rect" id="node8" title=" " alt="" coords="1257,155,1328,181"/>
+<area shape="rect" id="node11" href="$FmIsPlottedBase_8H.html" title=" " alt="" coords="1699,229,1897,256"/>
+<area shape="rect" id="node18" href="$FFaReference_8H.html" title="Classes representing guarded pointers." alt="" coords="1481,692,1640,733"/>
+<area shape="rect" id="node34" href="$FmResultStatusData_8H.html" title=" " alt="" coords="1029,789,1252,815"/>
+<area shape="rect" id="node35" href="$FFaUnitCalculator_8H.html" title="Conversion of units for physical property parameters." alt="" coords="713,781,905,823"/>
+<area shape="rect" id="node36" href="$FFaVec3_8H.html" title="Point vectors in 3D space." alt="" coords="1407,304,1618,331"/>
+<area shape="rect" id="node12" href="$FmIsRenderedBase_8H.html" title=" " alt="" coords="1691,304,1905,331"/>
+<area shape="rect" id="node13" href="$FmIsMeasuredBase_8H.html" title=" " alt="" coords="1917,379,2133,405"/>
+<area shape="rect" id="node14" href="$FmSimulationModelBase_8H.html" title="Base class for all objects that affect the simulation model." alt="" coords="1907,453,2158,480"/>
+<area shape="rect" id="node15" href="$FmModelMemberBase_8H.html" title="Base class for all model data objects." alt="" coords="1611,528,1846,555"/>
+<area shape="rect" id="node16" title=" " alt="" coords="2399,960,2461,987"/>
+<area shape="rect" id="node17" href="$FmBase_8H.html" title="Base parent class for the model data structure entries." alt="" coords="1625,610,1766,637"/>
+<area shape="rect" id="node32" href="$FFaListViewItem_8H.html" title="Base class for list view items." alt="" coords="529,781,688,823"/>
+<area shape="rect" id="node19" href="$FFaField_8H.html" title="Template class for field representation in the FEDEM model database." alt="" coords="1337,781,1496,823"/>
+<area shape="rect" id="node24" href="$FFaFieldContainer_8H.html" title="Base class for the FEDEM model database structure." alt="" coords="1559,781,1717,823"/>
+<area shape="rect" id="node29" href="$FmArray_8H.html" title=" " alt="" coords="2136,699,2279,726"/>
+<area shape="rect" id="node31" href="$FmTypeCheck_8H.html" title="Type checking control." alt="" coords="1715,699,1894,726"/>
+<area shape="rect" id="node23" href="$FFaDynCB_8H.html" title="Macros for definition of dynamic callback objects." alt="" coords="1793,871,1939,912"/>
+<area shape="rect" id="node20" title=" " alt="" coords="1326,878,1369,905"/>
+<area shape="rect" id="node21" href="$FFaFieldBase_8H.html" title="Base class for all model database fields." alt="" coords="1495,878,1616,905"/>
+<area shape="rect" id="node22" title=" " alt="" coords="2146,960,2226,987"/>
+<area shape="rect" id="node25" title=" " alt="" coords="931,878,982,905"/>
+<area shape="rect" id="node26" title=" " alt="" coords="2249,878,2291,905"/>
+<area shape="rect" id="node27" href="$FFaSingelton_8H.html" title="Template for singleton classes." alt="" coords="1057,871,1200,912"/>
+<area shape="rect" id="node28" href="$FFaTypeCheck_8H.html" title="Type checking control." alt="" coords="1964,871,2123,912"/>
+<area shape="rect" id="node30" title=" " alt="" coords="2185,789,2241,815"/>
+<area shape="rect" id="node33" href="$FFaViewItem_8H.html" title="Abstract interface for list view items." alt="" coords="497,871,656,912"/>
+<area shape="rect" id="node38" href="$FmEngine_8H.html" title=" " alt="" coords="2097,155,2251,181"/>
+<area shape="rect" id="node48" href="$FmColor_8H.html" title=" " alt="" coords="1969,699,2112,726"/>
+<area shape="rect" id="node49" href="$FFaMat34_8H.html" title="Position matrices in 3D space." alt="" coords="1404,155,1624,181"/>
+<area shape="rect" id="node39" href="$FmSensorBase_8H.html" title=" " alt="" coords="1972,229,2157,256"/>
+<area shape="rect" id="node40" href="$FmMathFuncBase_8H.html" title=" " alt="" coords="2576,229,2780,256"/>
+<area shape="rect" id="node46" href="$FmThreshold_8H.html" title=" " alt="" coords="2467,789,2641,815"/>
+<area shape="rect" id="node47" href="$FFaReferenceList_8H.html" title="Classes representing lists of guarded pointers." alt="" coords="2233,603,2392,644"/>
+<area shape="rect" id="node41" href="$FmParamObjectBase_8H.html" title=" " alt="" coords="2283,379,2507,405"/>
+<area shape="rect" id="node42" href="$FFaEnum_8H.html" title="Enum variables with text representations." alt="" coords="2468,878,2672,905"/>
+<area shape="rect" id="node43" title=" " alt="" coords="2575,960,2635,987"/>
+<area shape="rect" id="node44" title=" " alt="" coords="2659,960,2726,987"/>
+<area shape="rect" id="node45" title=" " alt="" coords="2485,960,2551,987"/>
+<area shape="rect" id="node50" href="$FFaMat33_8H.html" title="Point transformations in 3D space." alt="" coords="1353,229,1573,256"/>
+<area shape="rect" id="node52" href="$FFaVersionNumber_8H.html" title="Fedem version number representation." alt="" coords="5,781,167,823"/>
+</map>

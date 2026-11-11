@@ -1,0 +1,12 @@
+<map id="FmResultBase" name="FmResultBase">
+<area shape="rect" id="node1" title="Base class for all objects that postprocess the simulation results." alt="" coords="192,229,308,256"/>
+<area shape="rect" id="node7" href="$classFmAnimation.html" title=" " alt="" coords="5,304,116,331"/>
+<area shape="rect" id="node8" href="$classFmCurveSet.html" title=" " alt="" coords="140,304,243,331"/>
+<area shape="rect" id="node9" href="$classFmGraph.html" title=" " alt="" coords="267,304,350,331"/>
+<area shape="rect" id="node10" href="$classFmPipeStringDataExporter.html" title=" " alt="" coords="374,304,569,331"/>
+<area shape="rect" id="node2" href="$classFmModelMemberBase.html" title="Base class for all model data objects." alt="" coords="165,155,335,181"/>
+<area shape="rect" id="node3" href="$classFmBase.html" title="Base parent class for the model data structure entries." alt="" coords="150,80,225,107"/>
+<area shape="rect" id="node4" href="$classFFaFieldContainer.html" title="Base class for the FEDEM model database structure." alt="" coords="109,5,247,32"/>
+<area shape="rect" id="node5" href="$classFFaListViewItem.html" title="Base class for list view items." alt="" coords="255,80,384,107"/>
+<area shape="rect" id="node6" href="$classFFaViewItem.html" title="Abstract interface class for list view items." alt="" coords="271,5,378,32"/>
+</map>

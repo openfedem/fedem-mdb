@@ -1,0 +1,11 @@
+<map id="vpmDB/FmRotFriction.H" name="vpmDB/FmRotFriction.H">
+<area shape="rect" id="node1" title=" " alt="" coords="521,5,699,32"/>
+<area shape="rect" id="node2" href="$FmBallJoint_8C.html" title=" " alt="" coords="178,80,341,107"/>
+<area shape="rect" id="node3" href="$FmBearingFriction_8H.html" title=" " alt="" coords="365,80,572,107"/>
+<area shape="rect" id="node7" href="$FmSimulationModelBase_8C.html" title="Base class for all objects that affect the simulation model." alt="" coords="574,155,825,181"/>
+<area shape="rect" id="node8" href="$FmFreeJoint_8C.html" title=" " alt="" coords="647,80,813,107"/>
+<area shape="rect" id="node9" href="$FmRotFriction_8C.html" title=" " alt="" coords="837,80,1015,107"/>
+<area shape="rect" id="node4" href="$FmBearingFriction_8C.html" title=" " alt="" coords="5,155,212,181"/>
+<area shape="rect" id="node5" href="$FmDB_8C.html" title=" " alt="" coords="236,155,363,181"/>
+<area shape="rect" id="node6" href="$FmRevJoint_8C.html" title=" " alt="" coords="387,155,550,181"/>
+</map>

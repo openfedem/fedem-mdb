@@ -1,0 +1,5 @@
+<map id="FFaReferenceList&lt; Type &gt;" name="FFaReferenceList&lt; Type &gt;">
+<area shape="rect" id="node1" title="A container of FFaReference objects (guarded pointers)." alt="" coords="5,171,199,197"/>
+<area shape="rect" id="node2" href="$classFFaReferenceListBase.html" title="The base class for FFaReferenceList." alt="" coords="19,95,185,121"/>
+<area shape="rect" id="node3" href="$classFFaFieldContainer.html" title="Base class for the FEDEM model database structure." alt="" coords="33,5,171,32"/>
+</map>

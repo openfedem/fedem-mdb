@@ -1,0 +1,16 @@
+<map id="FmRigidJoint" name="FmRigidJoint">
+<area shape="rect" id="node1" title=" " alt="" coords="94,827,199,853"/>
+<area shape="rect" id="node2" href="$classFmSMJointBase.html" title=" " alt="" coords="85,752,209,779"/>
+<area shape="rect" id="node3" href="$classFmJointBase.html" title=" " alt="" coords="95,677,199,704"/>
+<area shape="rect" id="node4" href="$classFmHasDOFsBase.html" title=" " alt="" coords="79,603,214,629"/>
+<area shape="rect" id="node5" href="$classFmIsPositionedBase.html" title=" " alt="" coords="69,528,224,555"/>
+<area shape="rect" id="node6" href="$classFmIsPlottedBase.html" title=" " alt="" coords="81,453,213,480"/>
+<area shape="rect" id="node7" href="$classFmIsRenderedBase.html" title=" " alt="" coords="73,379,221,405"/>
+<area shape="rect" id="node8" href="$classFmIsMeasuredBase.html" title=" " alt="" coords="71,304,222,331"/>
+<area shape="rect" id="node9" href="$classFmSimulationModelBase.html" title="Base class for all objects that affect the simulation model." alt="" coords="54,229,239,256"/>
+<area shape="rect" id="node10" href="$classFmModelMemberBase.html" title="Base class for all model data objects." alt="" coords="62,155,231,181"/>
+<area shape="rect" id="node11" href="$classFmBase.html" title="Base parent class for the model data structure entries." alt="" coords="47,80,121,107"/>
+<area shape="rect" id="node12" href="$classFFaFieldContainer.html" title="Base class for the FEDEM model database structure." alt="" coords="5,5,144,32"/>
+<area shape="rect" id="node13" href="$classFFaListViewItem.html" title="Base class for list view items." alt="" coords="151,80,281,107"/>
+<area shape="rect" id="node14" href="$classFFaViewItem.html" title="Abstract interface class for list view items." alt="" coords="168,5,275,32"/>
+</map>

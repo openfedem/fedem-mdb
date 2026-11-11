@@ -1,0 +1,6 @@
+<map id="wavefunctionsmodule::checkdepth" name="wavefunctionsmodule::checkdepth">
+<area shape="rect" id="node1" title="Checks that the finite water depth does not cause cause overflow." alt="" coords="256,71,423,112"/>
+<area shape="rect" id="node2" href="$interfacewavefunctionsmodule_1_1initfunc4.html#ab599bde3e477014b49003a31213cb8a3" title="Initializes wave function parameters from the given file." alt="" coords="5,5,208,47"/>
+<area shape="rect" id="node3" href="$interfacewavefunctionsmodule_1_1initfunc4.html#afef1676161402f0a47f4be39e4a0b7f2" title="Initializes a wave function based on statistical parameters." alt="" coords="6,71,207,112"/>
+<area shape="rect" id="node4" href="$interfacewavefunctionsmodule_1_1initfunc4.html#a4aa0d97f46e1bf2953224407b5c3e571" title="Initializes a wave function based on statistical parameters." alt="" coords="11,136,202,177"/>
+</map>

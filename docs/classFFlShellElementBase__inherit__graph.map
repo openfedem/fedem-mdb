@@ -1,0 +1,11 @@
+<map id="FFlShellElementBase" name="FFlShellElementBase">
+<area shape="rect" id="node1" title=" " alt="" coords="135,155,295,181"/>
+<area shape="rect" id="node6" href="$classFFlQUAD4.html" title=" " alt="" coords="5,229,95,256"/>
+<area shape="rect" id="node7" href="$classFFlQUAD8.html" title=" " alt="" coords="119,229,208,256"/>
+<area shape="rect" id="node8" href="$classFFlTRI3.html" title=" " alt="" coords="232,229,303,256"/>
+<area shape="rect" id="node9" href="$classFFlTRI6.html" title=" " alt="" coords="327,229,397,256"/>
+<area shape="rect" id="node2" href="$classFFlElementBase.html" title=" " alt="" coords="151,80,279,107"/>
+<area shape="rect" id="node3" href="$classFFlPartBase.html" title="Base class for all object types of a FE model." alt="" coords="21,5,119,32"/>
+<area shape="rect" id="node4" href="$classFFlFEAttributeRefs.html" title=" " alt="" coords="143,5,287,32"/>
+<area shape="rect" id="node5" href="$classFFlFENodeRefs.html" title=" " alt="" coords="312,5,433,32"/>
+</map>

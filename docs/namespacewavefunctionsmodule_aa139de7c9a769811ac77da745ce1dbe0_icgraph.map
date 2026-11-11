@@ -1,0 +1,17 @@
+<map id="wavefunctionsmodule::wavenumber" name="wavefunctionsmodule::wavenumber">
+<area shape="rect" id="node1" title="Calculates the wave number for finite depth waves." alt="" coords="665,280,832,321"/>
+<area shape="rect" id="node2" href="$namespacewavefunctionsmodule.html#a409b2f382d9232e850cd7e45ff20e112" title="Evaluates the finite depth wave profile." alt="" coords="433,181,599,223"/>
+<area shape="rect" id="node6" href="$namespacewavefunctionsmodule.html#af083ce99d4b5b74b498641ac7a8831d7" title="Evaluates the finite depth wave profile." alt="" coords="200,123,367,164"/>
+<area shape="rect" id="node7" href="$interfacewavefunctionsmodule_1_1initfunc4.html#ab599bde3e477014b49003a31213cb8a3" title="Initializes wave function parameters from the given file." alt="" coords="415,247,617,288"/>
+<area shape="rect" id="node8" href="$namespacewavefunctionsmodule.html#a06c8bdd24c903d00c546d9f9534c69a4" title="Computes coefficients for 5th order Stokes waves." alt="" coords="433,312,599,353"/>
+<area shape="rect" id="node10" href="$namespacewavefunctionsmodule.html#a0b66f307c0d375822090491d4417f9e1" title="Solves the streamline wave equation." alt="" coords="433,377,599,419"/>
+<area shape="rect" id="node13" href="$interfacewavefunctionsmodule_1_1initfunc4.html#afef1676161402f0a47f4be39e4a0b7f2" title="Initializes a wave function based on statistical parameters." alt="" coords="415,443,617,484"/>
+<area shape="rect" id="node14" href="$interfacewavefunctionsmodule_1_1initfunc4.html#a4aa0d97f46e1bf2953224407b5c3e571" title="Initializes a wave function based on statistical parameters." alt="" coords="421,508,611,549"/>
+<area shape="rect" id="node15" href="$namespacewavefunctionsmodule.html#a2dc8d3557051ab7af9072d329bcceb12" title="Evaluates the wave profile according to 2nd order Stokes theory." alt="" coords="200,5,367,47"/>
+<area shape="rect" id="node3" href="$namespacewavefunctionsmodule.html#ae6675f30431fbeb5ee575addef577573" title="Evaluates a wave function with embedded nonlinear components." alt="" coords="200,188,367,229"/>
+<area shape="rect" id="node4" href="$waveFunctions_8f90.html#af53dd46f6ec6f14c122049d65d401d22" title="Evaluates a wave profile." alt="" coords="36,189,121,215"/>
+<area shape="rect" id="node5" href="$waveFunctions_8f90.html#a87f58579e696210125726e70c72a80fb" title="Evaluates a wave profile function." alt="" coords="29,101,128,127"/>
+<area shape="rect" id="node9" href="$waveFunctions_8f90.html#a029e8dbc12171cb45d8aaba47ef6a9b6" title="Initializes parameters for a non&#45;linear wave function." alt="" coords="210,322,357,349"/>
+<area shape="rect" id="node11" href="$namespacewavefunctionsmodule.html#aaae55e5d1230e413de13ceadc774560f" title="Initializes an irregular wave function with embedded streamlines." alt="" coords="200,377,367,419"/>
+<area shape="rect" id="node12" href="$waveFunctions_8f90.html#a6bd66dfe63dbe6032935b90c30c07340" title="Initializes parameters for an embedded non&#45;linear wave function." alt="" coords="5,385,152,411"/>
+</map>

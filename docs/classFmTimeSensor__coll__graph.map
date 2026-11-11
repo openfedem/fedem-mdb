@@ -1,0 +1,45 @@
+<map id="FmTimeSensor" name="FmTimeSensor">
+<area shape="rect" id="node1" title=" " alt="" coords="3900,501,4020,528"/>
+<area shape="rect" id="node2" href="$classFmSensorBase.html" title=" " alt="" coords="3525,496,3643,523"/>
+<area shape="rect" id="node3" href="$classFmIsRenderedBase.html" title=" " alt="" coords="3103,493,3251,520"/>
+<area shape="rect" id="node22" href="$classFmIsPlottedBase.html" title=" " alt="" coords="3518,745,3650,772"/>
+<area shape="rect" id="node4" href="$classFmIsMeasuredBase.html" title=" " alt="" coords="2721,493,2872,520"/>
+<area shape="rect" id="node5" href="$classFmSimulationModelBase.html" title="Base class for all objects that affect the simulation model." alt="" coords="2287,493,2472,520"/>
+<area shape="rect" id="node6" href="$classFmModelMemberBase.html" title="Base class for all model data objects." alt="" coords="1843,492,2013,519"/>
+<area shape="rect" id="node7" href="$classFmBase.html" title="Base parent class for the model data structure entries." alt="" coords="1449,492,1523,519"/>
+<area shape="rect" id="node8" href="$classFFaFieldContainer.html" title="Base class for the FEDEM model database structure." alt="" coords="5,943,144,969"/>
+<area shape="rect" id="node13" href="$classFFaReferenceBase.html" title="Base class for the template class FFaReference for guarded pointers." alt="" coords="564,960,707,987"/>
+<area shape="rect" id="node14" href="$classFFaReferenceListBase.html" title="The base class for FFaReferenceList." alt="" coords="260,1004,425,1031"/>
+<area shape="rect" id="node9" href="$classFFaField.html" title=" " alt="" coords="912,631,1148,657"/>
+<area shape="rect" id="node19" href="$classFmTriad.html" title=" " alt="" coords="4551,409,4625,436"/>
+<area shape="rect" id="node20" href="$classFmHasDOFsBase.html" title=" " alt="" coords="4313,677,4448,704"/>
+<area shape="rect" id="node21" href="$classFmIsPositionedBase.html" title=" " alt="" coords="3883,775,4037,801"/>
+<area shape="rect" id="node10" href="$classFFaFieldBase.html" title="Base class for all model database fields." alt="" coords="289,288,396,315"/>
+<area shape="rect" id="node11" href="$classFFaField.html" title=" " alt="" coords="945,377,1115,404"/>
+<area shape="rect" id="node16" href="$classFFaField.html" title=" " alt="" coords="574,204,697,231"/>
+<area shape="rect" id="node23" href="$classFFaField.html" title=" " alt="" coords="731,420,888,447"/>
+<area shape="rect" id="node25" href="$classFFaField.html" title=" " alt="" coords="1185,795,1385,821"/>
+<area shape="rect" id="node26" href="$classFFaField.html" title=" " alt="" coords="1602,853,1762,880"/>
+<area shape="rect" id="node28" href="$classFFaField.html" title=" " alt="" coords="3873,379,4047,405"/>
+<area shape="rect" id="node39" href="$classFFaField.html" title=" " alt="" coords="2067,8,2263,35"/>
+<area shape="rect" id="node42" href="$classFFaField.html" title=" " alt="" coords="2496,51,2697,93"/>
+<area shape="rect" id="node43" href="$classFFaField.html" title=" " alt="" coords="2896,107,3079,149"/>
+<area shape="rect" id="node12" href="$classFFaReference.html" title=" " alt="" coords="933,520,1127,547"/>
+<area shape="rect" id="node24" href="$classFFaReference.html" title=" " alt="" coords="1172,902,1397,943"/>
+<area shape="rect" id="node27" href="$classFFaReference.html" title=" " alt="" coords="1575,960,1789,987"/>
+<area shape="rect" id="node29" href="$classFFaReference.html" title=" " alt="" coords="1813,1011,2043,1037"/>
+<area shape="rect" id="node38" href="$classFFaReference.html" title=" " alt="" coords="4084,1057,4289,1084"/>
+<area shape="rect" id="node41" href="$classFFaReferenceList.html" title=" " alt="" coords="3275,1123,3485,1149"/>
+<area shape="rect" id="node15" href="$classFFaNoCopyField.html" title=" " alt="" coords="943,313,1117,340"/>
+<area shape="rect" id="node40" href="$classFFaFieldUnsignedInt.html" title="Same as FFaField&lt;int&gt;, but hiding negative&#45;valued instances." alt="" coords="3683,231,3836,257"/>
+<area shape="rect" id="node17" href="$classFFaListViewItem.html" title="Base class for list view items." alt="" coords="1421,543,1551,569"/>
+<area shape="rect" id="node18" href="$classFFaViewItem.html" title="Abstract interface class for list view items." alt="" coords="977,580,1083,607"/>
+<area shape="rect" id="node30" href="$classFFlNode.html" title="FE node class. Stores node position and additional data for the node." alt="" coords="4343,1251,4419,1277"/>
+<area shape="rect" id="node31" href="$classFFlPartBase.html" title="Base class for all object types of a FE model." alt="" coords="2747,1348,2846,1375"/>
+<area shape="rect" id="node36" href="$classFFlNamedPartBase.html" title=" " alt="" coords="3103,1287,3250,1313"/>
+<area shape="rect" id="node32" href="$classFFlFEResultBase.html" title=" " alt="" coords="3895,1251,4025,1277"/>
+<area shape="rect" id="node33" href="$classFaVec3.html" title="Class for point vectors in 3D space." alt="" coords="3927,1301,3993,1328"/>
+<area shape="rect" id="node34" href="$classFFlReference.html" title=" " alt="" coords="3860,1185,4060,1226"/>
+<area shape="rect" id="node35" href="$classFFlAttributeBase.html" title=" " alt="" coords="3519,1209,3649,1236"/>
+<area shape="rect" id="node37" href="$classFFlFEAttributeRefs.html" title=" " alt="" coords="3105,1209,3249,1236"/>
+</map>

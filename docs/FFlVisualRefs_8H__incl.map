@@ -1,0 +1,14 @@
+<map id="fedem&#45;foundation/src/FFlLib/FFlVisualRefs.H" name="fedem&#45;foundation/src/FFlLib/FFlVisualRefs.H">
+<area shape="rect" id="node1" title=" " alt="" coords="255,5,427,47"/>
+<area shape="rect" id="node2" href="$FFlReference_8H.html" title=" " alt="" coords="5,95,171,121"/>
+<area shape="rect" id="node6" title=" " alt="" coords="314,266,377,293"/>
+<area shape="rect" id="node8" href="$FFlVisualBase_8H.html" title=" " alt="" coords="195,95,365,121"/>
+<area shape="rect" id="node10" title=" " alt="" coords="739,266,797,293"/>
+<area shape="rect" id="node3" title=" " alt="" coords="239,266,289,293"/>
+<area shape="rect" id="node4" title=" " alt="" coords="60,177,127,203"/>
+<area shape="rect" id="node5" href="$FFlPartBase_8H.html" title=" " alt="" coords="151,177,307,203"/>
+<area shape="rect" id="node7" title=" " alt="" coords="129,266,215,293"/>
+<area shape="rect" id="node9" href="$FFaGenericFactory_8H.html" title="General object creation factory." alt="" coords="440,169,597,211"/>
+<area shape="rect" id="node11" href="$FFaSingelton_8H.html" title="Template for singleton classes." alt="" coords="401,259,543,300"/>
+<area shape="rect" id="node12" href="$FFaDynCB_8H.html" title="Macros for definition of dynamic callback objects." alt="" coords="568,259,715,300"/>
+</map>

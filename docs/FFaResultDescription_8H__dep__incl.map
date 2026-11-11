@@ -1,0 +1,13 @@
+<map id="fedem&#45;foundation/src/FFaLib/FFaDefinitions/FFaResultDescription.H" name="fedem&#45;foundation/src/FFaLib/FFaDefinitions/FFaResultDescription.H">
+<area shape="rect" id="node1" title="Result variable description." alt="" coords="703,5,880,61"/>
+<area shape="rect" id="node2" href="$FmCurveSet_8H.html" title=" " alt="" coords="610,124,778,151"/>
+<area shape="rect" id="node11" href="$FFaResultDescription_8C.html" title="Result variable description." alt="" coords="802,109,978,165"/>
+<area shape="rect" id="node3" href="$FmCurveSet_8C.html" title=" " alt="" coords="5,213,172,240"/>
+<area shape="rect" id="node4" href="$FmDB_8C.html" title=" " alt="" coords="196,213,323,240"/>
+<area shape="rect" id="node5" href="$FmEngine_8C.html" title=" " alt="" coords="347,213,499,240"/>
+<area shape="rect" id="node6" href="$FmGraph_8C.html" title=" " alt="" coords="523,213,670,240"/>
+<area shape="rect" id="node7" href="$FmIsPlottedBase_8C.html" title=" " alt="" coords="694,213,891,240"/>
+<area shape="rect" id="node8" href="$FmMathFuncBase_8C.html" title=" " alt="" coords="915,213,1118,240"/>
+<area shape="rect" id="node9" href="$FmResultBase_8C.html" title="Base class for all objects that postprocess the simulation results." alt="" coords="1142,213,1323,240"/>
+<area shape="rect" id="node10" href="$FmStrainRosette_8C.html" title=" " alt="" coords="1348,213,1544,240"/>
+</map>

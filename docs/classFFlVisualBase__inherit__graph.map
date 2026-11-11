@@ -1,0 +1,6 @@
+<map id="FFlVisualBase" name="FFlVisualBase">
+<area shape="rect" id="node1" title=" " alt="" coords="78,80,193,107"/>
+<area shape="rect" id="node3" href="$classFFlVAppearance.html" title=" " alt="" coords="5,155,132,181"/>
+<area shape="rect" id="node4" href="$classFFlVDetail.html" title=" " alt="" coords="157,155,247,181"/>
+<area shape="rect" id="node2" href="$classFFlPartBase.html" title="Base class for all object types of a FE model." alt="" coords="86,5,185,32"/>
+</map>

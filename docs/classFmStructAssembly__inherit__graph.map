@@ -1,0 +1,10 @@
+<map id="FmStructAssembly" name="FmStructAssembly">
+<area shape="rect" id="node1" title=" " alt="" coords="74,379,219,405"/>
+<area shape="rect" id="node2" href="$classFmAssemblyBase.html" title=" " alt="" coords="77,304,216,331"/>
+<area shape="rect" id="node3" href="$classFmSubAssembly.html" title="Base class for all sub&#45;assembly objects." alt="" coords="81,229,212,256"/>
+<area shape="rect" id="node4" href="$classFmModelMemberBase.html" title="Base class for all model data objects." alt="" coords="62,155,231,181"/>
+<area shape="rect" id="node5" href="$classFmBase.html" title="Base parent class for the model data structure entries." alt="" coords="47,80,121,107"/>
+<area shape="rect" id="node6" href="$classFFaFieldContainer.html" title="Base class for the FEDEM model database structure." alt="" coords="5,5,144,32"/>
+<area shape="rect" id="node7" href="$classFFaListViewItem.html" title="Base class for list view items." alt="" coords="151,80,281,107"/>
+<area shape="rect" id="node8" href="$classFFaViewItem.html" title="Abstract interface class for list view items." alt="" coords="168,5,275,32"/>
+</map>

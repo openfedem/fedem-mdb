@@ -1,0 +1,16 @@
+<map id="FmFrictionBase" name="FmFrictionBase">
+<area shape="rect" id="node1" title=" " alt="" coords="93,453,216,480"/>
+<area shape="rect" id="node10" href="$classFmRotFriction.html" title=" " alt="" coords="26,528,139,555"/>
+<area shape="rect" id="node12" href="$classFmTransFriction.html" title=" " alt="" coords="169,528,295,555"/>
+<area shape="rect" id="node2" href="$classFmParamObjectBase.html" title=" " alt="" coords="75,379,234,405"/>
+<area shape="rect" id="node3" href="$classFmStructPropertyBase.html" title="Base class for structural property objects without physical shape." alt="" coords="71,304,239,331"/>
+<area shape="rect" id="node4" href="$classFmSimulationModelBase.html" title="Base class for all objects that affect the simulation model." alt="" coords="62,229,247,256"/>
+<area shape="rect" id="node5" href="$classFmModelMemberBase.html" title="Base class for all model data objects." alt="" coords="70,155,239,181"/>
+<area shape="rect" id="node6" href="$classFmBase.html" title="Base parent class for the model data structure entries." alt="" coords="55,80,129,107"/>
+<area shape="rect" id="node7" href="$classFFaFieldContainer.html" title="Base class for the FEDEM model database structure." alt="" coords="13,5,152,32"/>
+<area shape="rect" id="node8" href="$classFFaListViewItem.html" title="Base class for list view items." alt="" coords="159,80,289,107"/>
+<area shape="rect" id="node9" href="$classFFaViewItem.html" title="Abstract interface class for list view items." alt="" coords="176,5,283,32"/>
+<area shape="rect" id="node11" href="$classFmBearingFriction.html" title=" " alt="" coords="5,603,147,629"/>
+<area shape="rect" id="node13" href="$classFmCamFriction.html" title=" " alt="" coords="171,603,293,629"/>
+<area shape="rect" id="node14" href="$classFmPrismaticFriction.html" title=" " alt="" coords="317,603,469,629"/>
+</map>

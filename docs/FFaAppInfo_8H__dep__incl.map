@@ -1,0 +1,12 @@
+<map id="fedem&#45;foundation/src/FFaLib/FFaDefinitions/FFaAppInfo.H" name="fedem&#45;foundation/src/FFaLib/FFaDefinitions/FFaAppInfo.H">
+<area shape="rect" id="node1" title="Utilities for retrieving information about the running application." alt="" coords="798,5,961,61"/>
+<area shape="rect" id="node2" href="$FmDB_8C.html" title=" " alt="" coords="5,124,132,151"/>
+<area shape="rect" id="node3" href="$FmGlobalViewSettings_8C.html" title=" " alt="" coords="157,124,391,151"/>
+<area shape="rect" id="node4" href="$FmIsRenderedBase_8C.html" title=" " alt="" coords="415,124,629,151"/>
+<area shape="rect" id="node5" href="$FmLink_8C.html" title=" " alt="" coords="653,124,788,151"/>
+<area shape="rect" id="node6" href="$FmPart_8C.html" title=" " alt="" coords="813,124,946,151"/>
+<area shape="rect" id="node7" href="$FFaAppInfo_8C.html" title="Utilities for retrieving information about the running application." alt="" coords="970,109,1133,165"/>
+<area shape="rect" id="node8" href="$FFaDynamicLibraryBase_8C.html" title="Management of dynamic loading of shared object libraries." alt="" coords="1157,109,1397,165"/>
+<area shape="rect" id="node9" href="$FiASCFile_8C.html" title="External device function based on multi&#45;column ASCII file." alt="" coords="1421,117,1642,158"/>
+<area shape="rect" id="node10" href="$FiCurveASCFile_8C.html" title="External device function based on single&#45;column ASCII file." alt="" coords="1666,117,1925,158"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="fedem&#45;foundation/src/FFlLib/FFlVisualBase.H" name="fedem&#45;foundation/src/FFlLib/FFlVisualBase.H">
+<area shape="rect" id="node1" title=" " alt="" coords="126,5,301,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="115,191,178,218"/>
+<area shape="rect" id="node3" href="$FFlPartBase_8H.html" title=" " alt="" coords="19,102,175,129"/>
+<area shape="rect" id="node5" href="$FFaGenericFactory_8H.html" title="General object creation factory." alt="" coords="307,95,464,136"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,191,91,218"/>
+<area shape="rect" id="node6" title=" " alt="" coords="540,191,599,218"/>
+<area shape="rect" id="node7" title=" " alt="" coords="623,191,673,218"/>
+<area shape="rect" id="node8" href="$FFaSingelton_8H.html" title="Template for singleton classes." alt="" coords="202,184,345,225"/>
+<area shape="rect" id="node9" href="$FFaDynCB_8H.html" title="Macros for definition of dynamic callback objects." alt="" coords="369,184,516,225"/>
+</map>

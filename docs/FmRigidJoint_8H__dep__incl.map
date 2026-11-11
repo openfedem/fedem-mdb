@@ -1,0 +1,12 @@
+<map id="vpmDB/FmRigidJoint.H" name="vpmDB/FmRigidJoint.H">
+<area shape="rect" id="node1" title=" " alt="" coords="629,5,800,32"/>
+<area shape="rect" id="node2" href="$FedemDB_8C.html" title="Exported global functions for accessing the FEDEM mechanism model." alt="" coords="5,80,104,107"/>
+<area shape="rect" id="node3" href="$FmCreate_8C.html" title="Global functions for creating positioned mechanism objects." alt="" coords="129,80,279,107"/>
+<area shape="rect" id="node4" href="$FmDB_8C.html" title=" " alt="" coords="303,80,430,107"/>
+<area shape="rect" id="node5" href="$FmJointBase_8C.html" title=" " alt="" coords="454,80,623,107"/>
+<area shape="rect" id="node6" href="$FmPart_8C.html" title=" " alt="" coords="648,80,781,107"/>
+<area shape="rect" id="node7" href="$FmRigidJoint_8C.html" title=" " alt="" coords="805,80,976,107"/>
+<area shape="rect" id="node8" href="$FmSimulationModelBase_8C.html" title="Base class for all objects that affect the simulation model." alt="" coords="1000,80,1251,107"/>
+<area shape="rect" id="node9" href="$FmSolverParser_8C.html" title="Class managing writing the FEDEM dynamics solver input file." alt="" coords="1275,80,1463,107"/>
+<area shape="rect" id="node10" href="$FmTriad_8C.html" title=" " alt="" coords="1488,80,1627,107"/>
+</map>
