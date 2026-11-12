@@ -4,6 +4,12 @@
 //
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
+/*!
+  \file FmIconPixmapsMain.H
+  \brief Icons for model database objects.
+  \details These icons are used in the Objects view of the FEDEM GUI.
+  This file should only be included once in the program (typically in main.C).
+*/
 
 #ifndef FM_ICON_PIXMAPS_MAIN_H
 #define FM_ICON_PIXMAPS_MAIN_H
