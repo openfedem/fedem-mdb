@@ -8,7 +8,7 @@
 <area shape="rect" id="node68" href="$FmAirState_8H.html" title=" " alt="" coords="2539,685,2701,711"/>
 <area shape="rect" id="node69" href="$FmAnalysis_8H.html" title=" " alt="" coords="1081,528,1245,555"/>
 <area shape="rect" id="node72" href="$FmDB_8H.html" title=" " alt="" coords="2487,1162,2615,1189"/>
-<area shape="rect" id="node74" title=" " alt="" coords="2942,80,3173,107"/>
+<area shape="rect" id="node74" href="$FmIconPixmaps_8H.html" title="Icons for model database objects." alt="" coords="2942,80,3173,107"/>
 <area shape="rect" id="node75" href="$FFaStringExt_8H.html" title="Extensions of the STL string class." alt="" coords="3451,991,3642,1032"/>
 <area shape="rect" id="node77" href="$FFaParse_8H.html" title="Utilities for input file parsing." alt="" coords="2688,1251,2891,1278"/>
 <area shape="rect" id="node78" href="$FFaMsg_8H.html" title="Interface for various user feedback." alt="" coords="3386,1333,3545,1375"/>

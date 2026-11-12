@@ -71,7 +71,7 @@
 <area shape="rect" id="node91" href="$FmBladeProperty_8H.html" title=" " alt="" coords="2354,229,2553,256"/>
 <area shape="rect" id="node92" href="$FmUserDefinedElement_8H.html" title=" " alt="" coords="1392,155,1635,181"/>
 <area shape="rect" id="node93" href="$FmModelExpOptions_8H.html" title=" " alt="" coords="9274,80,9497,107"/>
-<area shape="rect" id="node94" title=" " alt="" coords="9521,80,9751,107"/>
+<area shape="rect" id="node94" href="$FmIconPixmaps_8H.html" title="Icons for model database objects." alt="" coords="9521,80,9751,107"/>
 <area shape="rect" id="node95" href="$FmModelMemberConnector_8H.html" title=" " alt="" coords="9775,80,10043,107"/>
 <area shape="rect" id="node96" href="$FFaAppInfo_8H.html" title="Utilities for retrieving information about the running application." alt="" coords="8953,304,9111,345"/>
 <area shape="rect" id="node97" href="$FFaFilePath_8H.html" title="Utilities for file path handling." alt="" coords="9363,311,9562,338"/>

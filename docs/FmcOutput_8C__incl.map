@@ -6,7 +6,7 @@
 <area shape="rect" id="node42" href="$FmCreate_8H.html" title="Global functions for creating positioned mechanism objects." alt="" coords="5,80,157,107"/>
 <area shape="rect" id="node44" href="$FFaMsg_8H.html" title="Interface for various user feedback." alt="" coords="283,885,442,927"/>
 <area shape="rect" id="node45" href="$FFaParse_8H.html" title="Utilities for input file parsing." alt="" coords="283,803,485,830"/>
-<area shape="rect" id="node46" title=" " alt="" coords="607,80,838,107"/>
+<area shape="rect" id="node46" href="$FmIconPixmaps_8H.html" title="Icons for model database objects." alt="" coords="607,80,838,107"/>
 <area shape="rect" id="node3" href="$FmCtrlElementBase_8H.html" title=" " alt="" coords="384,244,603,271"/>
 <area shape="rect" id="node4" href="$FmIsRenderedBase_8H.html" title=" " alt="" coords="386,319,601,345"/>
 <area shape="rect" id="node5" href="$FmIsMeasuredBase_8H.html" title=" " alt="" coords="1111,393,1327,420"/>

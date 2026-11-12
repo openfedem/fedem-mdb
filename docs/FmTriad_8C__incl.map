@@ -1,6 +1,6 @@
 <map id="vpmDB/FmTriad.C" name="vpmDB/FmTriad.C">
 <area shape="rect" id="node1" title=" " alt="" coords="2293,5,2432,32"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,80,216,107"/>
+<area shape="rect" id="node2" href="$triadSymbols_8h.html" title="Icons for triads of different type." alt="" coords="5,80,216,107"/>
 <area shape="rect" id="node3" href="$FFlLinkHandler_8H.html" title="Container class for finite element models." alt="" coords="1107,1251,1283,1278"/>
 <area shape="rect" id="node11" href="$FFlNode_8H.html" title=" " alt="" coords="329,767,535,793"/>
 <area shape="rect" id="node19" href="$FFaParse_8H.html" title="Utilities for input file parsing." alt="" coords="3331,1251,3533,1278"/>

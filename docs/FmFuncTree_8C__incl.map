@@ -1,6 +1,6 @@
 <map id="vpmDB/FmFuncTree.C" name="vpmDB/FmFuncTree.C">
 <area shape="rect" id="node1" title=" " alt="" coords="1111,5,1276,32"/>
-<area shape="rect" id="node2" title=" " alt="" coords="650,80,881,107"/>
+<area shape="rect" id="node2" href="$FmIconPixmaps_8H.html" title="Icons for model database objects." alt="" coords="650,80,881,107"/>
 <area shape="rect" id="node3" href="$FmMathFuncBase_8H.html" title=" " alt="" coords="905,80,1109,107"/>
 <area shape="rect" id="node32" href="$FmSubAssembly_8H.html" title="Base class for all sub&#45;assembly objects." alt="" coords="1096,155,1291,181"/>
 <area shape="rect" id="node33" href="$FmDB_8H.html" title=" " alt="" coords="1389,461,1517,487"/>
