@@ -5,10 +5,18 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmIsMeasuredBase.C
+  \brief Base class for all objects with measurable response quantities.
+*/
+
 #include "vpmDB/FmIsMeasuredBase.H"
 #include "vpmDB/FmSimpleSensor.H"
 
+
+//! \cond DO_NOT_DOCUMENT
 Fmd_DB_SOURCE_INIT(FcIS_MEASURED_BASE, FmIsMeasuredBase, FmSimulationModelBase);
+//! \endcond
 
 
 FmIsMeasuredBase::FmIsMeasuredBase()
@@ -72,60 +80,62 @@ bool FmIsMeasuredBase::cloneLocal(FmBase* obj, int depth)
 }
 
 
-FmSensorChoice FmIsMeasuredBase::itsDofTable[] = {
-  FmSensorChoice(FmIsMeasuredBase::X_TRANS,"X trans."),
-  FmSensorChoice(FmIsMeasuredBase::Y_TRANS,"Y trans."),
-  FmSensorChoice(FmIsMeasuredBase::Z_TRANS,"Z trans."),
-  FmSensorChoice(FmIsMeasuredBase::X_ROT,"X rot."),
-  FmSensorChoice(FmIsMeasuredBase::Y_ROT,"Y rot."),
-  FmSensorChoice(FmIsMeasuredBase::Z_ROT,"Z rot."),
-  FmSensorChoice(FmIsMeasuredBase::REL,"Length"),
-  FmSensorChoice(FmIsMeasuredBase::REL_X,"Global DX"),
-  FmSensorChoice(FmIsMeasuredBase::REL_Y,"Global DY"),
-  FmSensorChoice(FmIsMeasuredBase::REL_Z,"Global DZ"),
-  FmSensorChoice(FmIsMeasuredBase::REL_RX,"Rel X rot."),
-  FmSensorChoice(FmIsMeasuredBase::REL_RY,"Rel Y rot."),
-  FmSensorChoice(FmIsMeasuredBase::REL_RZ,"Rel Z rot."),
-  FmSensorChoice(FmIsMeasuredBase::MAX_PR,"Max principal"),
-  FmSensorChoice(FmIsMeasuredBase::MIN_PR,"Min principal"),
-  FmSensorChoice(FmIsMeasuredBase::SA_MAX,"Signed Abs Max"),
-  FmSensorChoice(FmIsMeasuredBase::VMISES,"von Mises"),
-  FmSensorChoice(FmIsMeasuredBase::GAGE_1,"Gage 1"),
-  FmSensorChoice(FmIsMeasuredBase::GAGE_2,"Gage 2"),
-  FmSensorChoice(FmIsMeasuredBase::GAGE_3,"Gage 3"),
-  FmSensorChoice(FmIsMeasuredBase::UNSIGNED,"Unsigned angle"),
-  FmSensorChoice(FmIsMeasuredBase::ANGLE_YZ,"Angle in global YZ-plane"),
-  FmSensorChoice(FmIsMeasuredBase::ANGLE_ZX,"Angle in global ZX-plane"),
-  FmSensorChoice(FmIsMeasuredBase::ANGLE_XY,"Angle in global XY-plane")
-};
+std::array<FmSensorChoice,FmIsMeasuredBase::NUM_DOF>
+FmIsMeasuredBase::itsDofTable{{
+  { FmIsMeasuredBase::X_TRANS, "X trans." },
+  { FmIsMeasuredBase::Y_TRANS, "Y trans." },
+  { FmIsMeasuredBase::Z_TRANS, "Z trans." },
+  { FmIsMeasuredBase::X_ROT, "X rot." },
+  { FmIsMeasuredBase::Y_ROT, "Y rot." },
+  { FmIsMeasuredBase::Z_ROT, "Z rot." },
+  { FmIsMeasuredBase::REL, "Length" },
+  { FmIsMeasuredBase::REL_X, "Global DX" },
+  { FmIsMeasuredBase::REL_Y, "Global DY" },
+  { FmIsMeasuredBase::REL_Z, "Global DZ" },
+  { FmIsMeasuredBase::REL_RX, "Rel X rot." },
+  { FmIsMeasuredBase::REL_RY, "Rel Y rot." },
+  { FmIsMeasuredBase::REL_RZ, "Rel Z rot." },
+  { FmIsMeasuredBase::MAX_PR, "Max principal" },
+  { FmIsMeasuredBase::MIN_PR, "Min principal" },
+  { FmIsMeasuredBase::SA_MAX, "Signed Abs Max" },
+  { FmIsMeasuredBase::VMISES, "von Mises" },
+  { FmIsMeasuredBase::GAGE_1, "Gage 1" },
+  { FmIsMeasuredBase::GAGE_2, "Gage 2" },
+  { FmIsMeasuredBase::GAGE_3, "Gage 3" },
+  { FmIsMeasuredBase::UNSIGNED,"Unsigned angle" },
+  { FmIsMeasuredBase::ANGLE_YZ, "Angle in global YZ-plane" },
+  { FmIsMeasuredBase::ANGLE_ZX, "Angle in global ZX-plane" },
+  { FmIsMeasuredBase::ANGLE_XY, "Angle in global XY-plane" }
+}};
 
 
-FmSensorChoice FmIsMeasuredBase::itsEntityTable[] = {
-  FmSensorChoice(FmIsMeasuredBase::POS,"Position, global coordinates"),
-  FmSensorChoice(FmIsMeasuredBase::LOCAL_VEL,"Velocity, local coordinates"),
-  FmSensorChoice(FmIsMeasuredBase::GLOBAL_VEL,"Velocity, global coordinates"),
-  FmSensorChoice(FmIsMeasuredBase::LOCAL_ACC,"Acceleration, local coordinates"),
-  FmSensorChoice(FmIsMeasuredBase::GLOBAL_ACC,"Acceleration, global coordinates"),
-  FmSensorChoice(FmIsMeasuredBase::DISTANCE,"Distance"),
-  FmSensorChoice(FmIsMeasuredBase::VEL,"Velocity"),
-  FmSensorChoice(FmIsMeasuredBase::ACCEL,"Acceleration"),
-  FmSensorChoice(FmIsMeasuredBase::ANGLE,"Angle"),
-  FmSensorChoice(FmIsMeasuredBase::REL_POS,"Length/angle"),
-  FmSensorChoice(FmIsMeasuredBase::JSPR_ANG,"Spring length/angle"),
-  FmSensorChoice(FmIsMeasuredBase::JSPR_DEFL,"Spring deflection"),
-  FmSensorChoice(FmIsMeasuredBase::JSPR_FORCE,"Spring force"),
-  FmSensorChoice(FmIsMeasuredBase::JDAMP_ANG,"Damper length/angle"),
-  FmSensorChoice(FmIsMeasuredBase::JDAMP_VEL,"Damper velocity"),
-  FmSensorChoice(FmIsMeasuredBase::JDAMP_FORCE,"Damper force"),
-  FmSensorChoice(FmIsMeasuredBase::LENGTH,"Length"),
-  FmSensorChoice(FmIsMeasuredBase::DEFL,"Deflection"),
-  FmSensorChoice(FmIsMeasuredBase::FORCE,"Force"),
-  FmSensorChoice(FmIsMeasuredBase::LOCAL_FORCE, "Force, local coordinates"),
-  FmSensorChoice(FmIsMeasuredBase::GLOBAL_FORCE,"Force, global coordinates"),
-  FmSensorChoice(FmIsMeasuredBase::WIND_SPEED,"Wind speed"),
-  FmSensorChoice(FmIsMeasuredBase::FLUID_VEL,"Fluid particle velocity"),
-  FmSensorChoice(FmIsMeasuredBase::FLUID_ACC,"Fluid particle acceleration"),
-  FmSensorChoice(FmIsMeasuredBase::DYN_PRESS,"Dynamic pressure from fluid"),
-  FmSensorChoice(FmIsMeasuredBase::STRAIN,"Strain"),
-  FmSensorChoice(FmIsMeasuredBase::STRESS,"Stress")
-};
+std::array<FmSensorChoice,FmIsMeasuredBase::NUM_ENTITY>
+FmIsMeasuredBase::itsEntityTable{{
+  { FmIsMeasuredBase::POS, "Position, global coordinates" },
+  { FmIsMeasuredBase::LOCAL_VEL, "Velocity, local coordinates" },
+  { FmIsMeasuredBase::GLOBAL_VEL, "Velocity, global coordinates" },
+  { FmIsMeasuredBase::LOCAL_ACC, "Acceleration, local coordinates" },
+  { FmIsMeasuredBase::GLOBAL_ACC, "Acceleration, global coordinates" },
+  { FmIsMeasuredBase::DISTANCE, "Distance" },
+  { FmIsMeasuredBase::VEL, "Velocity" },
+  { FmIsMeasuredBase::ACCEL, "Acceleration" },
+  { FmIsMeasuredBase::ANGLE, "Angle" },
+  { FmIsMeasuredBase::REL_POS, "Length/angle" },
+  { FmIsMeasuredBase::JSPR_ANG, "Spring length/angle" },
+  { FmIsMeasuredBase::JSPR_DEFL, "Spring deflection" },
+  { FmIsMeasuredBase::JSPR_FORCE, "Spring force" },
+  { FmIsMeasuredBase::JDAMP_ANG, "Damper length/angle" },
+  { FmIsMeasuredBase::JDAMP_VEL, "Damper velocity" },
+  { FmIsMeasuredBase::JDAMP_FORCE, "Damper force" },
+  { FmIsMeasuredBase::LENGTH, "Length" },
+  { FmIsMeasuredBase::DEFL, "Deflection" },
+  { FmIsMeasuredBase::FORCE, "Force" },
+  { FmIsMeasuredBase::LOCAL_FORCE,  "Force, local coordinates" },
+  { FmIsMeasuredBase::GLOBAL_FORCE, "Force, global coordinates" },
+  { FmIsMeasuredBase::WIND_SPEED, "Wind speed" },
+  { FmIsMeasuredBase::FLUID_VEL, "Fluid particle velocity" },
+  { FmIsMeasuredBase::FLUID_ACC, "Fluid particle acceleration" },
+  { FmIsMeasuredBase::DYN_PRESS, "Dynamic pressure from fluid" },
+  { FmIsMeasuredBase::STRAIN, "Strain" },
+  { FmIsMeasuredBase::STRESS, "Stress" }
+}};
