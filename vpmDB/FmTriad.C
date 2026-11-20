@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmTriad.C
+  \brief Class representing a 3- or 6-DOF triad in a mechanism model.
+*/
+
 #ifdef USE_INVENTOR
 #include "vpmDisplay/FdTriad.H"
 #include "vpmDisplay/FdPart.H"
@@ -1674,11 +1679,11 @@ void FmTriad::updateChildrenDisplayTopology()
       // Update the other end-triad of the connected beam,
       // which is not this triad
       if (FmTriad* other = beam->getOtherTriad(this); other)
-        other->updateThisTopologyOnly();
-      beam->drawObject();
+        other->updateTopologyInViewer(false);
+      beam->draw(false);
     }
     else
-      link->updateThisTopologyOnly();
+      link->updateTopologyInViewer(false);
 
   std::vector<FmJointBase*> jnts;
   getJointBinding(jnts);

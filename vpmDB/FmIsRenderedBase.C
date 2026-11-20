@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmIsRenderedBase.C
+  \brief Base class for all objects which can be visualized in the 3D view.
+*/
+
 #include "vpmDB/FmIsRenderedBase.H"
 #include "FFaLib/FFaDefinitions/FFaAppInfo.H"
 #ifdef USE_INVENTOR
@@ -12,7 +17,9 @@
 #endif
 
 
+//! \cond DO_NOT_DOCUMENT
 Fmd_DB_SOURCE_INIT(FcIS_RENDERED_BASE, FmIsRenderedBase, FmIsMeasuredBase);
+//! \endcond
 
 FmTriad* FmIsRenderedBase::detachTriad = NULL;
 
@@ -36,24 +43,14 @@ FmIsRenderedBase::~FmIsRenderedBase()
 }
 
 
-bool FmIsRenderedBase::draw()
+bool FmIsRenderedBase::draw(bool updateChildren)
 {
   if (FFaAppInfo::isConsole()) return false;
 
 #ifdef USE_INVENTOR
-  if (itsDisplayPt)
-    return itsDisplayPt->updateFdAll(true);
-#endif
-
-  return true;
-}
-
-
-void FmIsRenderedBase::drawObject()
-{
-#ifdef USE_INVENTOR
-  if (itsDisplayPt && !FFaAppInfo::isConsole())
-    itsDisplayPt->updateFdAll(false);
+  return itsDisplayPt ? itsDisplayPt->updateFdAll(updateChildren) : true;
+#else
+  return updateChildren;
 #endif
 }
 
@@ -65,39 +62,26 @@ bool FmIsRenderedBase::highlight(bool trueOrFalse)
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
     itsDisplayPt->highlight(trueOrFalse);
-#else
-  if (!trueOrFalse)
-    return false;
-#endif
-
   return true;
-}
-
-
-void FmIsRenderedBase::updateTopologyInViewer()
-{
-  if (FFaAppInfo::isConsole()) return;
-
-#ifdef USE_INVENTOR
-  if (itsDisplayPt) {
-    itsDisplayPt->updateFdTopology(true);
-    itsDisplayPt->updateFdDetails();
-    itsDisplayPt->updateFdApperance();
-  }
+#else
+  return trueOrFalse;
 #endif
 }
 
 
-void FmIsRenderedBase::updateThisTopologyOnly()
+void FmIsRenderedBase::updateTopologyInViewer(bool updateChildren)
 {
   if (FFaAppInfo::isConsole()) return;
 
 #ifdef USE_INVENTOR
   if (itsDisplayPt) {
-    itsDisplayPt->updateFdTopology(false);
+    itsDisplayPt->updateFdTopology(updateChildren);
     itsDisplayPt->updateFdDetails();
     itsDisplayPt->updateFdApperance();
   }
+#else
+  // Dummy statement (to avoid gcc compiler warning)
+  if (updateChildren) {}
 #endif
 }
 
@@ -120,17 +104,6 @@ void FmIsRenderedBase::updateDisplayDetails()
 #ifdef USE_INVENTOR
   if (itsDisplayPt)
     itsDisplayPt->updateFdDetails();
-#endif
-}
-
-
-void FmIsRenderedBase::updateDisplayApperance()
-{
-  if (FFaAppInfo::isConsole()) return;
-
-#ifdef USE_INVENTOR
-  if (itsDisplayPt)
-    itsDisplayPt->updateFdApperance();
 #endif
 }
 

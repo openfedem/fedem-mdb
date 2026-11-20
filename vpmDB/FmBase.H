@@ -96,7 +96,7 @@ public:
   //! \brief Removes this object from the model database.
   virtual bool disconnect() { return this->mainDisconnect(); }
   //! \brief Visualization interface for objects that can be rendered.
-  virtual void drawObject() {}
+  virtual bool draw(bool = false) { return false; }
 
   //! \brief Returns \e true if \a *this is part of the specified sub-assembly.
   bool isPartOf(const FmSubAssembly* subAss) const;
