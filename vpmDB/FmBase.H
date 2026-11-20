@@ -13,12 +13,15 @@
 #ifndef FM_BASE_H
 #define FM_BASE_H
 
-#include "FFaLib/FFaContainers/FFaReference.H"
-#include "FFaLib/FFaContainers/FFaField.H"
-#include "FFaLib/FFaContainers/FFaFieldContainer.H"
+// Note: The header file FmArray.H must be included _before_ FFaField.H
+// to build on windows, see commit 8695374ef691fc12337c7bbe507d68393b785b7b.
 
 #include "vpmDB/FmArray.H"
 #include "vpmDB/FmTypeCheck.H"
+
+#include "FFaLib/FFaContainers/FFaReference.H"
+#include "FFaLib/FFaContainers/FFaField.H"
+#include "FFaLib/FFaContainers/FFaFieldContainer.H"
 
 class FmRingStart;
 class FmSubAssembly;
@@ -149,7 +152,7 @@ protected:
 
   //! \brief Conditionally inserts this object into the model database.
   bool eraseOrConnect();
-  //! \brief Inserts this object into the model database, unless aready present.
+  //! \brief Inserts this object into the model database unless already present.
   bool mainConnect(bool allowNonUniqueIDs = false);
   //! \brief Removes this object from the model database, if present.
   bool mainDisconnect();
