@@ -960,8 +960,8 @@ EXCLUDE_PATTERNS       = *_F.C *Interface.f90
 
 EXCLUDE_SYMBOLS        = SUBROUTINE \
                          INTEGER_FUNCTION \
-                         REAL_FUNCTION \
                          DOUBLE_FUNCTION \
+                         FFaEnumMapping \
                          DLLexport
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
