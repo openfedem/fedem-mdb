@@ -13,6 +13,7 @@
 
 #ifndef FM_ICON_PIXMAPS_MAIN_H
 #define FM_ICON_PIXMAPS_MAIN_H
+//! \cond NO_INCLUDE_GRAPH
 
 // Control elements
 #include "control.xpm"
@@ -140,4 +141,5 @@
 #include "windTower.xpm"
 #include "windTurbine.xpm"
 
+//! \endcond
 #endif
