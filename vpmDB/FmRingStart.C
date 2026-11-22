@@ -5,12 +5,19 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmRingStart.C
+  \brief Class representing the start (and end) of a linked list of objects.
+*/
+
 #include "vpmDB/FmRingStart.H"
 #include "vpmDB/FmPart.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
 
+//! \cond DO_NOT_DOCUMENT
 Fmd_SOURCE_INIT(FcRING_START, FmRingStart, FmModelMemberBase);
+//! \endcond
 
 
 FmRingStart::FmRingStart(const std::string& uistr, const char** pixmap,
@@ -78,7 +85,7 @@ void FmRingStart::displayRingMembers() const
       FFaMsg::setSubStep(++partNumber);
       FFaMsg::setSubTask(static_cast<FmPart*>(p)->getBaseFTLName());
       FFaMsg::setProgress(partNumber);
-      p->drawObject();
+      p->draw();
     }
     FFaMsg::disableProgress();
     FFaMsg::disableSubSteps();
@@ -86,7 +93,7 @@ void FmRingStart::displayRingMembers() const
   }
   else
     for (FmBase* p = this->getNext(); p != last; p = p->getNext())
-      p->drawObject();
+      p->draw();
 }
 
 
@@ -146,10 +153,9 @@ void FmRingStart::setParent(FmRingStart* parent)
 
 FmRingStart* FmRingStart::searchFuncHead(int funcUse) const
 {
-  FmRingStart* found = NULL;
   for (FmRingStart* child : myChildren)
-    if ((found = child->searchFuncHead(funcUse)))
-      break;
+    if (FmRingStart* found = child->searchFuncHead(funcUse); found)
+      return found;
 
-  return found;
+  return NULL;
 }

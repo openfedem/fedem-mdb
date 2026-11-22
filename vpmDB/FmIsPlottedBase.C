@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FmIsPlottedBase.C
+  \brief Base class for all objects which can have results that can be plotted.
+*/
+
 #include "vpmDB/FmIsPlottedBase.H"
 #include "vpmDB/FmCurveSet.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
@@ -12,7 +17,9 @@
 #include <algorithm>
 
 
+//! \cond DO_NOT_DOCUMENT
 Fmd_DB_SOURCE_INIT(FcIS_PLOTTED_BASE, FmIsPlottedBase, FmIsRenderedBase);
+//! \endcond
 
 
 FmIsPlottedBase::FmIsPlottedBase()
@@ -51,6 +58,11 @@ bool FmIsPlottedBase::cloneLocal(FmBase* obj, int)
 }
 
 
+/*!
+  This method is used to optionally clear the references to this object
+  from any curves that may be plotting result quantities from it.
+*/
+
 bool FmIsPlottedBase::eraseOptions()
 {
   if (FmModelMemberBase::inInteractiveErase && this->hasCurveSets())
@@ -73,7 +85,7 @@ bool FmIsPlottedBase::eraseOptions()
           }
   }
 
-  return FmIsRenderedBase::eraseOptions();
+  return this->FmIsRenderedBase::eraseOptions();
 }
 
 
